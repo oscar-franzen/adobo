@@ -2,7 +2,7 @@
  adobo
 
  Description:
- An analysis pipeline for scRNA-seq data.
+ An analysis framework for scRNA-seq data.
 
  How to use:
  https://github.com/oscar-franzen/adobo/
@@ -73,7 +73,6 @@ class data:
         """ Generates a bar plot of read counts per cell. """
         cell_counts = self.exp_mat.sum(axis=0)
         plt.clf()
-        #figure(num=None, figsize=(5, 5))
         colors = [barcolor]*(len(cell_counts))
 
         plt.bar(np.arange(len(cell_counts)), sorted(cell_counts, reverse=True),
@@ -86,12 +85,42 @@ class data:
         else:
             plt.show()
         plt.close()
+    
+    def simple_filters(self, minreads=1000, minexpgenes=0.001, verbose=False):
+        """
+        Removes cells with too few reads and genes with very low expression.
+
+        Arguments:
+            minreads        Minimum number of reads per cell required to keep the cell
+            minexpgenes     If this value is a float, then at least that fraction of
+                            cells must express the gene. If integer, then it denotes the
+                            minimum that number of cells must express the gene.
+        """
+        cell_counts = self.exp_mat.sum(axis=0)
+        r = cell_counts > minreads
+        self.exp_mat = self.exp_mat[self.exp_mat.columns[r]]
+        if verbose:
+            print('%s cells removed' % np.sum(np.logical_not(r)))
+        if minexpgenes > 0:
+            if type(minexpgenes) == int:
+                genes_expressed = self.exp_mat.apply(lambda x: sum(x > 0), axis=1)
+                target_genes = genes_expressed[genes_expressed>minexpgenes].index
+                d = '{0:,g}'.format(np.sum(genes_expressed <= minexpgenes))
+                self.exp_mat = self.exp_mat[self.exp_mat.index.isin(target_genes)]
+                if verbose:
+                    print('Removed %s genes.' % d)
+            else:
+                genes_expressed = self.exp_mat.apply(lambda x: sum(x > 0)/len(x), axis=1)
+                d = '{0:,g}'.format(np.sum(genes_expressed <= minexpgenes))
+                self.exp_mat = self.exp_mat[genes_expressed > minexpgenes]
+                if verbose:
+                    print('Removed %s genes.' % d)
 
     def load_from_file(self, filename, sep='\t', header=0, column_id=True, verbose=False):
         """
         Load a gene expression matrix consisting of raw read counts
     
-        Args:
+        Arguments:
             filename    Path to the file
             sep         Character used to separate fields
             header      If the data file has a header (set to 0 if it has

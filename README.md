@@ -22,8 +22,12 @@ d.remove_mito(verbose=True)
 d.detect_ERCC_spikes(verbose=True)
 ```
 
-# Quality control
+# Quality control and filtering
 ```python
 # barplot of number of reads per cell
 d.barplot_reads_per_cell()
+
+# apply a simple filter, requiring minimum number of reads per cell and a minimum
+# number of cells expressing a gene
+d.simple_filters(minreads=1000, minexpgenes=0.001, verbose=True)
 ```
