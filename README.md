@@ -1,10 +1,11 @@
 adobo for scRNA-seq
 
-Launch Python
+# Launch Python
 ```bash
 python3
 ```
 
+# Basic usage - loading a dataset of raw read counts
 ```python
 import adobo
 # create a new data object
@@ -16,4 +17,7 @@ d.remove_empty(verbose=True)
 
 # remove mitochondrial genes
 d.remove_mito(verbose=True)
+
+# detect ERCC spikes
+d.detect_ERCC_spikes(verbose=True)
 ```
