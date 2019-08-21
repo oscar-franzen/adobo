@@ -48,3 +48,6 @@ d.auto_clean(rRNA_genes=rRNA, verbose=True)
 # Normalize
 ```python
 ```
+
+# Documentation
+https://oscar-franzen.github.io/adobo/
