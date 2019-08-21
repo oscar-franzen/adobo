@@ -10,7 +10,7 @@ python3
 import adobo
 # create a new data object
 d = adobo.data()
-d.load_from_file('SC_mouse_heart_RK_May_2019.mat', verbose=True, column_id=False)
+d.load_from_file('input.mat', verbose=True, column_id=False)
 
 # remove empty cells and genes
 d.remove_empty(verbose=True)
