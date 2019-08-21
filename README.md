@@ -21,3 +21,9 @@ d.remove_mito(verbose=True)
 # detect ERCC spikes
 d.detect_ERCC_spikes(verbose=True)
 ```
+
+# Quality control
+```python
+# barplot of number of reads per cell
+d.barplot_reads_per_cell()
+```

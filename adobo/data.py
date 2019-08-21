@@ -1,8 +1,24 @@
+"""
+ adobo
+
+ Description:
+ An analysis pipeline for scRNA-seq data.
+
+ How to use:
+ https://github.com/oscar-franzen/adobo/
+
+ Contact:
+ Oscar Franzen <p.oscar.franzen@gmail.com>
+"""
+
 import sys
 import os
 
 import pandas as pd
 import numpy as np
+
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure
 
 class data:
     def __init__(self):
@@ -52,6 +68,24 @@ class data:
         self.exp_mat = self.exp_mat[np.logical_not(s)]
         if verbose:
             print('%s ERCC spikes detected' % np.sum(s))
+            
+    def barplot_reads_per_cell(self, barcolor='#E69F00', filename=None):
+        """ Generates a bar plot of read counts per cell. """
+        cell_counts = self.exp_mat.sum(axis=0)
+        plt.clf()
+        #figure(num=None, figsize=(5, 5))
+        colors = [barcolor]*(len(cell_counts))
+
+        plt.bar(np.arange(len(cell_counts)), sorted(cell_counts, reverse=True),
+                color=colors)
+        plt.ylabel('raw read counts')
+        plt.xlabel('cells (sorted on highest to lowest)')
+        plt.title('sequencing reads')
+        if filename:
+            plt.savefig(filename, bbox_inches='tight')
+        else:
+            plt.show()
+        plt.close()
 
     def load_from_file(self, filename, sep='\t', header=0, column_id=True, verbose=False):
         """
