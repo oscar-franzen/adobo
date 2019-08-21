@@ -20,6 +20,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 
+from sklearn.covariance import MinCovDet
+
+# Suppress warnings from sklearn
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
+
 class data:
     def __init__(self):
         self.exp_mito = None
@@ -71,7 +79,7 @@ class data:
         if verbose:
             print('%s ERCC spikes detected' % np.sum(s))
         
-    def auto_clean(self, rRNA_genes):
+    def auto_clean(self, rRNA_genes, sd_thres=3, seed=42):
         """
         Finds low quality cells using five metrics:
 
@@ -83,6 +91,10 @@ class data:
             
         Arguments:
             rRNA_genes      List of rRNA genes.
+            sd_thres        Number of standard deviations to consider significant, i.e.
+                            cells are low quality if this. Set to higher to remove
+                            fewer cells. Default is 3.
+            seed            For the random number generator.
 
         Remarks:
         This function computes Mahalanobis distances from the quality metrics. A robust
@@ -90,19 +102,43 @@ class data:
         Mahalanobis distances of three standard deviations from the mean are considered
         outliers.
         """
-        if type(self.exp_ERCC) == None:
-            raise Exception('auto_clean() needs ERCC spikes')
         
         data = self.exp_mat
+        data_mt = self.exp_mito
         data_ERCC = self.exp_ERCC
+        
+        if type(data_ERCC) == None:
+            raise Exception('auto_clean() needs ERCC spikes')
+        if type(data_mt) == None:
+            raise Exception('No mitochondrial genes found. Run detect_mito() first.')
 
         reads_per_cell = data.sum(axis=0) # no. reads/cell
         no_genes_det = np.sum(data > 0, axis=0)
         data_rRNA = data.loc[data.index.intersection(rRNA_genes)]
-        data_mt = self.exp_mito
-        if not data_mt:
-            raise Exception('No mitochondrial genes found. Run detect_mito() first.')
-            
+        
+        perc_rRNA = data_rRNA.sum(axis=0)/reads_per_cell*100
+        perc_mt = data_mt.sum(axis=0)/reads_per_cell*100
+        perc_ERCC = data_ERCC.sum(axis=0)/reads_per_cell*100
+
+        qc_mat = pd.DataFrame({'reads_per_cell' : np.log(reads_per_cell),
+                               'no_genes_det' : no_genes_det,
+                               'perc_rRNA' : perc_rRNA,
+                               'perc_mt' : perc_mt,
+                               'perc_ERCC' : perc_ERCC})
+        robust_cov = MinCovDet(random_state=seed).fit(qc_mat)
+        mahal_dists = robust_cov.mahalanobis(qc_mat)
+
+        MD_mean = np.mean(mahal_dists)
+        MD_sd = np.std(mahal_dists)
+
+        thres_lower = MD_mean - MD_sd * sd_thres
+        thres_upper = MD_mean + MD_sd * sd_thres
+
+        res = (mahal_dists < thres_lower) | (mahal_dists > thres_upper)
+
+        self.low_quality_cells = data.columns[res].values
+        print(self.low_quality_cells)
+
     def barplot_reads_per_cell(self, barcolor='#E69F00', filename=None,
                                title='sequencing reads'):
         """ Generates a bar plot of read counts per cell. """
