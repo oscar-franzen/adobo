@@ -10,7 +10,8 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
     Parameters
     ----------
         filename : str
-                   Path to the file
+                   Path to the file containing input data. Should be a matrix where
+                   columns are cells and rows are genes.
         sep : str, optional
               Character used to separate fields (default \t)
         header : str, optional
