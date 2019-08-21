@@ -44,3 +44,7 @@ rRNA = rRNA.iloc[:,0].values
 
 d.auto_clean(rRNA_genes=rRNA, verbose=True)
 ```
+
+# Normalize
+```python
+```

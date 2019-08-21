@@ -38,8 +38,15 @@ class data:
         cells = '{:,}'.format(self.exp_mat.shape[1])
         return '%s genes and %s cells' % (genes, cells)
         
+    def _describe(self):
+        genes = '{:,}'.format(self.exp_mat.shape[0])
+        cells = '{:,}'.format(self.exp_mat.shape[1])
+        s = "%s genes and %s cells\n\
+%s low quality cells" % (genes, cells, len(self.low_quality_cells))
+        return s
+        
     def __repr__(self):
-        return self._print_raw_dimensions()
+        return self._describe()
 
     def remove_empty(self, verbose=False):
         """ Removes empty cells and genes """
