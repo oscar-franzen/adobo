@@ -42,5 +42,5 @@ import pandas as pd
 rRNA = pd.read_csv('examples/rRNA_genes.txt', header=None)
 rRNA = rRNA.iloc[:,0].values
 
-d.auto_clean(rRNA_genes=rRNA)
+d.auto_clean(rRNA_genes=rRNA, verbose=True)
 ```

@@ -79,7 +79,7 @@ class data:
         if verbose:
             print('%s ERCC spikes detected' % np.sum(s))
         
-    def auto_clean(self, rRNA_genes, sd_thres=3, seed=42):
+    def auto_clean(self, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         """
         Finds low quality cells using five metrics:
 
@@ -97,10 +97,10 @@ class data:
             seed            For the random number generator.
 
         Remarks:
-        This function computes Mahalanobis distances from the quality metrics. A robust
-        estimate of covariance is used in the Mahalanobis function. Cells with
-        Mahalanobis distances of three standard deviations from the mean are considered
-        outliers.
+            This function computes Mahalanobis distances from the quality metrics. A
+            robust estimate of covariance is used in the Mahalanobis function. Cells with
+            Mahalanobis distances of three standard deviations from the mean are
+            considered outliers.
         """
         
         data = self.exp_mat
@@ -135,9 +135,10 @@ class data:
         thres_upper = MD_mean + MD_sd * sd_thres
 
         res = (mahal_dists < thres_lower) | (mahal_dists > thres_upper)
-
         self.low_quality_cells = data.columns[res].values
-        print(self.low_quality_cells)
+        
+        if verbose:
+            print('%s low quality cell(s) identified' % len(self.low_quality_cells))
 
     def barplot_reads_per_cell(self, barcolor='#E69F00', filename=None,
                                title='sequencing reads'):
