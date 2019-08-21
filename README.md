@@ -10,13 +10,13 @@ python3
 import adobo
 # create a new data object
 d = adobo.data()
-d.load_from_file('GSE95315_10X_expression_data.brain.tab', verbose=True, column_id=True)
+d.load_from_file('SC_mouse_heart_RK_May_2019.mat', verbose=True, column_id=False)
 
 # remove empty cells and genes
 d.remove_empty(verbose=True)
 
-# remove mitochondrial genes
-d.remove_mito(verbose=True)
+# detect and remove mitochondrial genes
+d.detect_mito(verbose=True)
 
 # detect ERCC spikes
 d.detect_ERCC_spikes(verbose=True)
@@ -33,4 +33,9 @@ d.barplot_genes_per_cell()
 # apply a simple filter, requiring minimum number of reads per cell and a minimum
 # number of cells expressing a gene
 d.simple_filters(minreads=1000, minexpgenes=0.001, verbose=True)
+```
+
+# Automatic detection of low quality cells
+```python
+d.auto_clean(rRNA_genes=['test'])
 ```

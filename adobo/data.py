@@ -22,7 +22,8 @@ from matplotlib.pyplot import figure
 
 class data:
     def __init__(self):
-        pass
+        self.exp_mito = None
+        self.exp_ERCC = None
         
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
@@ -53,10 +54,11 @@ class data:
             if verbose:
                 log_info('%s empty genes will be removed' % (np.sum(genes == total_genes)))
     
-    def remove_mito(self, mito_pattern='^mt-', verbose=False):
+    def detect_mito(self, mito_pattern='^mt-', verbose=False):
         """ Remove mitochondrial genes. """
         mt_count = self.exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
         if np.sum(mt_count) > 0:
+            self.exp_mito = self.exp_mat.loc[self.exp_mat.index[mt_count]]
             self.exp_mat = self.exp_mat.loc[self.exp_mat.index[np.logical_not(mt_count)]]
         if verbose:
             print('%s mitochondrial genes detected and removed' % np.sum(mt_count))
@@ -68,6 +70,38 @@ class data:
         self.exp_mat = self.exp_mat[np.logical_not(s)]
         if verbose:
             print('%s ERCC spikes detected' % np.sum(s))
+        
+    def auto_clean(self, rRNA_genes):
+        """
+        Finds low quality cells using five metrics:
+
+            1. log-transformed number of molecules detected
+            2. the number of genes detected
+            3. the percentage of reads mapping to ribosomal
+            4. mitochondrial genes
+            5. ERCC recovery (if available)
+            
+        Arguments:
+            rRNA_genes      List of rRNA genes.
+
+        Remarks:
+        This function computes Mahalanobis distances from the quality metrics. A robust
+        estimate of covariance is used in the Mahalanobis function. Cells with
+        Mahalanobis distances of three standard deviations from the mean are considered
+        outliers.
+        """
+        if type(self.exp_ERCC) == None:
+            raise Exception('auto_clean() needs ERCC spikes')
+        
+        data = self.exp_mat
+        data_ERCC = self.exp_ERCC
+
+        reads_per_cell = data.sum(axis=0) # no. reads/cell
+        no_genes_det = np.sum(data > 0, axis=0)
+        data_rRNA = data.loc[data.index.intersection(rRNA_genes)]
+        data_mt = self.exp_mito
+        if not data_mt:
+            raise Exception('No mitochondrial genes found. Run detect_mito() first.')
             
     def barplot_reads_per_cell(self, barcolor='#E69F00', filename=None,
                                title='sequencing reads'):
