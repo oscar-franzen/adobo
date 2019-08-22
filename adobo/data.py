@@ -1,14 +1,12 @@
+# adobo.
+#
+# Description: An analysis framework for scRNA-seq data.
+#  How to use: https://github.com/oscar-franzen/adobo/
+#     Contact: Oscar Franzen <p.oscar.franzen@gmail.com>
 """
- adobo
-
- Description:
- An analysis framework for scRNA-seq data.
-
- How to use:
- https://github.com/oscar-franzen/adobo/
-
- Contact:
- Oscar Franzen <p.oscar.franzen@gmail.com>
+Summary
+-------
+This module contains a data storage class.
 """
 
 import sys
@@ -19,7 +17,7 @@ import numpy as np
 
 from sklearn.covariance import MinCovDet
 
-class data:
+class dataset:
     """
     Storage container for raw data and analysis results.
     

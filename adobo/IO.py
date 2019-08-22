@@ -1,8 +1,18 @@
+# adobo.
+#
+# Description: An analysis framework for scRNA-seq data.
+#  How to use: https://github.com/oscar-franzen/adobo/
+#     Contact: Oscar Franzen <p.oscar.franzen@gmail.com>
+"""
+Summary
+-------
+Functions for reading and writing scRNA-seq data.
+"""
 import os
 import pandas as pd
 import numpy as np
 
-from adobo import data
+from adobo import dataset
 
 def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
     r"""Load a gene expression matrix consisting of raw read counts
@@ -23,7 +33,8 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
 
     Returns
     -------
-    A data class object.
+    :class:`adobo.data.dataset`
+        A data class object.
     """
     if not os.path.exists(filename):
         raise Exception('%s not found' % filename)
@@ -41,7 +52,7 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
             print('%s duplicated genes detected and removed.' % np.sum(dups))
     if np.any(exp_mat.dtypes != 'int64'):
         raise Exception('Non-count values detected in data matrix.')
-    obj = data(exp_mat)
+    obj = dataset(exp_mat)
     if verbose:
         genes = '{:,}'.format(exp_mat.shape[0])
         cells = '{:,}'.format(exp_mat.shape[1])
