@@ -12,17 +12,18 @@ Classes, functions and arguments are documented here:
 # pip3
 ```
 
-# Launch Python
+# Quick guide to get started
+### Launch Python
 ```bash
 python3
 ```
 
-# Load the adobo package
+### Load the adobo package
 ```python
 import adobo as ad
 ```
 
-# Basic usage - loading a dataset of raw read counts
+### Basic usage - loading a dataset of raw read counts
 ```python
 # create a new data object
 data = ad.IO.load_from_file('input_single_cell_rnaseq_read_counts.mat',
@@ -39,7 +40,7 @@ data = ad.preproc.detect_mito(data, verbose=True)
 data = ad.preproc.detect_ERCC_spikes(data, verbose=True)
 ```
 
-# Quality control and filtering
+### Quality control and filtering
 ```python
 # barplot of number of reads per cell
 ad.plotting.barplot_reads_per_cell(data)
@@ -52,7 +53,7 @@ ad.plotting.barplot_genes_per_cell(data)
 data = ad.preproc.simple_filter(data, minreads=1000, minexpgenes=0.001, verbose=True)
 ```
 
-# Automatic detection of low quality cells
+### Automatic detection of low quality cells
 ```python
 # Load list of rRNA genes
 import pandas as pd
@@ -62,6 +63,9 @@ rRNA = rRNA.iloc[:,0].values
 d.auto_clean(rRNA_genes=rRNA, verbose=True)
 ```
 
-# Normalize
+### Normalize
 ```python
 ```
+
+# Contact, bugs, etc
+* Oscar Franzén, <p.oscar.franzen@gmail.com>
