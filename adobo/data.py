@@ -12,11 +12,6 @@ This module contains a data storage class.
 import sys
 import os
 
-import pandas as pd
-import numpy as np
-
-from sklearn.covariance import MinCovDet
-
 class dataset:
     """
     Storage container for raw data and analysis results.
@@ -29,11 +24,17 @@ class dataset:
         Raw read count matrix containing mitochondrial genes.
     exp_ERCC : :class:`pandas.DataFrame`
         Raw read count matrix containing ERCC spikes.
+    low_quality_cells : `list`
+        Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
+    norm : :class:`pandas.DataFrame`
+        Normalized gene expression data.
     """
     def __init__(self, raw_mat):
         self.exp_mat = raw_mat
         self.exp_mito = None
         self.exp_ERCC = None
+        self.low_quality_cells = None
+        self.norm = None
     
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])

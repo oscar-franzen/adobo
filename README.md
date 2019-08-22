@@ -58,11 +58,12 @@ import pandas as pd
 rRNA = pd.read_csv('examples/rRNA_genes.txt', header=None)
 rRNA = rRNA.iloc[:,0].values
 
-ad.preproc.find_low_quality_cells(rRNA_genes=rRNA, verbose=True)
+ad.preproc.find_low_quality_cells(data, rRNA_genes=rRNA, verbose=True)
 ```
 
 ### Normalize
 ```python
+ad.normalize.norm(data)
 ```
 
 # Contact, bugs, etc

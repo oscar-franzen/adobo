@@ -9,6 +9,8 @@ Summary
 Functions for pre-processing scRNA-seq data.
 """
 import numpy as np
+import pandas as pd
+from sklearn.covariance import MinCovDet
 
 # Suppress warnings from sklearn
 def _warn(*args, **kwargs):
