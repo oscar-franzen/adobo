@@ -21,16 +21,16 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data`
+    obj : data, :class:`adobo.data.dataset`
         A data class object.
-    minreads : `int`, optional (default: 1000)
-        Minimum number of reads per cell required to keep the cell.
-    minexpgenes : `str`, optional (default: 0.001)
+    minreads : `int`, optional
+        Minimum number of reads per cell required to keep the cell (default: 1000).
+    minexpgenes : `str`, optional
         If this value is a float, then at least that fraction of cells must express the
         gene. If integer, then it denotes the minimum that number of cells must express
-        the gene.
-    verbose : `bool`, optional (default: False)
-        Be verbose or not.
+        the gene (default: 0.001).
+    verbose : `bool`, optional
+        Be verbose or not (default: False).
 
     Returns
     -------
@@ -71,52 +71,60 @@ def remove_empty(obj, verbose=False):
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data`
+    obj : data, :class:`adobo.data.dataset`
         A data class object.
-    verbose : boolean, optional (default: False)
-        Be verbose or not.
+    verbose : boolean, optional
+        Be verbose or not (default: False).
 
     Returns
     -------
-    Modifies the passed data object.
+    int
+        Number of empty cells removed.
+    int
+        Number of empty genes removed.
     """
     exp_mat = obj.exp_mat
     data_zero = exp_mat == 0
-
+    
     cells = data_zero.sum(axis=0)
     genes = data_zero.sum(axis=1)
-
+    
     total_genes = exp_mat.shape[0]
     total_cells = exp_mat.shape[1]
+    
+    ecr=0
+    egr=0
 
     if np.sum(cells == total_cells) > 0:
         r = np.logical_not(cells == total_cells)
         exp_mat = exp_mat[exp_mat.columns[r]]
+        ecr = np.sum(cells == total_cells)
         if verbose:
-            print('%s empty cells will be removed' % (np.sum(cells == total_cells)))
+            print('%s empty cells will be removed' % (ecr))
     if np.sum(genes == total_genes) > 0:
         r = np.logical_not(genes == total_genes)
         exp_mat = exp_mat.loc[exp_mat.index[r]]
+        egr = np.sum(genes == total_genes)
         if verbose:
-            print('%s empty genes will be removed' % (np.sum(genes == total_genes)))
-    obj.exp_mat = exp_mat
-    return obj
+            print('%s empty genes will be removed' % (egr))
+    return ecr, egr
 
 def detect_mito(obj, mito_pattern='^mt-', verbose=False):
     """Remove mitochondrial genes
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data`
+    obj : data, :class:`adobo.data.dataset`
         A data class object.
-    mito_pattern : `str`, optional (default: "^mt-")
-        A regular expression matching mitochondrial gene symbols
-    verbose : boolean, optional (default: False)
-        Be verbose or not (default False)
+    mito_pattern : `str`, optional
+        A regular expression matching mitochondrial gene symbols (default: "^mt-")
+    verbose : boolean, optional
+        Be verbose or not (default: False).
 
     Returns
     -------
-    Modifies the passed data object.
+    int
+        Number of mitochondrial genes detected.
     """
     exp_mat = obj.exp_mat
     mt_count = exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
@@ -125,40 +133,43 @@ def detect_mito(obj, mito_pattern='^mt-', verbose=False):
         exp_mat = exp_mat.loc[exp_mat.index[np.logical_not(mt_count)]]
         obj.exp_mat = exp_mat
         obj.exp_mito = exp_mito
+    nm = np.sum(mt_count)
     if verbose:
-        print('%s mitochondrial genes detected and removed' % np.sum(mt_count))
-    return obj
+        print('%s mitochondrial genes detected and removed' % nm)
+    return nm
         
 def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
     """Moves ERCC (if present) to a separate container
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data`
+    obj : data, :class:`adobo.data.dataset`
         A data class object.
-    ERCC_pattern : `str`, optional (default: "ERCC[_-]\S+$")
-        A regular expression matching ERCC gene symbols.
-    verbose : `bool`, optional (default: False)
-        Be verbose or not (default False)
+    ERCC_pattern : `str`, optional
+        A regular expression matching ERCC gene symbols (default: "ERCC[_-]\S+$").
+    verbose : `bool`, optional
+        Be verbose or not (default: False).
 
     Returns
     -------
-    Modifies the passed data object.
+    int
+        Number of detected ERCC spikes.
     """
     exp_mat = obj.exp_mat
     s = exp_mat.index.str.contains(ERCC_pattern)
     exp_ERCC = exp_mat[s]
     exp_mat = exp_mat[np.logical_not(s)]
+    nd = np.sum(s)
     if verbose:
-        print('%s ERCC spikes detected' % np.sum(s))
+        print('%s ERCC spikes detected' % nd)
     obj.exp_mat = exp_mat
     obj.exp_ERCC = exp_ERCC
-    return obj
+    return nd
 
 def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     """Statistical detection of low quality cells
     
-    Extended Summary
+    Notes
     ----------------
     Mahalanobis distances are computed from five quality metrics. A robust estimate of
     covariance is used in the Mahalanobis function. Cells with Mahalanobis distances of
@@ -173,21 +184,22 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data`
+    obj : data, :class:`adobo.data.dataset`
         A data class object.
     rRNA_genes : `list`
         List of rRNA genes.
-    sd_thres : float, optional (default: 3)
+    sd_thres : `float`, optional
         Number of standard deviations to consider significant, i.e. cells are low quality
-        if this. Set to higher to remove fewer cells.
-    seed : `float`, optional (default: 42)
-        For the random number generator.
-    verbose : `bool`, optional (default: False)
-        Be verbose or not.
+        if this. Set to higher to remove fewer cells (default: 3).
+    seed : `float`, optional
+        For the random number generator (default: 42).
+    verbose : `bool`, optional
+        Be verbose or not (default: False).
 
     Returns
     -------
-    Modifies the passed data object.
+    list
+        A list of low quality cells that were identified.
     """
     
     data = obj.exp_mat
@@ -227,4 +239,4 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     if verbose:
         print('%s low quality cell(s) identified' % len(low_quality_cells))
     obj.low_quality_cells = low_quality_cells
-    return obj
+    return low_quality_cells

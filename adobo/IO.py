@@ -22,13 +22,18 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
     filename : `str`
         Path to the file containing input data. Should be a matrix where
         columns are cells and rows are genes.
-    sep : `str`, optional (default: "\\t")
-        Character used to separate fields.
-    header : `str`, optional (default: `0`)
-        If the data file has a header. 0 means yes otherwise None.
+    sep : `str`, optional
+        Character used to separate fields (default: "\\t").
+    header : `str`, optional
+        If the data file has a header. 0 means yes otherwise None (default: `0`).
+    column_id : `bool`, optional
+        Whether the header (first line) of the file contains a column ID for the genes. If
+        this is the case, set this to True, otherwise False (default: True).
+    verbose : `bool`, optional
+        To be verbose or not (default: False).
 
-    Extended Summary
-    ----------------
+    Notes
+    -----
     Gene expression matrix should not be normalized.
 
     Returns

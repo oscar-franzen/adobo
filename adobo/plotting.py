@@ -17,14 +17,14 @@ def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data`
+    obj : data, :class:`adobo.data.dataset`
         A data class object.
-    barcolor : `str`, optional (default: "#E69F00")
-        Color of the bars (default is orange).
+    barcolor : `str`, optional
+        Color of the bars (default: "#E69F00").
     filename : `str`, optional
         Write plot to file.
-    title : `str`, optional (default: "sequencing reads")
-        Title of the plot.
+    title : `str`, optional
+        Title of the plot (default: "sequencing reads").
 
     Returns
     -------
@@ -52,14 +52,14 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data`
+    obj : data, :class:`adobo.data.dataset`
           A data class object
-    barcolor : `str`, optional (default: "#E69F00")
-        Color of the bars (default is orange).
+    barcolor : `str`, optional
+        Color of the bars (default: "#E69F00").
     filename : `str`, optional
         Write plot to file.
-    title : `str`, optional (default: "sequencing reads")
-        Title of the plot.
+    title : `str`, optional
+        Title of the plot (default: "sequencing reads").
 
     Returns
     -------
