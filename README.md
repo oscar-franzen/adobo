@@ -1,7 +1,7 @@
 # Description
 adobo for scRNA-seq
 
-# Tutorials API-level Documentation
+# Tutorials and API Documentation
 Classes, functions and arguments are documented here:
 * https://oscar-franzen.github.io/adobo/
 

@@ -17,7 +17,7 @@ def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data.dataset`
+    obj : :class:`adobo.data.dataset`
         A data class object.
     barcolor : `str`, optional
         Color of the bars (default: "#E69F00").
@@ -52,7 +52,7 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data.dataset`
+    obj : :class:`adobo.data.dataset`
           A data class object
     barcolor : `str`, optional
         Color of the bars (default: "#E69F00").

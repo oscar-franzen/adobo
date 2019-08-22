@@ -21,7 +21,7 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data.dataset`
+    obj : :class:`adobo.data.dataset`
         A data class object.
     minreads : `int`, optional
         Minimum number of reads per cell required to keep the cell (default: 1000).
@@ -71,7 +71,7 @@ def remove_empty(obj, verbose=False):
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data.dataset`
+    obj : :class:`adobo.data.dataset`
         A data class object.
     verbose : boolean, optional
         Be verbose or not (default: False).
@@ -114,7 +114,7 @@ def detect_mito(obj, mito_pattern='^mt-', verbose=False):
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data.dataset`
+    obj : :class:`adobo.data.dataset`
         A data class object.
     mito_pattern : `str`, optional
         A regular expression matching mitochondrial gene symbols (default: "^mt-")
@@ -143,7 +143,7 @@ def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data.dataset`
+    obj : :class:`adobo.data.dataset`
         A data class object.
     ERCC_pattern : `str`, optional
         A regular expression matching ERCC gene symbols (default: "ERCC[_-]\S+$").
@@ -184,7 +184,7 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
 
     Parameters
     ----------
-    obj : data, :class:`adobo.data.dataset`
+    obj : :class:`adobo.data.dataset`
         A data class object.
     rRNA_genes : `list`
         List of rRNA genes.
