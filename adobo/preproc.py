@@ -11,10 +11,10 @@ Functions for pre-processing scRNA-seq data.
 import numpy as np
 
 # Suppress warnings from sklearn
-def warn(*args, **kwargs):
+def _warn(*args, **kwargs):
     pass
 import warnings
-warnings.warn = warn
+warnings.warn = _warn
 
 def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
     """Removes cells with too few reads and genes with very low expression
@@ -34,29 +34,37 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
 
     Returns
     -------
-    Modifies the passed data object.
+    int
+        Number of cells removed.
+    int
+        Number of genes removed.
     """
     exp_mat = obj.exp_mat
     cell_counts = exp_mat.sum(axis=0)
     r = cell_counts > minreads
     exp_mat = exp_mat[exp_mat.columns[r]]
+    cr = np.sum(np.logical_not(r))
+    gr = 0
     if verbose:
-        print('%s cells removed' % np.sum(np.logical_not(r)))
+        print('%s cells removed' % cr)
     if minexpgenes > 0:
         if type(minexpgenes) == int:
             genes_expressed = exp_mat.apply(lambda x: sum(x > 0), axis=1)
             target_genes = genes_expressed[genes_expressed>minexpgenes].index
-            d = '{0:,g}'.format(np.sum(genes_expressed <= minexpgenes))
+            gr = np.sum(genes_expressed <= minexpgenes)
+            d = '{0:,g}'.format(gr)
             exp_mat = exp_mat[exp_mat.index.isin(target_genes)]
             if verbose:
                 print('Removed %s genes.' % d)
         else:
             genes_expressed = exp_mat.apply(lambda x: sum(x > 0)/len(x), axis=1)
-            d = '{0:,g}'.format(np.sum(genes_expressed <= minexpgenes))
+            gr = np.sum(genes_expressed <= minexpgenes)
+            d = '{0:,g}'.format(gr)
             exp_mat = exp_mat[genes_expressed > minexpgenes]
             if verbose:
                 print('Removed %s genes.' % d)
     obj.exp_mat = exp_mat
+    return cr, gr
 
 def remove_empty(obj, verbose=False):
     """Removes empty cells and genes

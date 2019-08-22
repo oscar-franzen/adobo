@@ -67,3 +67,6 @@ d.auto_clean(rRNA_genes=rRNA, verbose=True)
 
 # Contact, bugs, etc
 * Oscar Franzén, <p.oscar.franzen@gmail.com>
+
+# Developer notes
+* docstrings are in numpy format.

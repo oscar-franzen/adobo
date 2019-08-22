@@ -34,7 +34,7 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
     Returns
     -------
     :class:`adobo.data.dataset`
-        A data class object.
+        A dataset class object.
     """
     if not os.path.exists(filename):
         raise Exception('%s not found' % filename)
