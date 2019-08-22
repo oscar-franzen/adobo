@@ -35,10 +35,10 @@ data = ad.preproc.detect_ERCC_spikes(data, verbose=True)
 # Quality control and filtering
 ```python
 # barplot of number of reads per cell
-d.barplot_reads_per_cell()
+ad.plotting.barplot_reads_per_cell(data)
 
 # barplot of number of expressed genes per cell
-d.barplot_genes_per_cell()
+ad.plotting.barplot_genes_per_cell(data)
 
 # apply a simple filter, requiring minimum number of reads per cell and a minimum
 # number of cells expressing a gene
