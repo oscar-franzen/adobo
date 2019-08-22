@@ -1,11 +1,9 @@
+# Description
 adobo for scRNA-seq
 
-# API-level Documentation
+# Tutorials API-level Documentation
 Classes, functions and arguments are documented here:
 * https://oscar-franzen.github.io/adobo/
-
-# Tutorials
-...
 
 # Install
 ```bash

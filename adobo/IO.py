@@ -5,17 +5,17 @@ import numpy as np
 from adobo import data
 
 def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
-    """Load a gene expression matrix consisting of raw read counts
+    r"""Load a gene expression matrix consisting of raw read counts
 
     Parameters
     ----------
-        filename : str
-                   Path to the file containing input data. Should be a matrix where
-                   columns are cells and rows are genes.
-        sep : str, optional
-              Character used to separate fields (default '\t')
-        header : str, optional
-                 If the data file has a header (default 0)
+    filename : `str`
+        Path to the file containing input data. Should be a matrix where
+        columns are cells and rows are genes.
+    sep : `str`, optional (default: "\\t")
+        Character used to separate fields.
+    header : `str`, optional (default: `0`)
+        If the data file has a header. 0 means yes otherwise None.
 
     Extended Summary
     ----------------

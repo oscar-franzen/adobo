@@ -11,20 +11,20 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
 
     Parameters
     ----------
-        obj : data
-              A data class object
-        minreads : int, optional
-                   Minimum number of reads per cell required to keep the cell.
-        minexpgenes : str, optional
-                      If this value is a float, then at least that fraction of cells must
-                      express the gene. If integer, then it denotes the minimum that
-                      number of cells must express the gene.
-        title : str, optional
-                Title of the plot
+    obj : data, :class:`adobo.data`
+        A data class object.
+    minreads : `int`, optional (default: 1000)
+        Minimum number of reads per cell required to keep the cell.
+    minexpgenes : `str`, optional (default: 0.001)
+        If this value is a float, then at least that fraction of cells must express the
+        gene. If integer, then it denotes the minimum that number of cells must express
+        the gene.
+    verbose : `bool`, optional (default: False)
+        Be verbose or not.
 
     Returns
     -------
-    A data class object.
+    Modifies the passed data object.
     """
     exp_mat = obj.exp_mat
     cell_counts = exp_mat.sum(axis=0)
@@ -47,21 +47,20 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
             if verbose:
                 print('Removed %s genes.' % d)
     obj.exp_mat = exp_mat
-    return obj
 
 def remove_empty(obj, verbose=False):
     """Removes empty cells and genes
 
     Parameters
     ----------
-        obj : data
-              A data class object
-        verbose : boolean, optional
-                  Be verbose or not (default False)
+    obj : data, :class:`adobo.data`
+        A data class object.
+    verbose : boolean, optional (default: False)
+        Be verbose or not.
 
     Returns
     -------
-    A data class object.    
+    Modifies the passed data object.
     """
     exp_mat = obj.exp_mat
     data_zero = exp_mat == 0
@@ -90,16 +89,16 @@ def detect_mito(obj, mito_pattern='^mt-', verbose=False):
 
     Parameters
     ----------
-        obj : data
-              A data class object
-        mito_pattern : str, optional
-                       A regular expression matching mitochondrial gene symbols
-        verbose : boolean, optional
-                  Be verbose or not (default False)
+    obj : data, :class:`adobo.data`
+        A data class object.
+    mito_pattern : `str`, optional (default: "^mt-")
+        A regular expression matching mitochondrial gene symbols
+    verbose : boolean, optional (default: False)
+        Be verbose or not (default False)
 
     Returns
     -------
-    A data class object.
+    Modifies the passed data object.
     """
     exp_mat = obj.exp_mat
     mt_count = exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
@@ -117,16 +116,16 @@ def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
 
     Parameters
     ----------
-        obj : data
-              A data class object
-        ERCC_pattern : str, optional
-                       A regular expression matching ERCC gene symbols
-        verbose : boolean, optional
-                  Be verbose or not (default False)
+    obj : data, :class:`adobo.data`
+        A data class object.
+    ERCC_pattern : `str`, optional (default: "ERCC[_-]\S+$")
+        A regular expression matching ERCC gene symbols.
+    verbose : `bool`, optional (default: False)
+        Be verbose or not (default False)
 
     Returns
     -------
-    A data class object.
+    Modifies the passed data object.
     """
     exp_mat = obj.exp_mat
     s = exp_mat.index.str.contains(ERCC_pattern)
@@ -135,36 +134,48 @@ def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
     if verbose:
         print('%s ERCC spikes detected' % np.sum(s))
     obj.exp_mat = exp_mat
+    obj.exp_ERCC = exp_ERCC
     return obj
 
-def auto_clean(self, rRNA_genes, sd_thres=3, seed=42, verbose=False):
-    """
-    Finds low quality cells using five metrics:
+def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
+    """Statistical detection of low quality cells
+    
+    Extended Summary
+    ----------------
+    Mahalanobis distances are computed from five quality metrics. A robust estimate of
+    covariance is used in the Mahalanobis function. Cells with Mahalanobis distances of
+    three standard deviations from the mean are by default considered outliers.
+    The five metrics are:
 
         1. log-transformed number of molecules detected
         2. the number of genes detected
         3. the percentage of reads mapping to ribosomal
         4. mitochondrial genes
         5. ERCC recovery (if available)
-        
-    Arguments:
-        rRNA_genes      List of rRNA genes.
-        sd_thres        Number of standard deviations to consider significant, i.e.
-                        cells are low quality if this. Set to higher to remove
-                        fewer cells. Default is 3.
-        seed            For the random number generator.
 
-    Remarks:
-        This function computes Mahalanobis distances from the quality metrics. A
-        robust estimate of covariance is used in the Mahalanobis function. Cells with
-        Mahalanobis distances of three standard deviations from the mean are
-        considered outliers.
+    Parameters
+    ----------
+    obj : data, :class:`adobo.data`
+        A data class object.
+    rRNA_genes : `list`
+        List of rRNA genes.
+    sd_thres : float, optional (default: 3)
+        Number of standard deviations to consider significant, i.e. cells are low quality
+        if this. Set to higher to remove fewer cells.
+    seed : `float`, optional (default: 42)
+        For the random number generator.
+    verbose : `bool`, optional (default: False)
+        Be verbose or not.
+
+    Returns
+    -------
+    Modifies the passed data object.
     """
     
-    data = self.exp_mat
-    data_mt = self.exp_mito
-    data_ERCC = self.exp_ERCC
-    
+    data = obj.exp_mat
+    data_mt = obj.exp_mito
+    data_ERCC = obj.exp_ERCC
+
     if type(data_ERCC) == None:
         raise Exception('auto_clean() needs ERCC spikes')
     if type(data_mt) == None:
@@ -193,7 +204,9 @@ def auto_clean(self, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     thres_upper = MD_mean + MD_sd * sd_thres
 
     res = (mahal_dists < thres_lower) | (mahal_dists > thres_upper)
-    self.low_quality_cells = data.columns[res].values
+    low_quality_cells = data.columns[res].values
     
     if verbose:
-        print('%s low quality cell(s) identified' % len(self.low_quality_cells))
+        print('%s low quality cell(s) identified' % len(low_quality_cells))
+    obj.low_quality_cells = low_quality_cells
+    return obj

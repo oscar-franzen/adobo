@@ -20,6 +20,18 @@ import numpy as np
 from sklearn.covariance import MinCovDet
 
 class data:
+    """
+    Storage container for raw data and analysis results.
+    
+    Attributes
+    ----------
+    exp_mat : :class:`pandas.DataFrame`
+        Raw read count matrix.
+    exp_mito : :class:`pandas.DataFrame`
+        Raw read count matrix containing mitochondrial genes.
+    exp_ERCC : :class:`pandas.DataFrame`
+        Raw read count matrix containing ERCC spikes.
+    """
     def __init__(self, raw_mat):
         self.exp_mat = raw_mat
         self.exp_mito = None
