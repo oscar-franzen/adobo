@@ -1,5 +1,12 @@
 adobo for scRNA-seq
 
+# API-level Documentation
+Classes, functions and arguments are documented here:
+* https://oscar-franzen.github.io/adobo/
+
+# Tutorials
+...
+
 # Install
 ```bash
 # pip3
@@ -58,6 +65,3 @@ d.auto_clean(rRNA_genes=rRNA, verbose=True)
 # Normalize
 ```python
 ```
-
-# Documentation
-https://oscar-franzen.github.io/adobo/
