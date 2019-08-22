@@ -1,13 +1,22 @@
 adobo for scRNA-seq
 
+# Install
+```bash
+# pip3
+```
+
 # Launch Python
 ```bash
 python3
 ```
 
+# Load the adobo package
+```python
+import adobo as ad
+```
+
 # Basic usage - loading a dataset of raw read counts
 ```python
-import adobo
 # create a new data object
 d = adobo.data()
 d.load_from_file('input.mat', verbose=True, column_id=False)
