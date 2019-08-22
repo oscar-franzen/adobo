@@ -18,17 +18,18 @@ import adobo as ad
 # Basic usage - loading a dataset of raw read counts
 ```python
 # create a new data object
-d = adobo.data()
-d.load_from_file('input.mat', verbose=True, column_id=False)
+data = ad.IO.load_from_file('input_single_cell_rnaseq_read_counts.mat',
+                             verbose=True,
+                             column_id=False)
 
 # remove empty cells and genes
-d.remove_empty(verbose=True)
+data = ad.preproc.remove_empty(data, verbose=True)
 
 # detect and remove mitochondrial genes
-d.detect_mito(verbose=True)
+data = ad.preproc.detect_mito(data, verbose=True)
 
 # detect ERCC spikes
-d.detect_ERCC_spikes(verbose=True)
+data = ad.preproc.detect_ERCC_spikes(data, verbose=True)
 ```
 
 # Quality control and filtering

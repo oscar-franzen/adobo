@@ -1,3 +1,5 @@
+import numpy as np
+
 # Suppress warnings from sklearn
 def warn(*args, **kwargs):
     pass
@@ -34,43 +36,93 @@ def simple_filters(obj, minreads=1000, minexpgenes=0.001, verbose=False):
             if verbose:
                 print('Removed %s genes.' % d)
 
-def remove_empty(self, verbose=False):
-    """ Removes empty cells and genes """
-    data_zero = self.exp_mat == 0
+def remove_empty(obj, verbose=False):
+    """Removes empty cells and genes
+
+    Parameters
+    ----------
+        obj : data
+              A data class object
+        verbose : boolean, optional
+                  Be verbose or not (default False)
+
+    Returns
+    -------
+    A data class object.    
+    """
+    exp_mat = obj.exp_mat
+    data_zero = exp_mat == 0
 
     cells = data_zero.sum(axis=0)
     genes = data_zero.sum(axis=1)
 
-    total_genes = self.exp_mat.shape[0]
-    total_cells = self.exp_mat.shape[1]
+    total_genes = exp_mat.shape[0]
+    total_cells = exp_mat.shape[1]
 
     if np.sum(cells == total_cells) > 0:
         r = np.logical_not(cells == total_cells)
-        self.exp_mat = self.exp_mat[self.exp_mat.columns[r]]
+        exp_mat = exp_mat[exp_mat.columns[r]]
         if verbose:
             print('%s empty cells will be removed' % (np.sum(cells == total_cells)))
     if np.sum(genes == total_genes) > 0:
         r = np.logical_not(genes == total_genes)
-        self.exp_mat = self.exp_mat.loc[self.exp_mat.index[r]]
+        exp_mat = exp_mat.loc[exp_mat.index[r]]
         if verbose:
-            log_info('%s empty genes will be removed' % (np.sum(genes == total_genes)))
+            print('%s empty genes will be removed' % (np.sum(genes == total_genes)))
+    obj.exp_mat = exp_mat
+    return obj
 
-def detect_mito(self, mito_pattern='^mt-', verbose=False):
-    """ Remove mitochondrial genes. """
-    mt_count = self.exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
+def detect_mito(obj, mito_pattern='^mt-', verbose=False):
+    """Remove mitochondrial genes
+
+    Parameters
+    ----------
+        obj : data
+              A data class object
+        mito_pattern : str, optional
+                       A regular expression matching mitochondrial gene symbols
+        verbose : boolean, optional
+                  Be verbose or not (default False)
+
+    Returns
+    -------
+    A data class object.
+    """
+    exp_mat = obj.exp_mat
+    mt_count = exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
     if np.sum(mt_count) > 0:
-        self.exp_mito = self.exp_mat.loc[self.exp_mat.index[mt_count]]
-        self.exp_mat = self.exp_mat.loc[self.exp_mat.index[np.logical_not(mt_count)]]
+        exp_mito = exp_mat.loc[exp_mat.index[mt_count]]
+        exp_mat = exp_mat.loc[exp_mat.index[np.logical_not(mt_count)]]
+        obj.exp_mat = exp_mat
+        obj.exp_mito = exp_mito
     if verbose:
         print('%s mitochondrial genes detected and removed' % np.sum(mt_count))
+    return obj
         
-def detect_ERCC_spikes(self, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
-    """ Moves ERCC (if present) to a separate container. """
-    s = self.exp_mat.index.str.contains(ERCC_pattern)
-    self.exp_ERCC = self.exp_mat[s]
-    self.exp_mat = self.exp_mat[np.logical_not(s)]
+def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
+    """Moves ERCC (if present) to a separate container
+
+    Parameters
+    ----------
+        obj : data
+              A data class object
+        ERCC_pattern : str, optional
+                       A regular expression matching ERCC gene symbols
+        verbose : boolean, optional
+                  Be verbose or not (default False)
+
+    Returns
+    -------
+    A data class object.
+    """
+    exp_mat = obj.exp_mat
+    s = exp_mat.index.str.contains(ERCC_pattern)
+    exp_ERCC = exp_mat[s]
+    exp_mat = exp_mat[np.logical_not(s)]
     if verbose:
         print('%s ERCC spikes detected' % np.sum(s))
+    obj.exp_mat = exp_mat
+    return obj
 
 def auto_clean(self, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     """

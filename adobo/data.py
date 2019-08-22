@@ -37,7 +37,7 @@ class data:
         genes = '{:,}'.format(self.exp_mat.shape[0])
         cells = '{:,}'.format(self.exp_mat.shape[1])
         #s = "%s genes and %s cells\n\%s low quality cells" % (genes, cells, len(self.low_quality_cells))
-        s = "%s genes and %s cells" % (genes, cells)
+        s = "Raw read counts matrix contains:\n%s genes and %s cells" % (genes, cells)
         return s
     
     def __repr__(self):
