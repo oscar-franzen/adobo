@@ -6,35 +6,48 @@ def warn(*args, **kwargs):
 import warnings
 warnings.warn = warn
 
-def simple_filters(obj, minreads=1000, minexpgenes=0.001, verbose=False):
-    """
-    Removes cells with too few reads and genes with very low expression.
+def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
+    """Removes cells with too few reads and genes with very low expression
 
-    Arguments:
-        minreads        Minimum number of reads per cell required to keep the cell
-        minexpgenes     If this value is a float, then at least that fraction of
-                        cells must express the gene. If integer, then it denotes the
-                        minimum that number of cells must express the gene.
+    Parameters
+    ----------
+        obj : data
+              A data class object
+        minreads : int, optional
+                   Minimum number of reads per cell required to keep the cell.
+        minexpgenes : str, optional
+                      If this value is a float, then at least that fraction of cells must
+                      express the gene. If integer, then it denotes the minimum that
+                      number of cells must express the gene.
+        title : str, optional
+                Title of the plot
+
+    Returns
+    -------
+    A data class object.
     """
-    cell_counts = self.exp_mat.sum(axis=0)
+    exp_mat = obj.exp_mat
+    cell_counts = exp_mat.sum(axis=0)
     r = cell_counts > minreads
-    self.exp_mat = self.exp_mat[self.exp_mat.columns[r]]
+    exp_mat = exp_mat[exp_mat.columns[r]]
     if verbose:
         print('%s cells removed' % np.sum(np.logical_not(r)))
     if minexpgenes > 0:
         if type(minexpgenes) == int:
-            genes_expressed = self.exp_mat.apply(lambda x: sum(x > 0), axis=1)
+            genes_expressed = exp_mat.apply(lambda x: sum(x > 0), axis=1)
             target_genes = genes_expressed[genes_expressed>minexpgenes].index
             d = '{0:,g}'.format(np.sum(genes_expressed <= minexpgenes))
-            self.exp_mat = self.exp_mat[self.exp_mat.index.isin(target_genes)]
+            exp_mat = exp_mat[exp_mat.index.isin(target_genes)]
             if verbose:
                 print('Removed %s genes.' % d)
         else:
-            genes_expressed = self.exp_mat.apply(lambda x: sum(x > 0)/len(x), axis=1)
+            genes_expressed = exp_mat.apply(lambda x: sum(x > 0)/len(x), axis=1)
             d = '{0:,g}'.format(np.sum(genes_expressed <= minexpgenes))
-            self.exp_mat = self.exp_mat[genes_expressed > minexpgenes]
+            exp_mat = exp_mat[genes_expressed > minexpgenes]
             if verbose:
                 print('Removed %s genes.' % d)
+    obj.exp_mat = exp_mat
+    return obj
 
 def remove_empty(obj, verbose=False):
     """Removes empty cells and genes

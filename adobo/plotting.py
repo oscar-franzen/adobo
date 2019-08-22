@@ -18,7 +18,7 @@ def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
 
     Returns
     -------
-    None   
+    None
     """
     exp_mat = obj.exp_mat
     cell_counts = exp_mat.sum(axis=0)
@@ -53,7 +53,7 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
 
     Returns
     -------
-    None   
+    None
     """
     exp_mat = obj.exp_mat
     genes_expressed = exp_mat.apply(lambda x: sum(x > 0), axis=0)

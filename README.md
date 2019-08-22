@@ -40,9 +40,9 @@ ad.plotting.barplot_reads_per_cell(data)
 # barplot of number of expressed genes per cell
 ad.plotting.barplot_genes_per_cell(data)
 
-# apply a simple filter, requiring minimum number of reads per cell and a minimum
-# number of cells expressing a gene
-d.simple_filters(minreads=1000, minexpgenes=0.001, verbose=True)
+# apply a simple filter, requiring a minimum number of reads per cell and a minimum number
+# of cells expressing a gene. For SMART-seq2 data, bump up the minreads option.
+data = ad.preproc.simple_filter(data, minreads=1000, minexpgenes=0.001, verbose=True)
 ```
 
 # Automatic detection of low quality cells

@@ -13,7 +13,7 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
                    Path to the file containing input data. Should be a matrix where
                    columns are cells and rows are genes.
         sep : str, optional
-              Character used to separate fields (default \t)
+              Character used to separate fields (default '\t')
         header : str, optional
                  If the data file has a header (default 0)
 
@@ -23,7 +23,7 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
 
     Returns
     -------
-    A data class object.    
+    A data class object.
     """
     if not os.path.exists(filename):
         raise Exception('%s not found' % filename)
