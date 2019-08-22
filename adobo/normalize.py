@@ -14,6 +14,7 @@ import numpy as np
 def _depth_norm(data, scaling_factor):
     col_sums = data.apply(lambda x: sum(x), axis=0)
     data_norm = (data / col_sums) * scaling_factor
+    return data_norm
 
 def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=True,
          exon_lengths=None, scaling_factor=10000):
@@ -50,6 +51,9 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
         data = data.drop(obj.low_quality_cells, axis=1)
     if method == 'depth':
         norm = _depth_norm(data, scaling_factor)
-    if log:
+        obj.norm_method='depth'
+    elif method == 'rpkm':
+        obj.norm_method='rpkm'
+    if log2:
         norm = np.log2(norm+small_const)
     obj.norm = norm

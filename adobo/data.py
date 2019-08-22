@@ -28,6 +28,8 @@ class dataset:
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
     norm : :class:`pandas.DataFrame`
         Normalized gene expression data.
+    norm_method : `str`
+        Method used for normalization.
     """
     def __init__(self, raw_mat):
         self.exp_mat = raw_mat
@@ -35,6 +37,7 @@ class dataset:
         self.exp_ERCC = None
         self.low_quality_cells = None
         self.norm = None
+        self.norm_method = 'none'
     
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
@@ -45,7 +48,9 @@ class dataset:
         genes = '{:,}'.format(self.exp_mat.shape[0])
         cells = '{:,}'.format(self.exp_mat.shape[1])
         #s = "%s genes and %s cells\n\%s low quality cells" % (genes, cells, len(self.low_quality_cells))
-        s = "Raw read counts matrix contains:\n%s genes and %s cells" % (genes, cells)
+        s = """Raw read counts matrix contains:
+%s genes and %s cells
+Normalization method: %s""" % (genes, cells, self.norm_method)
         return s
     
     def __repr__(self):
