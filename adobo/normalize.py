@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 def clr_normalization(data, axis='genes'):
-    """Performs centered log ratio transformation similar to Seurat
+    """Performs centered log ratio normalization similar to Seurat
 
     Parameters
     ----------
@@ -132,7 +132,8 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
         Specifies the method to use. `standard` refers to the simplest normalization
         strategy involving scaling genes by total number of reads per cell. `rpkm`
         performs RPKM normalization and requires the `exon_lengths` parameter to be set.
-        `fqn` performs a full-quantile normalization.
+        `fqn` performs a full-quantile normalization. `clr` performs centered log ratio
+        normalization.
     log2 : `bool`
         Perform log2 transformation (default: True)
     small_const : `float`
