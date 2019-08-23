@@ -12,9 +12,41 @@ This module contains functions to normalize raw read counts.
 import numpy as np
 import pandas as pd
 
+def clr_normalization(data, axis='genes'):
+    """Performs centered log ratio transformation similar to Seurat
+
+    Parameters
+    ----------
+    data : :class:`pandas.DataFrame`
+        A pandas data frame object containing raw read counts (rows=genes,
+        columns=cells).
+    axis : {'genes', 'cells'}
+        Normalize over genes or cells (default: genes).
+        
+    References
+    ----------
+    [0] Hafemeister et al. (2019)
+        https://www.biorxiv.org/content/10.1101/576827v1
+
+    Returns
+    -------
+    :class:`pandas.DataFrame`
+        A normalized data matrix with same dimensions as before.
+    """
+    
+    if axis == 'genes':
+        axis = 1
+    elif axis == 'cells':
+        axis = 0
+    else:
+        raise Exception('Unknown axis specified.')
+        
+    r = data.apply(lambda x : np.log1p(x/np.exp(sum(np.log1p(x[x>0]))/len(x))), axis=axis)
+    return r
+
 def standard_normalization(data, scaling_factor):
-    """Performs a standard normalization by total read depth per cell and then multiplies
-    with a scaling factor.
+    """Performs a standard normalization by scaling with the total read depth per cell and
+    then multiplying with a scaling factor.
 
     Parameters
     ----------
@@ -114,6 +146,9 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
     scaling_factor : `int`
         Scaling factor used to multiply the scaled counts with. Only used for
         `method="depth"` (default: 10000).
+    axis : {'genes', 'cells'}
+        Only applicable when `method="clr"`, defines the axis to normalize across,
+        (default: 'genes').
 
     References
     ----------
@@ -135,6 +170,9 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
     elif method == 'fqn':
         norm = full_quantile_normalization(data)
         obj.norm_method='fqn'
+    elif method == 'clr':
+        norm = clr_normalization(data, axis)
+        obj.norm_method='clr'
     if log2:
         norm = np.log2(norm+small_const)
     obj.norm = norm
