@@ -63,7 +63,9 @@ ad.preproc.find_low_quality_cells(data, rRNA_genes=rRNA, verbose=True)
 
 ### Normalize
 ```python
-ad.normalize.norm(data)
+# adobo supports several normalization strategies, the default scales by total read depth
+# per cell
+ad.normalize.norm(data, method='standard')
 ```
 
 # Contact, bugs, etc

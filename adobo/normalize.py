@@ -71,7 +71,8 @@ def standard_normalization(data, scaling_factor):
     return data_norm
 
 def full_quantile_normalization(data):
-    """Performs full quantile normalization (FQN).
+    """Performs full quantile normalization (FQN). FQN was shown to perform well on single
+    cell data [1].
     
     Notes
     -----
@@ -88,6 +89,8 @@ def full_quantile_normalization(data):
     ----------
     [0] Bolstad et al. (2003) Bioinformatics
         https://academic.oup.com/bioinformatics/article/19/2/185/372664
+    [1] Cole et al. (2019) Cell Systems
+        https://www.biorxiv.org/content/10.1101/235382v2
 
     Returns
     -------
@@ -128,7 +131,7 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
-    method : {'standard', 'rpkm'}
+    method : {'standard', 'rpkm', 'fqn', 'clr'}
         Specifies the method to use. `standard` refers to the simplest normalization
         strategy involving scaling genes by total number of reads per cell. `rpkm`
         performs RPKM normalization and requires the `exon_lengths` parameter to be set.
@@ -174,6 +177,8 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
     elif method == 'clr':
         norm = clr_normalization(data, axis)
         obj.norm_method='clr'
+    else:
+        raise Exception('Unknown normalization method.')
     if log2:
         norm = np.log2(norm+small_const)
     obj.norm = norm
