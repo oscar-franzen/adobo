@@ -266,14 +266,14 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
-    method : `{'standard', 'rpkm', 'fqn', 'clr'}`
+    method : `{'standard', 'rpkm', 'fqn', 'clr', 'vsn'}`
         Specifies the method to use. `standard` refers to the simplest normalization
         strategy involving scaling genes by total number of reads per cell. `rpkm`
         performs RPKM normalization and requires the `exon_lengths` parameter to be set.
         `fqn` performs a full-quantile normalization. `clr` performs centered log ratio
         normalization. `vsn` performs a variance stabilizing normalization.
     log2 : `bool`
-        Perform log2 transformation (default: True)
+        Perform log2 transformation. Not done if method='vsn' (default: True)
     small_const : `float`
         A small constant to add to expression values to avoid log'ing genes with zero
         expression (default: 1).
@@ -312,8 +312,11 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     elif method == 'clr':
         norm = clr_normalization(data, axis)
         obj.norm_method='clr'
+    elif method == 'vsn':
+        norm = vsn(data)
+        obj.norm_method='vsn'
     else:
         raise Exception('Unknown normalization method.')
-    if log2:
+    if log2 and method!='vsn':
         norm = np.log2(norm+small_const)
     obj.norm = norm
