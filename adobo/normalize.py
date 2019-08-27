@@ -12,6 +12,135 @@ This module contains functions to normalize raw read counts.
 import numpy as np
 import pandas as pd
 
+from sklearn.neighbors import KernelDensity
+import statsmodels.api as sm
+from statsmodels.nonparametric.kernel_regression import KernelReg
+
+def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
+    """Performs variance stabilizing normaliztion
+    
+    Notes
+    -----
+    Adapted from the vst function in the R package sctransform [0].
+    
+    Parameters
+    ----------
+    data : :class:`pandas.DataFrame`
+        A pandas data frame object containing raw read counts (rows=genes,
+        columns=cells).
+    min_cells : `int`
+        Minimum number of cells expressing a gene for the gene to be used (default: 10).
+    gmean_eps : `float`
+        A small constant to avoid log(0)=-Inf (default: 1).
+    n_genes : `int`
+        Number of genes to use when estimating parameters (default: 2000).
+    
+    References
+    ----------
+    [0] https://cran.r-project.org/web/packages/sctransform/index.html
+    [1] https://www.biorxiv.org/content/10.1101/576827v1
+    
+    Returns
+    -------
+    :class:`pandas.DataFrame`
+        A normalized data matrix with same dimensions as before.
+    """
+    
+    bw_adjust = 3 # Kernel bandwidth adjustment factor
+    
+    # numericals functions
+    log10 = np.log10
+    log = np.log
+    exp = np.exp
+    mean = np.mean
+    sqrt = np.sqrt
+
+    # data summary
+    cell_attr = pd.DataFrame({'counts' : data.sum(axis=0),
+                             'genes' : (data>0).sum(axis=0)})
+    cell_attr['log_umi'] = log10(cell_attr.counts)
+    cell_attr['log_gene'] = log10(cell_attr.genes)
+    cell_attr['umi_per_gene'] = cell_attr.counts/cell_attr.genes
+    cell_attr['log_umi_per_gene'] = log10(cell_attr.umi_per_gene)
+    
+    genes_cell_count = (data>0).sum(axis=1)
+    genes = genes_cell_count[genes_cell_count>=10].index
+    X = data[data.index.isin(genes)]
+    genes_log_gmean = log10(row_geometric_mean(X, gmean_eps))
+    
+    cells_step1 = X.columns
+    genes_step1 = X.index
+    genes_log_gmean_step1 = genes_log_gmean
+    data_step1 = cell_attr
+    
+    if n_genes < len(genes_step1):
+        bw = bw_nrd(genes_log_gmean_step1)
+        kde = KernelDensity(bandwidth=bw, kernel='gaussian')
+        ret = kde.fit(genes_log_gmean_step1[:, None])
+        # TODO: score_samples is slower than density() in R
+        weights = 1/np.exp(kde.score_samples(genes_log_gmean_step1[:,None]))
+        genes_step1 = np.random.choice(X.index, n_genes, replace=False, p=weights/sum(weights))
+        X = X.loc[X.index.isin(genes_step1), X.columns.isin(cells_step1)]
+        X = X.reindex(genes_step1)
+        genes_log_gmean_step1 = np.log10(row_geometric_mean(X, gmean_eps))
+    
+    model_pars = []
+    for g in genes_step1:
+        y = X.loc[g,:]
+        mod = sm.GLM(y, sm.add_constant(data_step1['log_umi']), family=sm.families.Poisson())
+        res = mod.fit()
+        s = res.summary()
+        mu = res.fittedvalues
+        theta = theta_ml(y, mu)
+        coef = res.params
+        model_pars.append({'gene' : g,
+                           'theta' : theta,
+                           'log_umi' : coef['log_umi'],
+                           'const' : coef['const']})
+    model_pars = pd.DataFrame(model_pars)
+    model_pars.index = model_pars['gene']
+    model_pars = model_pars.drop('gene', axis=1)
+    model_pars.theta = log10(model_pars.theta)
+    
+    # remove outliers
+    outliers = model_pars.apply(lambda x : is_outlier(x, genes_log_gmean_step1), axis=0)
+    outliers = outliers.any(axis=1)
+    model_pars = model_pars[np.logical_not(outliers.values)]
+    
+    genes_step1 = model_pars.index.values
+    genes_log_gmean_step1 = genes_log_gmean_step1[np.logical_not(outliers.values)]
+    
+    x_points = np.maximum(genes_log_gmean, min(genes_log_gmean_step1))
+    x_points = np.minimum(x_points, max(genes_log_gmean_step1))
+    
+    model_pars_fit = model_pars.apply(
+        lambda x : KernelReg(x, genes_log_gmean_step1, bw='aic', var_type='c').fit(x_points)[0],
+        axis = 0
+    )
+    
+    model_pars_fit.index = x_points.index
+    model_pars.theta = 10**model_pars.theta
+    model_pars_fit.theta = 10**model_pars_fit.theta
+    model_pars_final = model_pars_fit
+    
+    regressor_data_final = pd.DataFrame({'const' : [1]*len(cell_attr['log_umi']),
+                                         'log_umi' : cell_attr['log_umi']})
+    
+    mu = exp(np.dot(model_pars_final.loc[:, ('const','log_umi')],
+             regressor_data_final.transpose()))
+    y = data[data.index.isin(model_pars_final.index)]
+    
+    # pearson residuals
+    mu2 = pd.DataFrame(mu**2)
+    t = (y-mu)
+    n = sqrt((mu+mu2.div(model_pars_final.loc[:, 'theta'].values, axis=0)))
+    
+    n.index = t.index
+    n.columns = t.columns
+    
+    pr = t/n
+    return pr
+
 def clr_normalization(data, axis='genes'):
     """Performs centered log ratio normalization similar to Seurat
 
@@ -131,7 +260,7 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
-    method : {'standard', 'rpkm', 'fqn', 'clr'}
+    method : `{'standard', 'rpkm', 'fqn', 'clr'}`
         Specifies the method to use. `standard` refers to the simplest normalization
         strategy involving scaling genes by total number of reads per cell. `rpkm`
         performs RPKM normalization and requires the `exon_lengths` parameter to be set.
