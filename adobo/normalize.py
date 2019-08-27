@@ -82,7 +82,7 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
         genes_step1 = np.random.choice(X.index, n_genes, replace=False, p=weights/sum(weights))
         X = X.loc[X.index.isin(genes_step1), X.columns.isin(cells_step1)]
         X = X.reindex(genes_step1)
-        genes_log_gmean_step1 = np.log10(row_geometric_mean(X, gmean_eps))
+        genes_log_gmean_step1 = log10(row_geometric_mean(X, gmean_eps))
     
     model_pars = []
     for g in genes_step1:
