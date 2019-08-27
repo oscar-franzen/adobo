@@ -253,9 +253,14 @@ def full_quantile_normalization(data):
     df = df.transpose()
     return df
 
-def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=True,
+def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells=True,
          exon_lengths=None, scaling_factor=10000):
     r"""Normalizes gene expression data
+    
+    Notes
+    -----
+    A wrapper function around the individual normalization functions, which can also be
+    called directly.
 
     Parameters
     ----------
@@ -291,7 +296,7 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
 
     Returns
     -------
-    None
+    Nothing. Modifies the passed object.
     """
     data = obj.exp_mat
     if remove_low_qual_cells:
