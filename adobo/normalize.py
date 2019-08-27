@@ -37,8 +37,8 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     
     References
     ----------
-    [0] https://cran.r-project.org/web/packages/sctransform/index.html
-    [1] https://www.biorxiv.org/content/10.1101/576827v1
+        [0] https://cran.r-project.org/web/packages/sctransform/index.html
+        [1] https://www.biorxiv.org/content/10.1101/576827v1
     
     Returns
     -------
