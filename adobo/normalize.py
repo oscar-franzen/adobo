@@ -17,11 +17,12 @@ import statsmodels.api as sm
 from statsmodels.nonparametric.kernel_regression import KernelReg
 
 def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
-    """Performs variance stabilizing normaliztion
+    """Performs variance stabilizing normaliztion based on a negative binomial regression
+    model with regularized parameters
     
     Notes
     -----
-    Adapted from the vst function in the R package sctransform [0].
+    Adopts a subset of the functionality of the vst function in the R package sctransform [0].
     
     Parameters
     ----------
@@ -265,7 +266,7 @@ def norm(obj, method='depth', log2=True, small_const=1, remove_low_qual_cells=Tr
         strategy involving scaling genes by total number of reads per cell. `rpkm`
         performs RPKM normalization and requires the `exon_lengths` parameter to be set.
         `fqn` performs a full-quantile normalization. `clr` performs centered log ratio
-        normalization.
+        normalization. `vsn` performs a variance stabilizing normalization.
     log2 : `bool`
         Perform log2 transformation (default: True)
     small_const : `float`
