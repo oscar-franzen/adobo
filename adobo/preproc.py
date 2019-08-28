@@ -8,6 +8,7 @@ Summary
 -------
 Functions for pre-processing scRNA-seq data.
 """
+import sys
 import numpy as np
 import pandas as pd
 from sklearn.covariance import MinCovDet
@@ -66,6 +67,7 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
             if verbose:
                 print('Removed %s genes.' % d)
     obj.exp_mat = exp_mat
+    obj.set_assay(sys._getframe().f_code.co_name)
     return cr, gr
 
 def remove_empty(obj, verbose=False):
@@ -109,6 +111,7 @@ def remove_empty(obj, verbose=False):
         egr = np.sum(genes == total_genes)
         if verbose:
             print('%s empty genes will be removed' % (egr))
+    obj.set_assay(sys._getframe().f_code.co_name)
     return ecr, egr
 
 def detect_mito(obj, mito_pattern='^mt-', verbose=False):
@@ -138,6 +141,7 @@ def detect_mito(obj, mito_pattern='^mt-', verbose=False):
     nm = np.sum(mt_count)
     if verbose:
         print('%s mitochondrial genes detected and removed' % nm)
+    obj.set_assay(sys._getframe().f_code.co_name)
     return nm
         
 def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
@@ -166,6 +170,7 @@ def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
         print('%s ERCC spikes detected' % nd)
     obj.exp_mat = exp_mat
     obj.exp_ERCC = exp_ERCC
+    obj.set_assay(sys._getframe().f_code.co_name)
     return nd
 
 def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
@@ -207,6 +212,8 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     
     if type(obj.exp_mito) == str:
         raise Exception('No mitochondrial genes found. Run detect_mito() first.')
+    if type(obj.exp_ERCC) == str:
+        raise Exception('No ERCC spikes found. Run detect_ERCC() first.')
     
     if type(rRNA_genes) == str:
         rRNA_genes = pd.read_csv(rRNA_genes, header=None)
@@ -216,9 +223,9 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     data_mt = obj.exp_mito
     data_ERCC = obj.exp_ERCC
 
-    if type(data_ERCC) == None:
+    if not obj.get_assay('detect_ERCC_spikes'):
         raise Exception('auto_clean() needs ERCC spikes')
-    if type(data_mt) == None:
+    if not obj.get_assay('detect_mito'):
         raise Exception('No mitochondrial genes found. Run detect_mito() first.')
 
     reads_per_cell = data.sum(axis=0) # no. reads/cell
@@ -249,4 +256,5 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     if verbose:
         print('%s low quality cell(s) identified' % len(low_quality_cells))
     obj.low_quality_cells = low_quality_cells
+    obj.set_assay(sys._getframe().f_code.co_name)
     return low_quality_cells

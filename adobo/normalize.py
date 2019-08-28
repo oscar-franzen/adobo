@@ -9,12 +9,16 @@ Summary
 This module contains functions to normalize raw read counts.
 """
 
+import sys
+
 import numpy as np
 import pandas as pd
 
 from sklearn.neighbors import KernelDensity
 import statsmodels.api as sm
 from statsmodels.nonparametric.kernel_regression import KernelReg
+
+from .log import warning
 
 def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     """Performs variance stabilizing normaliztion based on a negative binomial regression
@@ -353,7 +357,11 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     """
     data = obj.exp_mat
     if remove_low_qual_cells:
-        data = data.drop(obj.low_quality_cells, axis=1)
+        if not obj.get_assay('find_low_quality_cells'):
+            warning('remove_low_qual_cells set to True but low_quality_cells() has not \
+been performed')
+        else:
+            data = data.drop(obj.low_quality_cells, axis=1)
     if method == 'standard':
         norm = standard_normalization(data, scaling_factor)
         obj.norm_method='standard'
@@ -373,3 +381,4 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     if log2 and method!='vsn':
         norm = np.log2(norm+small_const)
     obj.norm = norm
+    obj.set_assay(sys._getframe().f_code.co_name)
