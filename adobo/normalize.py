@@ -213,7 +213,7 @@ def rpkm(data, gene_lengths):
     ----------
     obj : :class:`pandas.DataFrame`
         A pandas data frame object containing raw read counts (rows=genes, columns=cells).
-    gene_lengths : `:class:`pandas.Series`` or `str`
+    gene_lengths : :class:`pandas.Series` or `str`
         Should contain the gene lengths in base pairs and gene names set as index. The
         names must match the gene names used in `data`. Normally gene lengths should be
         the combined length of exons for every gene. If gene_lengths is a `str` then it is
@@ -332,7 +332,7 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
         expression (default: 1).
     remove_low_qual_cells : `bool`
         Remove low quality cells identified using :py:meth:`adobo.preproc.find_low_quality_cells`.
-    gene_lengths : `:class:`pandas.Series`` or `str`
+    gene_lengths : :class:`pandas.Series` or `str`
         A :class:`pandas.Series` containing the gene lengths in base pairs and gene names set as index. The
         names must match the gene names used in `data` (the order does not need to match
         and any symbols not found in the data will be discarded). Normally gene lengths
