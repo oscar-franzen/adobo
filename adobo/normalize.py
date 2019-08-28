@@ -322,7 +322,7 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     method : `{'standard', 'rpkm', 'fqn', 'clr', 'vsn'}`
         Specifies the method to use. `standard` refers to the simplest normalization
         strategy involving scaling genes by total number of reads per cell. `rpkm`
-        performs RPKM normalization and requires the `exon_lengths` parameter to be set.
+        performs RPKM normalization and requires the `gene_lengths` parameter to be set.
         `fqn` performs a full-quantile normalization. `clr` performs centered log ratio
         normalization. `vsn` performs a variance stabilizing normalization.
     log2 : `bool`
