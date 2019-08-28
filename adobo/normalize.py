@@ -333,7 +333,7 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     remove_low_qual_cells : `bool`
         Remove low quality cells identified using :py:meth:`adobo.preproc.find_low_quality_cells`.
     gene_lengths : `:class:`pandas.Series`` or `str`
-        A series containing the gene lengths in base pairs and gene names set as index. The
+        A :class:`pandas.Series` containing the gene lengths in base pairs and gene names set as index. The
         names must match the gene names used in `data` (the order does not need to match
         and any symbols not found in the data will be discarded). Normally gene lengths
         should be the combined length of exons for every gene. If gene_lengths is a `str`
