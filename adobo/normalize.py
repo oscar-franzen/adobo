@@ -200,6 +200,59 @@ def standard_normalization(data, scaling_factor):
     data_norm = (data / col_sums) * scaling_factor
     return data_norm
 
+def rpkm(data, gene_lengths):
+    """Normalize expression values as RPKM
+    
+    Notes
+    -----
+    This method should be used if you need to adjust for gene length, such as in
+    a SMART-Seq2 protocol.
+
+    Parameters
+    ----------
+    data : :class:`pandas.DataFrame`
+        A pandas data frame object containing raw read counts (rows=genes,
+        columns=cells).
+    gene_lengths : `:class:`pandas.Series``
+        Should contain the gene lengths in base pairs and gene names set as index. The
+        names must match the gene names used in `data`. Normally gene lengths should be
+        the combined length of exons for every gene.
+
+    References
+    ----------
+    [0] Conesa et al. (2016) Genome Biology
+        https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0881-8
+
+    Returns
+    -------
+    :class:`pandas.DataFrame`
+        A normalized data matrix with same dimensions as before.
+    """
+
+    # intersects and sorts
+    temp = pd.merge(data, exon_lengths, how='inner', left_on=data.index,
+                    right_on=exon_lengths['gene'].str.extract('^(.+)\.[0-9]+')[0])
+
+    temp.index = temp['gene']
+    exon_lengths = temp['length']
+    temp = temp.drop(['gene', 'length'], axis=1)
+    temp = temp[temp.columns[1:]]
+
+    # gene length in kilobases
+    kb = exon_lengths/1000
+
+    def _foo(x):
+        s = sum(x)/1000000
+        rpm = x/s
+        rpkm = rpm/kb
+
+        return rpkm
+
+    _q = temp.apply(_foo, axis=0) # 0 applying to each column
+
+    data_norm = np.log2(_q+1)
+    return data_norm
+
 def full_quantile_normalization(data):
     """Performs full quantile normalization (FQN). FQN was shown to perform well on single
     cell data [1].

@@ -169,7 +169,7 @@ def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
     return nd
 
 def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
-    """Statistical detection of low quality cells
+    """Statistical detection of low quality cells using Mahalanobis distances
     
     Notes
     ----------------
@@ -188,8 +188,9 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
-    rRNA_genes : `list`
-        List of rRNA genes.
+    rRNA_genes : `list` or `str`
+        Either a list of rRNA genes or a string containing the path to a file containing
+        the rRNA genes (one gene per line).
     sd_thres : `float`, optional
         Number of standard deviations to consider significant, i.e. cells are low quality
         if this. Set to higher to remove fewer cells (default: 3).
@@ -203,6 +204,13 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     list
         A list of low quality cells that were identified.
     """
+    
+    if type(obj.exp_mito) == str:
+        raise Exception('No mitochondrial genes found. Run detect_mito() first.')
+    
+    if type(rRNA_genes) == str:
+        rRNA_genes = pd.read_csv(rRNA_genes, header=None)
+        rRNA_genes = rRNA_genes.iloc[:,0].values
     
     data = obj.exp_mat
     data_mt = obj.exp_mito
