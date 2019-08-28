@@ -358,8 +358,8 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     data = obj.exp_mat
     if remove_low_qual_cells:
         if not obj.get_assay('find_low_quality_cells'):
-            warning('remove_low_qual_cells set to True but low_quality_cells() has not \
-been performed')
+            warning('remove_low_qual_cells set to True but find_low_quality_cells() has \
+not been performed')
         else:
             data = data.drop(obj.low_quality_cells, axis=1)
     if method == 'standard':
