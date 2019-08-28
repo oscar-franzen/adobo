@@ -31,8 +31,7 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     Parameters
     ----------
     data : :class:`pandas.DataFrame`
-        A pandas data frame object containing raw read counts (rows=genes,
-        columns=cells).
+        A pandas data frame object containing raw read counts (rows=genes, columns=cells).
     min_cells : `int`
         Minimum number of cells expressing a gene for the gene to be used (default: 10).
     gmean_eps : `float`
@@ -152,8 +151,7 @@ def clr_normalization(data, axis='genes'):
     Parameters
     ----------
     data : :class:`pandas.DataFrame`
-        A pandas data frame object containing raw read counts (rows=genes,
-        columns=cells).
+        A pandas data frame object containing raw read counts (rows=genes, columns=cells).
     axis : {'genes', 'cells'}
         Normalize over genes or cells (default: genes).
         
@@ -185,8 +183,7 @@ def standard_normalization(data, scaling_factor):
     Parameters
     ----------
     data : :class:`pandas.DataFrame`
-        A pandas data frame object containing raw read counts (rows=genes,
-        columns=cells).
+        A pandas data frame object containing raw read counts (rows=genes, columns=cells).
     scaling_factor : `int`
         Scaling factor used to multiply the scaled counts with (default: 10000).
 
@@ -214,13 +211,14 @@ def rpkm(data, gene_lengths):
 
     Parameters
     ----------
-    data : :class:`pandas.DataFrame`
-        A pandas data frame object containing raw read counts (rows=genes,
-        columns=cells).
-    gene_lengths : `:class:`pandas.Series``
+    obj : :class:`pandas.DataFrame`
+        A pandas data frame object containing raw read counts (rows=genes, columns=cells).
+    gene_lengths : `:class:`pandas.Series`` or `str`
         Should contain the gene lengths in base pairs and gene names set as index. The
         names must match the gene names used in `data`. Normally gene lengths should be
-        the combined length of exons for every gene.
+        the combined length of exons for every gene. If gene_lengths is a `str` then it is
+        taken as a filename and loaded; first column is gene names and second column is
+        the length, field separator is one space.
 
     References
     ----------
@@ -232,30 +230,29 @@ def rpkm(data, gene_lengths):
     :class:`pandas.DataFrame`
         A normalized data matrix with same dimensions as before.
     """
-
-    # intersects and sorts
-    temp = pd.merge(data, exon_lengths, how='inner', left_on=data.index,
-                    right_on=exon_lengths['gene'].str.extract('^(.+)\.[0-9]+')[0])
-
-    temp.index = temp['gene']
-    exon_lengths = temp['length']
-    temp = temp.drop(['gene', 'length'], axis=1)
-    temp = temp[temp.columns[1:]]
+    
+    mat = data
+    
+    if type(gene_lengths) == str:
+        gene_lengths = pd.read_csv(gene_lengths, header=None, sep=' ')
+        gene_lengths = pd.Series(gene_lengths[1].values, index=gene_lengths[0])
+    
+    # take the intersection
+    mat = mat[mat.index.isin(gene_lengths.index)]
+    gene_lengths = gene_lengths[gene_lengths.index.isin(mat.index)]
+    gene_lengths = gene_lengths.reindex(mat.index)
 
     # gene length in kilobases
-    kb = exon_lengths/1000
+    kb = gene_lengths/1000
 
     def _foo(x):
         s = sum(x)/1000000
         rpm = x/s
         rpkm = rpm/kb
-
         return rpkm
 
-    _q = temp.apply(_foo, axis=0) # 0 applying to each column
-
-    data_norm = np.log2(_q+1)
-    return data_norm
+    ret = mat.apply(_foo, axis=0)
+    return ret
 
 def full_quantile_normalization(data):
     """Performs full quantile normalization (FQN). FQN was shown to perform well on single
@@ -269,8 +266,7 @@ def full_quantile_normalization(data):
     Parameters
     ----------
     data : :class:`pandas.DataFrame`
-        A pandas data frame object containing raw read counts (rows=genes,
-        columns=cells).
+        A pandas data frame object containing raw read counts (rows=genes, columns=cells).
 
     References
     ----------
@@ -311,7 +307,7 @@ def full_quantile_normalization(data):
     return df
 
 def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells=True,
-         exon_lengths=None, scaling_factor=10000):
+         gene_lengths=None, scaling_factor=10000):
     r"""Normalizes gene expression data
     
     Notes
@@ -336,9 +332,14 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
         expression (default: 1).
     remove_low_qual_cells : `bool`
         Remove low quality cells identified using :py:meth:`adobo.preproc.find_low_quality_cells`.
-    exon_lengths : :class:`pandas.DataFrame`
-        A pandas data frame containing two columns; first column should be gene names
-        matching the data matrix and the second column should contain exon lengths.
+    gene_lengths : `:class:`pandas.Series`` or `str`
+        A series containing the gene lengths in base pairs and gene names set as index. The
+        names must match the gene names used in `data` (the order does not need to match
+        and any symbols not found in the data will be discarded). Normally gene lengths
+        should be the combined length of exons for every gene. If gene_lengths is a `str`
+        then it is taken as a filename and loaded; first column is gene names and second
+        column is the length, field separator is one space. gene_lengths is only needed
+        if method='rpkm'.
     scaling_factor : `int`
         Scaling factor used to multiply the scaled counts with. Only used for
         `method="depth"` (default: 10000).
@@ -366,6 +367,7 @@ not been performed')
         norm = standard_normalization(data, scaling_factor)
         obj.norm_method='standard'
     elif method == 'rpkm':
+        norm = rpkm(data, gene_lengths)
         obj.norm_method='rpkm'
     elif method == 'fqn':
         norm = full_quantile_normalization(data)
