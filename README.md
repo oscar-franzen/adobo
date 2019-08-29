@@ -1,5 +1,5 @@
 # Description
-adobo for scRNA-seq
+adobo is a Python-framework for single cell gene expression data analysis. adobo can be composed into scripts, used in interactive workflows and much more.
 
 # Tutorials and API Documentation
 Classes, functions and arguments are documented here:
