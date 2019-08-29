@@ -365,22 +365,22 @@ not been performed')
             data = data.drop(obj.low_quality_cells, axis=1)
     if method == 'standard':
         norm = standard_normalization(data, scaling_factor)
-        obj.norm_method='standard'
+        norm_method='standard'
     elif method == 'rpkm':
         norm = rpkm(data, gene_lengths)
-        obj.norm_method='rpkm'
+        norm_method='rpkm'
     elif method == 'fqn':
         norm = full_quantile_normalization(data)
-        obj.norm_method='fqn'
+        norm_method='fqn'
     elif method == 'clr':
         norm = clr_normalization(data, axis)
-        obj.norm_method='clr'
+        norm_method='clr'
     elif method == 'vsn':
         norm = vsn(data)
-        obj.norm_method='vsn'
+        norm_method='vsn'
     else:
         raise Exception('Unknown normalization method.')
     if log2 and method!='vsn':
         norm = np.log2(norm+small_const)
     obj.norm = norm
-    obj.set_assay(sys._getframe().f_code.co_name)
+    obj.set_assay(sys._getframe().f_code.co_name, norm_method)

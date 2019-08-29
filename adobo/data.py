@@ -52,8 +52,8 @@ class dataset:
     def get_assay(self, name):
         return name in self._assays
     
-    def set_assay(self, name):
-        self._assays[name] = 1
+    def set_assay(self, name, key=1):
+        self._assays[name] = key
     
     @property
     def low_quality_cells(self):
@@ -83,8 +83,8 @@ class dataset:
         genes = '{:,}'.format(self.exp_mat.shape[0])
         cells = '{:,}'.format(self.exp_mat.shape[1])
         s = 'Raw read counts matrix contains: %s genes and %s cells\n' % (genes, cells)
-        for item in self._assays:
-            s += 'Done: %s\n' % item
+        for key in self._assays:
+            s += 'Done: %s (%s)\n' % (key, self._assays[key])
         return s
     
     def info(self):
