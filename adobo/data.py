@@ -94,6 +94,10 @@ class dataset:
         return s
     
     def info(self):
+        """
+        Displays a basic summary of the dataset and what analyses have been performed on
+        it.
+        """
         if self.get_assay('detect_mito'):
             print('Number of mitochondrial genes found: %s' % self.exp_mito.shape[0])
         if self.get_assay('detect_ERCC_spikes'):
