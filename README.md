@@ -35,13 +35,21 @@ Your gene expression data is stored in the attribute `data.exp_mat`, and after l
 data.exp_mat
 ```
 
-Remove empty cells and genes:
+Before we start performing any analysis we should perform some data cleaning and normalization. A good first step is to look for empty cells and genes. Empty genes/cells do not carry any information and can safely be removed:
 ```python
 ad.preproc.remove_empty(data, verbose=True)
+```
 
+Some downstream analyses require that adobo knows which genes are mitochondrial. Usually the mitochondrial genes in human and mouse genomes have gene symbols starting with the prefix "mt-", but this might vary from species to species.
+```python
 # detect and remove mitochondrial genes
 ad.preproc.detect_mito(data, verbose=True)
 
+# Or specify a custom regular expression to identify the mitochondrial genes:
+ad.preproc.detect_mito(data, mito_pattern='^mito-', verbose=True)
+
+```
+```python
 # detect ERCC spikes
 ad.preproc.detect_ERCC_spikes(data, verbose=True)
 ```
