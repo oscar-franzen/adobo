@@ -36,7 +36,7 @@ data.exp_mat
 ```
 
 Remove empty cells and genes:
-```
+```python
 ad.preproc.remove_empty(data, verbose=True)
 
 # detect and remove mitochondrial genes
