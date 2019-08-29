@@ -145,7 +145,7 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     pr = t/n
     return pr
 
-def clr_normalization(data, axis='genes'):
+def clr(data, axis='genes'):
     """Performs centered log ratio normalization similar to Seurat
 
     Parameters
@@ -176,7 +176,7 @@ def clr_normalization(data, axis='genes'):
     r = data.apply(lambda x : np.log1p(x/np.exp(sum(np.log1p(x[x>0]))/len(x))), axis=axis)
     return r
 
-def standard_normalization(data, scaling_factor):
+def standard(data, scaling_factor):
     """Performs a standard normalization by scaling with the total read depth per cell and
     then multiplying with a scaling factor.
 
@@ -254,7 +254,7 @@ def rpkm(data, gene_lengths):
     ret = mat.apply(_foo, axis=0)
     return ret
 
-def full_quantile_normalization(data):
+def fqn(data):
     """Performs full quantile normalization (FQN). FQN was shown to perform well on single
     cell data [1].
     
@@ -351,6 +351,14 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     ----------
     [0] Cole et al. (2019) Cell Systems
         https://www.biorxiv.org/content/10.1101/235382v2
+    
+    See Also
+    --------
+    standard
+    rpkm
+    fqn
+    clr
+    vsn
 
     Returns
     -------
@@ -368,16 +376,16 @@ not been performed')
         raise Exception('The `gene_lengths` parameter needs to be set when method is RPKM.')
     
     if method == 'standard':
-        norm = standard_normalization(data, scaling_factor)
+        norm = standard(data, scaling_factor)
         norm_method='standard'
     elif method == 'rpkm':
         norm = rpkm(data, gene_lengths)
         norm_method='rpkm'
     elif method == 'fqn':
-        norm = full_quantile_normalization(data)
+        norm = fqn(data)
         norm_method='fqn'
     elif method == 'clr':
-        norm = clr_normalization(data, axis)
+        norm = clr(data, axis)
         norm_method='clr'
     elif method == 'vsn':
         norm = vsn(data)

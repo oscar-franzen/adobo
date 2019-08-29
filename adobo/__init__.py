@@ -11,6 +11,7 @@ from . import IO
 from . import preproc
 from . import plotting
 from . import normalize
+from . import hvg
 
 debug = 0
 
