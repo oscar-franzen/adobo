@@ -22,13 +22,14 @@ import adobo as ad
 ```
 
 ### Basic usage - loading a dataset of raw read counts
+Create a new dataset object. This is the object containing the dataset. All downstream operations and analyses are performed on this object and stored in it.
 ```python
-# create a new dataset object
 data = ad.IO.load_from_file('input_single_cell_rnaseq_read_counts.mat',
                              verbose=True,
                              column_id=False)
-
-# remove empty cells and genes
+```
+Remove empty cells and genes:
+```
 ad.preproc.remove_empty(data, verbose=True)
 
 # detect and remove mitochondrial genes

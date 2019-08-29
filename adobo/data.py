@@ -20,6 +20,8 @@ class dataset:
     
     Attributes
     ----------
+    _assays : `dict`
+        Holding information about what functions have been applied.
     exp_mat : :class:`pandas.DataFrame`
         Raw read count matrix.
     _exp_mito : :class:`pandas.DataFrame`
@@ -30,11 +32,12 @@ class dataset:
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
     norm : :class:`pandas.DataFrame`
         Normalized gene expression data.
-    norm_method : `str`
-        Method used for normalization.
+    hvg : `list`
+        Containing highly variable genes.
     """
     def __init__(self, raw_mat):
         # holding info about which assays have been done
+        self.hvg = []
         self._assays = {}
         self.exp_mat = raw_mat
         self._exp_ERCC = ASSAY_NOT_DONE
@@ -49,8 +52,11 @@ class dataset:
         cells = '{:,}'.format(self.exp_mat.shape[1])
         return '%s genes and %s cells' % (genes, cells)
 
-    def get_assay(self, name):
-        return name in self._assays
+    def get_assay(self, name, lang=False):
+        if lang:
+            return ('No','Yes')[name in self._assays]
+        else:
+            return name in self._assays
     
     def set_assay(self, name, key=1):
         self._assays[name] = key
@@ -96,5 +102,7 @@ class dataset:
             print('Number of low quality cells found: %s ' % self.low_quality_cells.shape[0])
         if self.get_assay('norm'):
             print('Normalization method: %s ' % self.norm_method)
+        s = 'Has HVG discovery been performed? %s' % self.get_assay('hvg', lang=True)
+        print(s)
     def __repr__(self):
         return self._describe()
