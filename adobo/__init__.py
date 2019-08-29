@@ -29,11 +29,9 @@ def excepthook(type, value, tb):
     tbtext = ''.join(traceback.format_exception(type, value, tb))
     lexer = get_lexer_by_name("pytb", stripall=True)
     formatter = TerminalFormatter()
-    
     if debug == 0:
-        err = re.search('Exception: (.+)', tbtext).group(1)
-        tbtext = err
-    
+        if re.search('\nException: .+',tbtext):
+            tbtext = re.search('Exception: (.+)',tbtext).group(1)
     sys.stderr.write(highlight(tbtext, lexer, formatter))
 
 sys.excepthook = excepthook

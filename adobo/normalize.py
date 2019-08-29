@@ -363,6 +363,10 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
 not been performed')
         else:
             data = data.drop(obj.low_quality_cells, axis=1)
+    # Check arguments
+    if method == 'rpkm' and gene_lengths == None:
+        raise Exception('The `gene_lengths` parameter needs to be set when method is RPKM.')
+    
     if method == 'standard':
         norm = standard_normalization(data, scaling_factor)
         norm_method='standard'
