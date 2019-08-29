@@ -34,7 +34,7 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
 
     Notes
     -----
-    Gene expression matrix should not be normalized.
+    The loaded gene expression matrix should not have been normalized.
 
     Returns
     -------
