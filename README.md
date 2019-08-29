@@ -29,7 +29,7 @@ data = ad.IO.load_from_file('input_single_cell_rnaseq_read_counts.mat',
                              column_id=False)
 ```
 
-It is also possible to load compressed data, the format is detected automatically (gzip, bz2, zip and xz are supported). For example:
+It is also possible to load compressed data; the compression format is detected automatically (gzip, bz2, zip and xz are supported). For example:
 ```python
 data = ad.IO.load_from_file('input_single_cell_rnaseq_read_counts.mat.gz',
                              verbose=True,
