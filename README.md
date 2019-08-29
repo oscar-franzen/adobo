@@ -73,4 +73,5 @@ ad.normalize.norm(data, method='standard')
 
 # Developer notes
 * docstrings are in numpy format.
+* API docs are generated with Sphinx
 * traceback is suppressed by default, set `ad.debug=0` to enable full traceback
