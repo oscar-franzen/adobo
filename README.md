@@ -28,6 +28,7 @@ data = ad.IO.load_from_file('input_single_cell_rnaseq_read_counts.mat',
                              verbose=True,
                              column_id=False)
 ```
+
 Remove empty cells and genes:
 ```
 ad.preproc.remove_empty(data, verbose=True)
@@ -69,6 +70,16 @@ ad.preproc.find_low_quality_cells(data, rRNA_genes=rRNA, verbose=True)
 ad.normalize.norm(data, method='standard')
 
 ### Detect highly variable genes
+```
+
+### Display content of a dataset
+To display the canonical string representation:
+```python
+repr(data)
+```
+To display a summary:
+```python
+data.info()
 ```
 
 # Contact, bugs, etc
