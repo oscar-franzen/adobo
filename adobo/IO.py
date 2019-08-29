@@ -43,6 +43,9 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
     """
     if not os.path.exists(filename):
         raise Exception('%s not found' % filename)
+    if len(sep)>1:
+        raise Exception('`sep` cannot be longer than 1, it should specify a single \
+character.')
     exp_mat = pd.read_csv(filename,
                           delimiter=sep,
                           header=header)
