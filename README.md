@@ -22,7 +22,7 @@ import adobo as ad
 ```
 
 ### Basic usage - loading a dataset of raw read counts
-Create a new dataset object. This is the object containing the dataset. All downstream operations and analyses are performed on this object and stored in it.
+Create a new dataset object. This will be a new object containing your single cell data. All downstream operations and analyses are performed on this object and stored in it.
 ```python
 data = ad.IO.load_from_file('input_single_cell_rnaseq_read_counts.mat',
                              verbose=True,
