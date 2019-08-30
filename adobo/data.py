@@ -38,6 +38,8 @@ class dataset:
     def __init__(self, raw_mat):
         # holding info about which assays have been done
         self.hvg = []
+        self.hvg_method = ASSAY_NOT_DONE
+        
         self._assays = {}
         self.exp_mat = raw_mat
         self._exp_ERCC = ASSAY_NOT_DONE

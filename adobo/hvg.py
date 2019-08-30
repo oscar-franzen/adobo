@@ -55,7 +55,7 @@ def seurat(data, ngenes=1000, num_bins=20):
     ret = np.array(top_hvg.index)
     return ret
 
-def brennecke(data, norm_ERCC=None, fdr=0.1, minBiolDisp=0.5):
+def brennecke(data_norm, norm_ERCC=None, fdr=0.1, minBiolDisp=0.5):
     """Implements the method of Brennecke et al. (2013) to identify highly variable genes
     
     Notes
@@ -65,8 +65,11 @@ def brennecke(data, norm_ERCC=None, fdr=0.1, minBiolDisp=0.5):
 
     Parameters
     ----------
-    obj : :class:`pandas.DataFrame`
-        A pandas data frame object containing raw read counts (rows=genes, columns=cells).
+    data_norm : :class:`pandas.DataFrame`
+        A pandas data frame containing normalized gene expression data
+        (rows=genes, columns=cells).
+    norm_ERCC : :class:`pandas.DataFrame`
+        A pandas data frame containing normalized ERCC spikes.
     ngenes : `int`
         Number of top highly variable genes to return.
     num_bins : `int`
@@ -160,4 +163,14 @@ def find_hvg(obj, method='seurat', ngenes=1000):
     -------
     Nothing. Modifies the passed object.
     """
-    pass
+    
+    data = obj.norm
+    data_ERCC = obj._exp_ERCC
+    
+    if method == 'seurat':
+        hvg = seurat(data, ngenes)
+    elif method == 'brennecke':
+        hvg = brennecke(data, data_ERCC)
+    
+    obj.hvg = hvg
+    obj.set_assay(sys._getframe().f_code.co_name, method)

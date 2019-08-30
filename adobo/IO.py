@@ -14,7 +14,7 @@ import numpy as np
 
 from adobo import dataset
 
-def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
+def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
     Parameters
@@ -34,7 +34,9 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
 
     Notes
     -----
-    The loaded gene expression matrix should not have been normalized.
+    The loaded gene expression matrix should not have been normalized. This function calls
+    :func:`~pandas.io.parsers.read_csv` to read the data matrix file. Any additional
+    arguments are passed into :func:`~pandas.io.parsers.read_csv`.
 
     Returns
     -------
@@ -48,7 +50,8 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False):
 character.')
     exp_mat = pd.read_csv(filename,
                           delimiter=sep,
-                          header=header)
+                          header=header,
+                          **args)
     if column_id:
         exp_mat.index = exp_mat[exp_mat.columns[0]]
         exp_mat = exp_mat.drop(exp_mat.columns[0], axis=1)
