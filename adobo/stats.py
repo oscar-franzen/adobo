@@ -58,7 +58,7 @@ def row_geometric_mean(mat, eps=1):
     :class:`pandas.Series`
         Computed values.
     """
-    return mat.apply(lambda x : exp(mean(log(x+eps)))-eps, axis=1)
+    return mat.apply(lambda x : np.exp(np.mean(np.log(x+eps)))-eps, axis=1)
     
 def theta_ml(y, mu, limit=10, eps=np.finfo(float).eps, verbose=False):
     """Estimates theta of the Negative Binomial Distribution using maximum likelihood

@@ -207,7 +207,8 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     Returns
     -------
     list
-        A list of low quality cells that were identified.
+        A list of low quality cells that were identified, and also modifies the passed
+        object.
     """
     
     if type(obj.exp_mito) == str:

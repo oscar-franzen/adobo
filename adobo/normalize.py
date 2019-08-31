@@ -19,6 +19,7 @@ import statsmodels.api as sm
 from statsmodels.nonparametric.kernel_regression import KernelReg
 
 from .log import warning
+from .stats import bw_nrd, row_geometric_mean, theta_ml, is_outlier
 
 def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     """Performs variance stabilizing normaliztion based on a negative binomial regression
@@ -26,7 +27,7 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     
     Notes
     -----
-    Adopts a subset of the functionality of the vst function in the R package sctransform [0].
+    Adopts a subset of the functionality of `vst` in the R package sctransform [0].
     
     Parameters
     ----------
@@ -307,7 +308,7 @@ def fqn(data):
     return df
 
 def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells=True,
-         gene_lengths=None, scaling_factor=10000):
+         gene_lengths=None, scaling_factor=10000, axis='genes'):
     r"""Normalizes gene expression data
     
     Notes
