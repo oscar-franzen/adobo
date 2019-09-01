@@ -73,6 +73,8 @@ character.')
             print('%s duplicated genes detected and removed.' % np.sum(dups))
     if np.any(exp_mat.dtypes != 'int64'):
         raise Exception('Non-count values detected in data matrix.')
+    rem = exp_mat.index.str.contains('^ArrayControl-[0-9]+', regex=True, case=False)
+    exp_mat = exp_mat[np.logical_not(rem)]
     obj = dataset(exp_mat)
     if verbose:
         genes = '{:,}'.format(exp_mat.shape[0])
