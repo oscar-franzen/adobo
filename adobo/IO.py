@@ -14,7 +14,7 @@ import numpy as np
 
 from adobo import dataset
 
-def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False, **args):
+def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
     Parameters
@@ -26,9 +26,9 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False, 
         Character used to separate fields (default: "\\t").
     header : `str`, optional
         If the data file has a header. 0 means yes otherwise None (default: `0`).
-    column_id : `bool`, optional
+    column_id : {'auto', 'yes', 'no'}, optional
         Whether the header (first line) of the file contains a column ID for the genes. If
-        this is the case, set this to True, otherwise False (default: True).
+        this is the case, set this to auto or yes, otherwise no (default: auto).
     verbose : `bool`, optional
         To be verbose or not (default: False).
 
@@ -48,13 +48,23 @@ def load_from_file(filename, sep='\t', header=0, column_id=True, verbose=False, 
     if len(sep)>1:
         raise Exception('`sep` cannot be longer than 1, it should specify a single \
 character.')
+    if not column_id in ('auto', 'yes', 'no'):
+        raise Exception('"column_id" can only be set to "auto", "yes" or "no"')
     exp_mat = pd.read_csv(filename,
                           delimiter=sep,
                           header=header,
                           **args)
-    if column_id:
-        exp_mat.index = exp_mat[exp_mat.columns[0]]
-        exp_mat = exp_mat.drop(exp_mat.columns[0], axis=1)
+    def move_col(x):
+        x.index = x[x.columns[0]]
+        x = x.drop(x.columns[0], axis=1)
+        return x
+
+    if column_id == 'auto':
+        if exp_mat[exp_mat.columns[0]].dtype != int:
+            exp_mat = move_col(exp_mat)
+    elif column_id == 'yes':
+        exp_mat = move_col(exp_mat)
+            
     # remove duplicate genes
     dups = exp_mat.index.duplicated(False)
     if np.any(dups):

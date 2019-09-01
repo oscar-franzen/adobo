@@ -376,6 +376,10 @@ not been performed')
     if method == 'rpkm' and gene_lengths == None:
         raise Exception('The `gene_lengths` parameter needs to be set when method is RPKM.')
     
+    # Normalize ERCC if available, because some HVG methods require normalized ERCC spikes
+    if obj._exp_ERCC:
+        obj._exp_ERCC[obj._exp_ERCC.index.isin(data.index)]
+    
     if method == 'standard':
         norm = standard(data, scaling_factor)
         norm_method='standard'

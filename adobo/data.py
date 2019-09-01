@@ -47,6 +47,7 @@ class dataset:
         self._low_quality_cells = ASSAY_NOT_DONE
 
         self.norm = None
+        self.norm_ERCC = None
         self.norm_method = ASSAY_NOT_DONE
     
     def _print_raw_dimensions(self):

@@ -19,7 +19,8 @@ def seurat(data, ngenes=1000, num_bins=20):
     -----
     The function bins the genes according to average expression, then calculates
     dispersion for each bin as variance to mean ratio. Within each bin, Z-scores are
-    calculated and returned. Z-scores are ranked and the top 1000 are selected.
+    calculated and returned. Z-scores are ranked and the top 1000 are selected. Input data
+    should be normalized first.
 
     Parameters
     ----------
@@ -140,8 +141,8 @@ def find_hvg(obj, method='seurat', ngenes=1000):
     
     Notes
     -----
-    A wrapper function around the individual HVG functions, which can also be
-    called directly.
+    A wrapper function around the individual HVG functions, which can also be called
+    directly.
 
     Parameters
     ----------
