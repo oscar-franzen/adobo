@@ -12,6 +12,7 @@ from . import preproc
 from . import plotting
 from . import normalize
 from . import hvg
+from . import dr
 
 debug = 0
 

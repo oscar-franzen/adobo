@@ -32,6 +32,10 @@ class dataset:
         Raw read count matrix containing ERCC spikes.
     _low_quality_cells : `list`
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
+    norm_log2 : `bool`
+        True if log2 transform was performed on the normalized data, otherwise False.
+    norm_method : `str`
+        Containing the method used for normalization.
     norm : :class:`pandas.DataFrame`
         Normalized gene expression data.
     hvg : `list`
@@ -53,6 +57,9 @@ class dataset:
         self.norm_method = ASSAY_NOT_DONE
         
         self.norm_log2=False
+        
+        # containing method and components for dimensionality reduction
+        self.dr = {}
     
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
