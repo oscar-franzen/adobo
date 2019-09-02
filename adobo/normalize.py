@@ -233,21 +233,18 @@ def rpkm(data, gene_lengths):
     """
     
     mat = data
-    
     if type(gene_lengths) == str:
         gene_lengths = pd.read_csv(gene_lengths, header=None, sep=' ')
         gene_lengths = pd.Series(gene_lengths[1].values, index=gene_lengths[0])
-    
     # take the intersection
     mat = mat[mat.index.isin(gene_lengths.index)]
     gene_lengths = gene_lengths[gene_lengths.index.isin(mat.index)]
     gene_lengths = gene_lengths.reindex(mat.index)
-
     # gene length in kilobases
     kb = gene_lengths/1000
 
     def _foo(x):
-        s = sum(x)/1000000
+        s = sum(x)/10**6
         rpm = x/s
         rpkm = rpm/kb
         return rpkm
