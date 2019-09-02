@@ -344,6 +344,108 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
     filt = res[res['padj'] < fdr]['gene']
     return np.array(filt.head(ngenes))
 
+def mm(data, fdr=0.1, ngenes=1000):
+    """
+    This function implements the approach from Andrews (2018).
+    
+    Notes
+    -----
+    Input should be raw read counts.
+
+    Parameters
+    ----------
+    data : :class:`pandas.DataFrame`
+        A pandas data frame containing raw read counts.
+    fdr : `float`
+        False Discovery Rate considered significant.
+    ngenes : `int`
+        Number of top highly variable genes to return.
+
+    References
+    ----------
+    https://doi.org/10.1093/bioinformatics/bty1044
+    https://github.com/tallulandrews/M3Drop
+
+    Returns
+    -------
+    `list`
+        A list containing highly variable genes.
+    """
+
+    tjs = data.sum(axis=1) # no. mol/gene
+    tis = data.sum(axis=0) # no. mol/cell
+    
+    djs = data.shape[1]-np.sum(data>0,axis=1) # dropouts no. per gene
+    dis = data.shape[0]-np.sum(data>0,axis=0) # dropouts no. per cell
+
+    nc = data.shape[1]
+    ng = data.shape[0]
+    
+    # total sampled molecules
+    total = sum(tis)
+    
+    min_size = 10**-10
+    my_rowvar = []
+    
+    for i, row in data.iterrows():
+        mu_is = tjs[i]*tis/total
+        my_rowvar.append(np.var(row-mu_is))
+
+    my_rowvar = np.array(my_rowvar)
+    size = tjs**2*(sum(tis**2)/total**2)/((nc-1)*my_rowvar-tjs)
+
+    max_size = 10*max(size)
+    size[size < 0] = max_size
+    size[size < min_size] = min_size
+    
+    size_g = size
+    forfit = (size < max(size_g)) & (tjs > 0) & (size_g > 0)
+    higher = (np.log(tjs/nc)/np.log(2)) > 4
+    
+    if sum(higher==True) > 2000:
+        forfit = higher & forfit
+    
+    rg = LinearRegression()
+    X = np.array(np.log((tjs/nc)[forfit])).reshape(-1,1)
+    y = np.array(np.log(size_g[forfit]))
+    rg.fit(X=X, y=y)
+    coef_1 = rg.intercept_
+    coef_2 = rg.coef_[0]
+    
+    exp_size = np.exp(coef_1 + coef_2 * np.log(tjs/nc))
+    
+    droprate_exp = []
+    droprate_exp_err = []
+    
+    for i in range(0,ng):
+        mu_is = tjs[i]*tis/total
+        p_is = (1+mu_is/exp_size[i])**(-exp_size[i])
+        p_var_is = p_is*(1-p_is)
+        droprate_exp.append(sum(p_is)/nc)
+        droprate_exp_err.append(np.sqrt(sum(p_var_is)/(nc**2)))
+        
+    droprate_exp = np.array(droprate_exp)
+    droprate_exp[droprate_exp < (1/nc)] = 1/nc
+    droprate_obs = djs/nc
+    droprate_obs_err = np.sqrt(droprate_obs*(1-droprate_obs)/nc)
+
+    diff = droprate_obs-droprate_exp
+    
+    droprate_exp_err = np.array(droprate_exp_err)
+    combined_err = np.sqrt(droprate_exp_err**2+droprate_obs_err**2)
+
+    Zed = diff/combined_err
+    pvalues = 1-norm.cdf(Zed)
+    pvalues = pd.Series(pvalues, index=data.index)
+    
+    padj = p_adjust_bh(pvalues)
+
+    res = pd.DataFrame({'gene': data.index, 'pvalue' : pvalues, 'padj' : padj})
+    res = res.sort_values(by='pvalue')
+    filt = res[res['padj'] < fdr]['gene']
+
+    return np.array(filt.head(ngenes))
+
 def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     """Finding highly variable genes
     
@@ -356,13 +458,13 @@ def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
-    method : `{'seurat', 'brennecke', 'scran', 'chen2016'}`
+    method : `{'seurat', 'brennecke', 'scran', 'chen2016', 'mm'}`
         Specifies the method to be used.
     ngenes : `int`
         Number of genes to return.
     fdr : `float`
         False Discovery Rate threshold for significant genes applied to those methods
-        that use it (brennecke and chen2016). Note that the number of returned genes
+        that use it (brennecke, chen2016, mm). Note that the number of returned genes
         might be fewer than specified by `ngenes` because of FDR consideration.
     verbose : `bool`
         Be verbose or not.
@@ -382,13 +484,15 @@ def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     if method == 'seurat':
         hvg = seurat(data, ngenes)
     elif method == 'brennecke':
-        hvg = brennecke(data, obj.norm_log2, data_ERCC, ngenes, verbose)
+        hvg = brennecke(data, obj.norm_log2, data_ERCC, fdr, ngenes, verbose)
     elif method == 'scran':
         hvg = scran(data, data_ERCC, obj.norm_log2, ngenes)
     elif method == 'chen2016':
-        hvg = chen2016(data, obj.norm_log2, ngenes)
+        hvg = chen2016(data, obj.norm_log2, fdr, ngenes)
+    elif method == 'mm':
+        hvg = mm(obj.exp_mat, fdr, ngenes)
     else:
         raise Exception('Unknown HVG method specified. Valid choices are: seurat, \
-brennecke, scran, chen2016')
+brennecke, scran, chen2016, mm')
     obj.hvg = hvg
     obj.set_assay(sys._getframe().f_code.co_name, method)
