@@ -13,6 +13,9 @@ import pandas as pd
 import numpy as np
 
 import scipy.stats
+from scipy.stats import gaussian_kde
+from scipy.stats import norm
+
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 
@@ -192,7 +195,7 @@ def scran(data_norm, ERCC, log2, ngenes=1000):
         A list containing highly variable genes.
     """
     if ERCC.shape[0] == 0:
-        raise Exception('scran() for HVG requires ERCC spikes.')
+        raise Exception('adobo.hvg.scran requires ERCC spikes.')
     if log2:
         data_norm = 2**data_norm-1
         ERCC = 2**ERCC-1
@@ -227,7 +230,121 @@ def scran(data_norm, ERCC, log2, ngenes=1000):
     vars_bio_bio = vars_bio_bio.sort_values(ascending=False)
     return vars_bio_bio.head(ngenes).index.values
 
-def find_hvg(obj, method='seurat', ngenes=1000, verbose=False):
+def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
+    """
+    This function implements the approach from Chen (2016) to identify highly variable
+    genes.
+    
+    Notes
+    -----
+    Expression counts should be normalized and on a log scale.
+
+    Parameters
+    ----------
+    data_norm : :class:`pandas.DataFrame`
+        A pandas data frame containing normalized gene expression data.
+    log2 : `bool`
+        If normalized data were log2 transformed or not.
+    fdr : `float`
+        False Discovery Rate considered significant.
+    ngenes : `int`
+        Number of top highly variable genes to return.
+
+    References
+    ----------
+    https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-016-2897-6
+    https://github.com/hillas/scVEGs/blob/master/scVEGs.r
+
+    Returns
+    -------
+    `list`
+        A list containing highly variable genes.
+    """
+    if log2:
+        data_norm = 2**data_norm-1
+    avg = data_norm.mean(axis=1)
+    norm_data = data_norm[avg > 0]
+    rows = data_norm.shape[0]
+    avg = data_norm.mean(axis=1)
+    std = data_norm.std(axis=1)
+    cv = std / avg
+    xdata = avg
+    ydata = np.log10(cv)
+    
+    r = np.logical_not(ydata.isna())
+    ydata = ydata[r]
+    xdata = xdata[r]
+
+    A = np.vstack([np.log10(xdata), np.ones(len(xdata))]).T
+    res = np.linalg.lstsq(A, ydata, rcond=None)[0]
+
+    def predict(k, m, x):
+        y = k*x+m
+        return y
+    xSeq = np.arange(min(np.log10(xdata)), max(np.log10(xdata)), 0.005)
+    def h(i):
+        a = np.log10(xdata) >= (xSeq[i] - 0.05)
+        b = np.log10(xdata) < (xSeq[i] + 0.05)
+        return np.sum((a & b))
+    gapNum = [h(i) for i in range(0, len(xSeq))]
+    cdx = np.nonzero(np.array(gapNum) > rows*0.005)[0]
+    xSeq = 10 ** xSeq
+
+    ySeq = predict(*res, np.log10(xSeq))
+    yDiff = np.diff(ySeq, 1)
+    ix = np.nonzero((yDiff > 0) & (np.log10(xSeq[0:-1]) > 0))[0]
+
+    if len(ix) == 0:
+        ix = len(ySeq) - 1
+    else:
+        ix = ix[0]
+    xSeq_all = 10**np.arange(min(np.log10(xdata)), max(np.log10(xdata)), 0.001)
+    xSeq = xSeq[cdx[0]:ix]
+    ySeq = ySeq[cdx[0]:ix]
+    reg = LinearRegression().fit(np.log10(xSeq).reshape(-1, 1), ySeq)
+
+    ydataFit = reg.predict(np.log10(xSeq_all).reshape(-1, 1))
+    logX = np.log10(xdata)
+    logXseq = np.log10(xSeq_all)
+    cvDist = []
+    for i in range(0, len(logX)):
+        cx = np.nonzero((logXseq >= (logX[i] - 0.2)) & (logXseq < (logX[i] + 0.2)))[0]
+        tmp = np.sqrt((logXseq[cx] - logX[i])**2 + (ydataFit[cx] - ydata[i])**2)
+        tx = np.argmin(tmp)
+
+        if logXseq[cx[tx]] > logX[i]:
+            if ydataFit[cx[tx]] > ydata[i]:
+                cvDist.append(-1*tmp[tx])
+            else:
+                cvDist.append(tmp[tx])
+        elif logXseq[cx[tx]] <= logX[i]:
+            if ydataFit[cx[tx]] < ydata[i]:
+                cvDist.append(tmp[tx])
+            else:
+                cvDist.append(-1*tmp[tx])
+
+    cvDist = np.log2(10**np.array(cvDist))
+    dor = gaussian_kde(cvDist)
+    dor_y = dor(cvDist)
+    distMid = cvDist[np.argmax(dor_y)]
+    dist2 = cvDist - distMid
+
+    a = dist2[dist2 <= 0]
+    b = abs(dist2[dist2 < 0])
+    c = distMid
+    tmpDist = np.concatenate((a, b))
+    tmpDist = np.append(tmpDist, c)
+
+    # estimate mean and sd using maximum likelihood
+    distFit = norm.fit(tmpDist)
+    pRaw = 1-norm.cdf(cvDist, loc=distFit[0], scale=distFit[1])
+    pAdj = p_adjust_bh(pRaw)
+    res = pd.DataFrame({'gene': norm_data.index, 'pvalue' : pRaw, 'padj' : pAdj})
+    res = res.sort_values(by='pvalue')
+    filt = res[res['padj'] < fdr]['gene']
+    return np.array(filt.head(ngenes))
+
+def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     """Finding highly variable genes
     
     Notes
@@ -239,21 +356,21 @@ def find_hvg(obj, method='seurat', ngenes=1000, verbose=False):
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
-    method : `{'seurat', 'brennecke'}`
+    method : `{'seurat', 'brennecke', 'scran', 'chen2016'}`
         Specifies the method to be used.
     ngenes : `int`
         Number of genes to return.
+    fdr : `float`
+        False Discovery Rate threshold for significant genes applied to those methods
+        that use it (brennecke and chen2016). Note that the number of returned genes
+        might be fewer than specified by `ngenes` because of FDR consideration.
     verbose : `bool`
-        Be verbode or not.
+        Be verbose or not.
 
     References
     ----------
     Yip et al. (2018) Briefings in Bioinformatics
     https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bby011/4898116
-    
-    See Also
-    --------
-    seurat
 
     Returns
     -------
@@ -261,10 +378,17 @@ def find_hvg(obj, method='seurat', ngenes=1000, verbose=False):
     """
     data = obj.norm
     data_ERCC = obj.norm_ERCC
-    
+
     if method == 'seurat':
         hvg = seurat(data, ngenes)
     elif method == 'brennecke':
         hvg = brennecke(data, obj.norm_log2, data_ERCC, ngenes, verbose)
+    elif method == 'scran':
+        hvg = scran(data, data_ERCC, obj.norm_log2, ngenes)
+    elif method == 'chen2016':
+        hvg = chen2016(data, obj.norm_log2, ngenes)
+    else:
+        raise Exception('Unknown HVG method specified. Valid choices are: seurat, \
+brennecke, scran, chen2016')
     obj.hvg = hvg
     obj.set_assay(sys._getframe().f_code.co_name, method)
