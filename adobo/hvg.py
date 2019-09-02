@@ -13,6 +13,8 @@ import pandas as pd
 import numpy as np
 
 import scipy.stats
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 
 from .stats import p_adjust_bh
 from .glm.glm import GLM
@@ -43,7 +45,7 @@ def seurat(data, ngenes=1000, num_bins=20):
 
     References
     ----------
-    [0] https://cran.r-project.org/web/packages/Seurat/index.html
+    https://cran.r-project.org/web/packages/Seurat/index.html
 
     Returns
     -------
@@ -94,7 +96,7 @@ def brennecke(data_norm, log2, ERCC=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ng
 
     References
     ----------
-    [0] Brennecke et al. (2013) Nature Methods https://doi.org/10.1038/nmeth.2645
+    Brennecke et al. (2013) Nature Methods https://doi.org/10.1038/nmeth.2645
 
     Returns
     -------
@@ -153,6 +155,78 @@ def brennecke(data_norm, log2, ERCC=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ng
     res = res.sort_values('pvalue')
     return np.array(res.head(ngenes)['gene'])
 
+def scran(data_norm, ERCC, log2, ngenes=1000):
+    """This function implements the approach from the scran R package
+    
+    Notes
+    -----
+    Expression counts should be normalized and on a log scale.
+
+    Outline of the steps:
+
+    1. fits a polynomial regression model to mean and variance of the technical genes
+    2. decomposes the total variance of the biological genes by subtracting the
+       technical variance predicted by the fit
+    3. sort based on biological variance
+
+    Parameters
+    ----------
+    data_norm : :class:`pandas.DataFrame`
+        A pandas data frame containing normalized gene expression data.
+    ERCC : :class:`pandas.DataFrame`
+        A pandas data frame containing normalized ERCC spikes.
+    log2 : `bool`
+        If normalized data were log2 transformed or not.
+    ngenes : `int`
+        Number of top highly variable genes to return.
+
+    References
+    ----------
+    Lun ATL, McCarthy DJ, Marioni JC (2016). “A step-by-step workflow for low-level
+    analysis of single-cell RNA-seq data with Bioconductor.” F1000Research,
+    doi.org/10.12688/f1000research.9501.2
+
+    Returns
+    -------
+    `list`
+        A list containing highly variable genes.
+    """
+    if ERCC.shape[0] == 0:
+        raise Exception('scran() for HVG requires ERCC spikes.')
+    if log2:
+        data_norm = 2**data_norm-1
+        ERCC = 2**ERCC-1
+    ERCC = ERCC.dropna(axis=1, how='all')
+    means_tech = ERCC.mean(axis=1)
+    vars_tech = ERCC.var(axis=1)
+
+    to_fit = np.log(vars_tech)
+    arr = [list(item) for item in zip(*sorted(zip(means_tech, to_fit)))]
+
+    x = arr[0]
+    y = arr[1]
+
+    poly_reg = PolynomialFeatures(degree=4)
+    x_poly = poly_reg.fit_transform(np.array(x).reshape(-1, 1))
+    pol_reg = LinearRegression()
+    pol_reg.fit(x_poly, y)
+
+    #plt.scatter(x, y, color='red')
+    #plt.plot(x, pol_reg.predict(poly_reg.fit_transform(np.array(x).reshape(-1,1))), color='blue')
+    #plt.xlabel('mean')
+    #plt.ylabel('var')
+    #plt.show()
+
+    # predict and remove technical variance
+    bio_means = data_norm.mean(axis=1)
+    vars_pred = pol_reg.predict(poly_reg.fit_transform(np.array(bio_means).reshape(-1, 1)))
+    vars_bio_total = data_norm.var(axis=1)
+
+    # biological variance component
+    vars_bio_bio = vars_bio_total - vars_pred
+    vars_bio_bio = vars_bio_bio.sort_values(ascending=False)
+    return vars_bio_bio.head(ngenes).index.values
+
 def find_hvg(obj, method='seurat', ngenes=1000, verbose=False):
     """Finding highly variable genes
     
@@ -174,8 +248,8 @@ def find_hvg(obj, method='seurat', ngenes=1000, verbose=False):
 
     References
     ----------
-    [0] Yip et al. (2018) Briefings in Bioinformatics
-        https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bby011/4898116
+    Yip et al. (2018) Briefings in Bioinformatics
+    https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bby011/4898116
     
     See Also
     --------
