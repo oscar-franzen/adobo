@@ -166,11 +166,12 @@ def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
     exp_ERCC = exp_mat[s]
     exp_mat = exp_mat[np.logical_not(s)]
     nd = np.sum(s)
-    if verbose:
-        print('%s ERCC spikes detected' % nd)
     obj.exp_mat = exp_mat
     obj.exp_ERCC = exp_ERCC
+    obj.ERCC_pattern = ERCC_pattern
     obj.set_assay(sys._getframe().f_code.co_name)
+    if verbose:
+        print('%s ERCC spikes detected' % nd)
     return nd
 
 def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):

@@ -377,9 +377,12 @@ not been performed')
         raise Exception('The `gene_lengths` parameter needs to be set when method is RPKM.')
     
     # Normalize ERCC if available, because some HVG methods require normalized ERCC spikes
-    if obj._exp_ERCC:
-        obj._exp_ERCC[obj._exp_ERCC.index.isin(data.index)]
-    
+    if not obj._exp_ERCC is None:
+        # some cells might have been removed in previous steps
+        obj._exp_ERCC = obj._exp_ERCC.iloc[:, obj._exp_ERCC.columns.isin(data.columns)]
+        obj._exp_ERCC = obj._exp_ERCC.reindex(data.columns, axis=1)
+        data = pd.concat([data, obj._exp_ERCC])
+        
     if method == 'standard':
         norm = standard(data, scaling_factor)
         norm_method='standard'
@@ -399,5 +402,9 @@ not been performed')
         raise Exception('Unknown normalization method.')
     if log2 and method!='vsn':
         norm = np.log2(norm+small_const)
+    if not obj._exp_ERCC is None:
+        s = norm.index.str.contains(obj.ERCC_pattern)
+        obj.norm_ERCC = norm[s]
+        norm = norm[np.logical_not(s)]
     obj.norm = norm
     obj.set_assay(sys._getframe().f_code.co_name, norm_method)

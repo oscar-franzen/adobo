@@ -42,8 +42,8 @@ class dataset:
         
         self._assays = {}
         self.exp_mat = raw_mat
-        self._exp_ERCC = ASSAY_NOT_DONE
-        self._exp_mito = ASSAY_NOT_DONE
+        self._exp_ERCC = None
+        self._exp_mito = None
         self._low_quality_cells = ASSAY_NOT_DONE
 
         self.norm = None
