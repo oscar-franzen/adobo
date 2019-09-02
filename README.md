@@ -5,18 +5,6 @@ adobo is a Python-framework for single cell gene expression data analysis. adobo
 Full documentation is available here:
 * https://oscar-franzen.github.io/adobo/
 
-### Detect highly variable genes
-
-### Display content of a dataset
-To display the canonical string representation:
-```python
-repr(data)
-```
-To display a summary:
-```python
-data.info()
-```
-
 # Contact, bugs, etc
 * Oscar Franzén, <p.oscar.franzen@gmail.com>
 

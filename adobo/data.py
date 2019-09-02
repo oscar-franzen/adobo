@@ -12,6 +12,8 @@ This module contains a data storage class.
 import sys
 import os
 
+import pandas as pd
+
 from .constants import ASSAY_NOT_DONE
 
 class dataset:
@@ -42,13 +44,15 @@ class dataset:
         
         self._assays = {}
         self.exp_mat = raw_mat
-        self._exp_ERCC = None
-        self._exp_mito = None
+        self._exp_ERCC = pd.DataFrame()
+        self._exp_mito = pd.DataFrame()
         self._low_quality_cells = ASSAY_NOT_DONE
 
-        self.norm = None
-        self.norm_ERCC = None
+        self.norm = pd.DataFrame()
+        self.norm_ERCC = pd.DataFrame()
         self.norm_method = ASSAY_NOT_DONE
+        
+        self.norm_log2=False
     
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
@@ -96,7 +100,7 @@ class dataset:
             s += 'Done: %s (%s)\n' % (key, self._assays[key])
         return s
     
-    def info(self):
+    def assays(self):
         """
         Displays a basic summary of the dataset and what analyses have been performed on
         it.
@@ -109,7 +113,8 @@ class dataset:
             print('Number of low quality cells found: %s ' % self.low_quality_cells.shape[0])
         if self.get_assay('norm'):
             print('Normalization method: %s ' % self.norm_method)
-        s = 'Has HVG discovery been performed? %s' % self.get_assay('hvg', lang=True)
+            print('Log2 transformed? %s' % (self.norm_log2))
+        s = 'Has HVG discovery been performed? %s' % self.get_assay('find_hvg', lang=True)
         print(s)
     def __repr__(self):
         return self._describe()
