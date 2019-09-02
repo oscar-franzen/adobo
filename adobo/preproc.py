@@ -212,11 +212,10 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         object.
     """
     
-    if type(obj.exp_mito) == str:
+    if obj.exp_mito is None:
         raise Exception('No mitochondrial genes found. Run detect_mito() first.')
-    if type(obj.exp_ERCC) == str:
+    if obj.exp_ERCC is None:
         raise Exception('No ERCC spikes found. Run detect_ERCC() first.')
-    
     if type(rRNA_genes) == str:
         rRNA_genes = pd.read_csv(rRNA_genes, header=None)
         rRNA_genes = rRNA_genes.iloc[:,0].values
