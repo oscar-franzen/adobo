@@ -28,7 +28,7 @@ class dataset:
         Raw read count matrix.
     _exp_mito : :class:`pandas.DataFrame`
         Raw read count matrix containing mitochondrial genes.
-    _exp_ERCC : :class:`pandas.DataFrame`
+    _exp_ercc : :class:`pandas.DataFrame`
         Raw read count matrix containing ERCC spikes.
     _low_quality_cells : `list`
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
@@ -40,6 +40,9 @@ class dataset:
         Normalized gene expression data.
     hvg : `list`
         Containing highly variable genes.
+    dr : `dict`
+        A dict of :py:class:`pandas.DataFrame` containing results of dimensionality
+        reduction.
     """
     def __init__(self, raw_mat):
         # holding info about which assays have been done
@@ -48,12 +51,12 @@ class dataset:
         
         self._assays = {}
         self.exp_mat = raw_mat
-        self._exp_ERCC = pd.DataFrame()
+        self._exp_ercc = pd.DataFrame()
         self._exp_mito = pd.DataFrame()
         self._low_quality_cells = ASSAY_NOT_DONE
 
         self.norm = pd.DataFrame()
-        self.norm_ERCC = pd.DataFrame()
+        self.norm_ercc = pd.DataFrame()
         self.norm_method = ASSAY_NOT_DONE
         
         self.norm_log2=False
@@ -92,12 +95,12 @@ class dataset:
         self._exp_mito = val
     
     @property
-    def exp_ERCC(self):
-        return self._exp_ERCC
+    def exp_ercc(self):
+        return self._exp_ercc
 
-    @exp_ERCC.setter
-    def exp_ERCC(self, val):
-        self._exp_ERCC = val
+    @exp_ercc.setter
+    def exp_ercc(self, val):
+        self._exp_ercc = val
     
     def _describe(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
@@ -114,8 +117,8 @@ class dataset:
         """
         if self.get_assay('detect_mito'):
             print('Number of mitochondrial genes found: %s' % self.exp_mito.shape[0])
-        if self.get_assay('detect_ERCC_spikes'):
-            print('Number of ERCC spikes found: %s ' % self.exp_ERCC.shape[0])
+        if self.get_assay('detect_ercc_spikes'):
+            print('Number of ERCC spikes found: %s ' % self.exp_ercc.shape[0])
         if self.get_assay('find_low_quality_cells'):
             print('Number of low quality cells found: %s ' % self.low_quality_cells.shape[0])
         if self.get_assay('norm'):

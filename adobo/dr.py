@@ -13,10 +13,11 @@ import pandas as pd
 import numpy as np
 import scipy.linalg
 from sklearn.preprocessing import scale
+import sklearn.manifold
 
 from . import irlbpy
 
-def irlb(data_norm, ncomp=75):
+def irlb(data_norm, ncomp=75, seed=42):
     """Truncated SVD by implicitly restarted Lanczos bidiagonalization
     
     Notes
@@ -31,6 +32,8 @@ def irlb(data_norm, ncomp=75):
         A pandas data frame containing normalized gene expression data.
     ncomp : `int`
         Number of components to return.
+    seed : `int`
+        For reproducibility.
     
     References
     ----------
@@ -45,7 +48,7 @@ def irlb(data_norm, ncomp=75):
         A py:class:`pandas.DataFrame` containing the components (columns).
     """
     inp = data_norm
-    lanc = irlbpy.lanczos(inp, nval=ncomp, maxit=1000, seed=42)
+    lanc = irlbpy.lanczos(inp, nval=ncomp, maxit=1000, seed=seed)
     # weighing by var
     comp = np.dot(lanc.V, np.diag(lanc.s))
     comp = pd.DataFrame(comp)
@@ -83,7 +86,7 @@ def svd(data_norm, ncomp=75):
     comp = pd.DataFrame(comp)
     return comp
 
-def run_PCA(obj, method='irlb', ncomp=75, allgenes=False, verbose=False):
+def pca(obj, method='irlb', ncomp=75, allgenes=False, verbose=False, seed=42):
     """Principal Component Analysis
     
     Notes
@@ -103,6 +106,8 @@ def run_PCA(obj, method='irlb', ncomp=75, allgenes=False, verbose=False):
         Use all genes instead of only HVG.
     verbose : `bool`
         Be noisy or not.
+    seed : `int`
+        For reproducibility (only irlb).
 
     References
     ----------
@@ -121,10 +126,62 @@ def run_PCA(obj, method='irlb', ncomp=75, allgenes=False, verbose=False):
     if allgenes and verbose:
         print('Using all genes (%s).' % data.shape[0])
     if method == 'irlb':
-        ret = irlb(data, ncomp)
+        ret = irlb(data, ncomp, seed)
     elif method == 'svd':
         ret = svd(data, ncomp)
     else:
         raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
+    ret.index = data.columns
     obj.dr[method] = ret
     obj.set_assay(sys._getframe().f_code.co_name, method)
+
+def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42):
+    """
+    Projects data to a two dimensional space using the tSNE algorithm.
+    
+    Notes
+    -----
+    Calls :py:func:`sklearn.manifold.TSNE`.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A dataset class object.
+    target : `{'irlb', 'svd', 'norm'}`
+        What to run tSNE on.
+    perplexity : `float`
+        From [1]: The perplexity is related to the number of nearest neighbors that
+        is used in other manifold learning algorithms. Larger datasets usually require
+        a larger perplexity. Consider selecting a value between 5 and 50. Different
+        values can result in significanlty different results.
+    n_iter : `int`
+        Number of iterations.
+    seed : `int`
+        For reproducibility.
+
+    References
+    ----------
+    [0] van der Maaten, L.J.P.; Hinton, G.E. Visualizing High-Dimensional Data
+    Using t-SNE. Journal of Machine Learning Research 9:2579-2605, 2008.
+    
+    [1] https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html
+
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    if not ('irlb', 'svd', 'norm') in target:
+        raise Exception('target can be one of: "irlb", "svd" or "norm"')
+    if target == 'norm':
+        X = obj.norm
+    else:
+        if not target in obj.dr:
+            raise Exception('%s was not found, please run run_PCA(...) first.')
+    #tsne = sklearn.manifold.TSNE(n_components=2,
+    #                             n_iter=n_iter,
+    #                             perplexity=perplexity,
+    #                             random_state=seed)
+    #self.embeddings = tsne.fit_transform(self.pca_components)
+    #self.embeddings = pd.DataFrame(self.embeddings,
+    #                               index=self.pca_components.index,
+    #                               columns=[1, 2])

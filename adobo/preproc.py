@@ -144,34 +144,34 @@ def detect_mito(obj, mito_pattern='^mt-', verbose=False):
     obj.set_assay(sys._getframe().f_code.co_name)
     return nm
         
-def detect_ERCC_spikes(obj, ERCC_pattern='^ERCC[_-]\S+$', verbose=False):
-    """Moves ERCC (if present) to a separate container
+def detect_ercc_spikes(obj, ercc_pattern='^ercc[_-]\S+$', verbose=False):
+    """Moves ercc (if present) to a separate container
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
-    ERCC_pattern : `str`, optional
-        A regular expression matching ERCC gene symbols (default: "ERCC[_-]\S+$").
+    ercc_pattern : `str`, optional
+        A regular expression matching ercc gene symbols (default: "ercc[_-]\S+$").
     verbose : `bool`, optional
         Be verbose or not (default: False).
 
     Returns
     -------
     int
-        Number of detected ERCC spikes.
+        Number of detected ercc spikes.
     """
     exp_mat = obj.exp_mat
-    s = exp_mat.index.str.contains(ERCC_pattern)
-    exp_ERCC = exp_mat[s]
+    s = exp_mat.index.str.contains(ercc_pattern)
+    exp_ercc = exp_mat[s]
     exp_mat = exp_mat[np.logical_not(s)]
     nd = np.sum(s)
     obj.exp_mat = exp_mat
-    obj.exp_ERCC = exp_ERCC
-    obj.ERCC_pattern = ERCC_pattern
+    obj.exp_ercc = exp_ercc
+    obj.ercc_pattern = ercc_pattern
     obj.set_assay(sys._getframe().f_code.co_name)
     if verbose:
-        print('%s ERCC spikes detected' % nd)
+        print('%s ercc spikes detected' % nd)
     return nd
 
 def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
@@ -188,7 +188,7 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         2. the number of genes detected
         3. the percentage of reads mapping to ribosomal
         4. mitochondrial genes
-        5. ERCC recovery (if available)
+        5. ercc recovery (if available)
 
     Parameters
     ----------
@@ -214,18 +214,18 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     
     if obj.exp_mito.shape[0] == 0:
         raise Exception('No mitochondrial genes found. Run detect_mito() first.')
-    if obj.exp_ERCC.shape[0] == 0:
-        raise Exception('No ERCC spikes found. Run detect_ERCC() first.')
+    if obj.exp_ercc.shape[0] == 0:
+        raise Exception('No ercc spikes found. Run detect_ercc() first.')
     if type(rRNA_genes) == str:
         rRNA_genes = pd.read_csv(rRNA_genes, header=None)
         rRNA_genes = rRNA_genes.iloc[:,0].values
     
     data = obj.exp_mat
     data_mt = obj.exp_mito
-    data_ERCC = obj.exp_ERCC
+    data_ercc = obj.exp_ercc
 
-    if not obj.get_assay('detect_ERCC_spikes'):
-        raise Exception('auto_clean() needs ERCC spikes')
+    if not obj.get_assay('detect_ercc_spikes'):
+        raise Exception('auto_clean() needs ercc spikes')
     if not obj.get_assay('detect_mito'):
         raise Exception('No mitochondrial genes found. Run detect_mito() first.')
 
@@ -235,13 +235,13 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     
     perc_rRNA = data_rRNA.sum(axis=0)/reads_per_cell*100
     perc_mt = data_mt.sum(axis=0)/reads_per_cell*100
-    perc_ERCC = data_ERCC.sum(axis=0)/reads_per_cell*100
+    perc_ercc = data_ercc.sum(axis=0)/reads_per_cell*100
 
     qc_mat = pd.DataFrame({'reads_per_cell' : np.log(reads_per_cell),
                            'no_genes_det' : no_genes_det,
                            'perc_rRNA' : perc_rRNA,
                            'perc_mt' : perc_mt,
-                           'perc_ERCC' : perc_ERCC})
+                           'perc_ercc' : perc_ercc})
     robust_cov = MinCovDet(random_state=seed).fit(qc_mat)
     mahal_dists = robust_cov.mahalanobis(qc_mat)
 

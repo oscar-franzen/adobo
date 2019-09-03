@@ -72,7 +72,7 @@ def seurat(data, ngenes=1000, num_bins=20):
     ret = np.array(top_hvg.index)
     return ret
 
-def brennecke(data_norm, log2, ERCC=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ngenes=1000,
+def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ngenes=1000,
               verbose=False):
     """Implements the method of Brennecke et al. (2013) to identify highly variable genes
     
@@ -87,8 +87,8 @@ def brennecke(data_norm, log2, ERCC=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ng
         A pandas data frame containing normalized gene expression data.
     log2 : `bool`
         If normalized data were log2 transformed or not.
-    ERCC : :class:`pandas.DataFrame`
-        A pandas data frame containing normalized ERCC spikes.
+    ercc : :class:`pandas.DataFrame`
+        A pandas data frame containing normalized ercc spikes.
     fdr : `float`
         False Discovery Rate considered significant.
     minBiolDisp : `float`
@@ -107,16 +107,16 @@ def brennecke(data_norm, log2, ERCC=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ng
     `list`
         A list containing highly variable genes.
     """
-    if ERCC.shape[0] == 0:
-        ERCC = data_norm
+    if ercc.shape[0] == 0:
+        ercc = data_norm
     if log2:
         data_norm = 2**data_norm-1
-        ERCC = 2**ERCC-1
-    ERCC = ERCC.dropna(axis=1, how='all')
+        ercc = 2**ercc-1
+    ercc = ercc.dropna(axis=1, how='all')
 
     # technical gene (spikes)
-    meansSp = ERCC.mean(axis=1)
-    varsSp = ERCC.var(axis=1)
+    meansSp = ercc.mean(axis=1)
+    varsSp = ercc.var(axis=1)
     cv2Sp = varsSp/meansSp**2
     # biological genes
     meansGenes = data_norm.mean(axis=1)
@@ -147,7 +147,7 @@ def brennecke(data_norm, log2, ERCC=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ng
     psia1theta = a1
     minBiolDisp = minBiolDisp**2
 
-    m = ERCC.shape[1]
+    m = ercc.shape[1]
     cv2th = a0+minBiolDisp+a0*minBiolDisp
 
     testDenom = (meansGenes*psia1theta+(meansGenes**2)*cv2th)/(1+cv2th/m)
@@ -159,7 +159,7 @@ def brennecke(data_norm, log2, ERCC=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ng
     res = res.sort_values('pvalue')
     return np.array(res.head(ngenes)['gene'])
 
-def scran(data_norm, ERCC, log2, ngenes=1000):
+def scran(data_norm, ercc, log2, ngenes=1000):
     """This function implements the approach from the scran R package
     
     Notes
@@ -177,8 +177,8 @@ def scran(data_norm, ERCC, log2, ngenes=1000):
     ----------
     data_norm : :class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
-    ERCC : :class:`pandas.DataFrame`
-        A pandas data frame containing normalized ERCC spikes.
+    ercc : :class:`pandas.DataFrame`
+        A pandas data frame containing normalized ercc spikes.
     log2 : `bool`
         If normalized data were log2 transformed or not.
     ngenes : `int`
@@ -195,14 +195,14 @@ def scran(data_norm, ERCC, log2, ngenes=1000):
     `list`
         A list containing highly variable genes.
     """
-    if ERCC.shape[0] == 0:
-        raise Exception('adobo.hvg.scran requires ERCC spikes.')
+    if ercc.shape[0] == 0:
+        raise Exception('adobo.hvg.scran requires ercc spikes.')
     if log2:
         data_norm = 2**data_norm-1
-        ERCC = 2**ERCC-1
-    ERCC = ERCC.dropna(axis=1, how='all')
-    means_tech = ERCC.mean(axis=1)
-    vars_tech = ERCC.var(axis=1)
+        ercc = 2**ercc-1
+    ercc = ercc.dropna(axis=1, how='all')
+    means_tech = ercc.mean(axis=1)
+    vars_tech = ercc.var(axis=1)
 
     to_fit = np.log(vars_tech)
     arr = [list(item) for item in zip(*sorted(zip(means_tech, to_fit)))]
@@ -462,14 +462,14 @@ def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     Nothing. Modifies the passed object.
     """
     data = obj.norm
-    data_ERCC = obj.norm_ERCC
+    data_ercc = obj.norm_ercc
 
     if method == 'seurat':
         hvg = seurat(data, ngenes)
     elif method == 'brennecke':
-        hvg = brennecke(data, obj.norm_log2, data_ERCC, fdr, ngenes, verbose)
+        hvg = brennecke(data, obj.norm_log2, data_ercc, fdr, ngenes, verbose)
     elif method == 'scran':
-        hvg = scran(data, data_ERCC, obj.norm_log2, ngenes)
+        hvg = scran(data, data_ercc, obj.norm_log2, ngenes)
     elif method == 'chen2016':
         hvg = chen2016(data, obj.norm_log2, fdr, ngenes)
     elif method == 'mm':
