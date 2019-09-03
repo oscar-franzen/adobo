@@ -12,7 +12,7 @@ import sys
 import pandas as pd
 import numpy as np
 import scipy.linalg
-from sklearn.preprocessing import scale
+from sklearn.preprocessing import scale as sklearn_scale
 import sklearn.manifold
 import umap as um
 
@@ -75,8 +75,6 @@ def svd(data_norm, ncomp=75):
         A py:class:`pandas.DataFrame` containing the components (columns).
     """
     inp = data_norm
-    inp = inp.transpose()
-    x = scale(inp, with_mean=True, with_std=False)
     s = scipy.linalg.svd(x)
     v = s[2].transpose()
     d = s[1]
@@ -87,13 +85,15 @@ def svd(data_norm, ncomp=75):
     comp = pd.DataFrame(comp)
     return comp
 
-def pca(obj, method='irlb', ncomp=75, allgenes=False, verbose=False, seed=42):
+def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False, seed=42):
     """Principal Component Analysis
     
     Notes
     -----
     A wrapper function around the individual normalization functions, which can also be
-    called directly.
+    called directly. Scaling of the data is achieved by setting scale=True (default),
+    which will center (subtract the column mean) and scale columns (divide by their
+    standard deviation).
 
     Parameters
     ----------
@@ -102,13 +102,15 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, verbose=False, seed=42):
     method : `{'irlb', 'svd'}`
         Method to use for PCA. This does not matter much. Default: irlb
     ncomp : `int`
-        Number of components to return, optional
+        Number of components to return. Default: 75
     allgenes : `bool`
-        Use all genes instead of only HVG, optional
+        Use all genes instead of only HVG. Default: False
+    scale : `bool`
+        Scales input data prior to PCA. Default: True
     verbose : `bool`
-        Be noisy or not. optional
+        Be noisy or not. Default: False
     seed : `int`
-        For reproducibility (only irlb), optional
+        For reproducibility (only irlb). Default: 42
 
     References
     ----------
@@ -124,6 +126,11 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, verbose=False, seed=42):
         data = data[data.index.isin(hvg)]
         if verbose:
             print('Only using HVG genes (%s).' % data.shape[0])
+    data = data.transpose() # cells as rows and genes as labels
+    if scale:
+        data = sklearn_scale(data, axis=0,   # over genes, i.e. features (columns)
+                             with_mean=True, # subtracting the column means
+                             with_std=True)  # scale the data to unit variance
     if allgenes and verbose:
         print('Using all genes (%s).' % data.shape[0])
     if method == 'irlb':
