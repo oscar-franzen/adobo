@@ -14,6 +14,7 @@ import numpy as np
 import scipy.linalg
 from sklearn.preprocessing import scale
 import sklearn.manifold
+import umap as um
 
 from . import irlbpy
 
@@ -31,9 +32,9 @@ def irlb(data_norm, ncomp=75, seed=42):
     data_norm : :class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
     ncomp : `int`
-        Number of components to return.
+        Number of components to return, optional.
     seed : `int`
-        For reproducibility.
+        For reproducibility, optional.
     
     References
     ----------
@@ -62,7 +63,7 @@ def svd(data_norm, ncomp=75):
     data_norm : :class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
     ncomp : `int`
-        Number of components to return.
+        Number of components to return, optional.
     
     References
     ----------
@@ -101,13 +102,13 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, verbose=False, seed=42):
     method : `{'irlb', 'svd'}`
         Method to use for PCA. This does not matter much. Default: irlb
     ncomp : `int`
-        Number of components to return. Default: 75
+        Number of components to return, optional
     allgenes : `bool`
-        Use all genes instead of only HVG.
+        Use all genes instead of only HVG, optional
     verbose : `bool`
-        Be noisy or not.
+        Be noisy or not. optional
     seed : `int`
-        For reproducibility (only irlb).
+        For reproducibility (only irlb), optional
 
     References
     ----------
@@ -135,7 +136,7 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, verbose=False, seed=42):
     obj.dr[method] = ret
     obj.set_assay(sys._getframe().f_code.co_name, method)
 
-def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42):
+def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False, **args):
     """
     Projects data to a two dimensional space using the tSNE algorithm.
     
@@ -158,6 +159,8 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42):
         Number of iterations.
     seed : `int`
         For reproducibility.
+    verbose : `bool`
+        Be verbose.
 
     References
     ----------
@@ -170,18 +173,61 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42):
     -------
     Nothing. Modifies the passed object.
     """
-    if not ('irlb', 'svd', 'norm') in target:
+    if not target in ('irlb', 'svd', 'norm'):
         raise Exception('target can be one of: "irlb", "svd" or "norm"')
     if target == 'norm':
         X = obj.norm
     else:
         if not target in obj.dr:
-            raise Exception('%s was not found, please run run_PCA(...) first.')
-    #tsne = sklearn.manifold.TSNE(n_components=2,
-    #                             n_iter=n_iter,
-    #                             perplexity=perplexity,
-    #                             random_state=seed)
-    #self.embeddings = tsne.fit_transform(self.pca_components)
-    #self.embeddings = pd.DataFrame(self.embeddings,
-    #                               index=self.pca_components.index,
-    #                               columns=[1, 2])
+            raise Exception('%s was not found, please run adobo.dr.pca(...) first.')
+        else:
+            X = obj.dr[target]
+    tsne = sklearn.manifold.TSNE(n_components=2,
+                                 n_iter=n_iter,
+                                 perplexity=perplexity,
+                                 random_state=seed,
+                                 verbose=verbose,
+                                 **args)
+    emb = tsne.fit_transform(X)
+    obj.dr['tsne'] = emb
+    obj.set_assay(sys._getframe().f_code.co_name)
+
+def umap(obj, target='irlb', seed=42, **args):
+    """
+    Projects data to a two dimensional space using the UMAP algorithm.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A dataset class object.
+    target : `{'irlb', 'svd', 'norm'}`
+        What to run tSNE on.
+    seed : `int`
+        For reproducibility.
+    verbose : `bool`
+        Be verbose.
+
+    References
+    ----------
+    McInnes L, Healy J, Melville J, arxiv, 2018
+
+    https://arxiv.org/abs/1802.03426
+    https://github.com/lmcinnes/umap
+    https://umap-learn.readthedocs.io/en/latest/
+
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    if target == 'norm':
+        X = obj.norm
+    else:
+        if not target in obj.dr:
+            raise Exception('%s was not found, please run adobo.dr.pca(...) first.')
+        else:
+            X = obj.dr[target]
+    reducer = um.UMAP(random_state=seed, **args)
+    emb = reducer.fit_transform(X)
+    emb = pd.DataFrame(emb)
+    obj.dr['umap'] = emb
+    obj.set_assay(sys._getframe().f_code.co_name)

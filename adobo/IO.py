@@ -14,7 +14,8 @@ import numpy as np
 
 from adobo import dataset
 
-def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False, **args):
+def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False,
+                   desc='no desc set', **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
     Parameters
@@ -29,6 +30,8 @@ def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False
     column_id : {'auto', 'yes', 'no'}, optional
         Whether the header (first line) of the file contains a column ID for the genes. If
         this is the case, set this to auto or yes, otherwise no (default: auto).
+    desc : `str`
+        A description of the data, optional
     verbose : `bool`, optional
         To be verbose or not (default: False).
 
@@ -75,7 +78,7 @@ character.')
         raise Exception('Non-count values detected in data matrix.')
     rem = exp_mat.index.str.contains('^ArrayControl-[0-9]+', regex=True, case=False)
     exp_mat = exp_mat[np.logical_not(rem)]
-    obj = dataset(exp_mat)
+    obj = dataset(exp_mat, desc)
     if verbose:
         genes = '{:,}'.format(exp_mat.shape[0])
         cells = '{:,}'.format(exp_mat.shape[1])

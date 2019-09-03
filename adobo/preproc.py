@@ -144,7 +144,7 @@ def detect_mito(obj, mito_pattern='^mt-', verbose=False):
     obj.set_assay(sys._getframe().f_code.co_name)
     return nm
         
-def detect_ercc_spikes(obj, ercc_pattern='^ercc[_-]\S+$', verbose=False):
+def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     """Moves ercc (if present) to a separate container
 
     Parameters

@@ -43,11 +43,14 @@ class dataset:
     dr : `dict`
         A dict of :py:class:`pandas.DataFrame` containing results of dimensionality
         reduction.
+    desc : `str`
+        A string describing the dataset.
     """
-    def __init__(self, raw_mat):
+    def __init__(self, raw_mat, desc='no desc set'):
         # holding info about which assays have been done
         self.hvg = []
         self.hvg_method = ASSAY_NOT_DONE
+        self.desc = desc
         
         self._assays = {}
         self.exp_mat = raw_mat
@@ -105,7 +108,9 @@ class dataset:
     def _describe(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
         cells = '{:,}'.format(self.exp_mat.shape[1])
-        s = 'Raw read counts matrix contains: %s genes and %s cells\n' % (genes, cells)
+        s = """Description: %s
+Raw read counts matrix contains: %s genes and %s cells""" % (self.desc, genes, cells)
+
         for key in self._assays:
             s += 'Done: %s (%s)\n' % (key, self._assays[key])
         return s
