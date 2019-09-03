@@ -79,3 +79,6 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
     else:
         plt.show()
     plt.close()
+
+def two_dim_scatter(obj):
+    pass

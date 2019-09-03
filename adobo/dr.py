@@ -75,11 +75,12 @@ def svd(data_norm, ncomp=75):
         A py:class:`pandas.DataFrame` containing the components (columns).
     """
     inp = data_norm
-    s = scipy.linalg.svd(x)
+    inp = inp.transpose()
+    s = scipy.linalg.svd(inp)
     v = s[2].transpose()
     d = s[1]
-    s_d = d/np.sqrt(x.shape[0]-1)
-    retx = x.dot(v)
+    s_d = d/np.sqrt(inp.shape[0]-1)
+    retx = inp.dot(v)
     retx = retx[:, 0:ncomp]
     comp = retx
     comp = pd.DataFrame(comp)
@@ -131,6 +132,7 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
         data = sklearn_scale(data, axis=0,   # over genes, i.e. features (columns)
                              with_mean=True, # subtracting the column means
                              with_std=True)  # scale the data to unit variance
+        data = data.transpose()
     if allgenes and verbose:
         print('Using all genes (%s).' % data.shape[0])
     if method == 'irlb':
@@ -139,7 +141,7 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
         ret = svd(data, ncomp)
     else:
         raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
-    ret.index = data.columns
+    ret.index = obj.norm.columns
     obj.dr[method] = ret
     obj.set_assay(sys._getframe().f_code.co_name, method)
 
