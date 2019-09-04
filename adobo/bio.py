@@ -8,3 +8,21 @@ Summary
 -------
 Functions related to biology.
 """
+
+def cell_cycle_predict(obj, genes_s_phase, genes_g2m_phase):
+    """Predicts cell cycle phase
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    genes_s_phase : `list`
+        A list of S phase genes.
+    genes_g2m_phase : `list`
+        A list of G2/M phase genes.
+
+    Returns
+    -------
+    None
+    """
+    pass

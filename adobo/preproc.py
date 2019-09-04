@@ -43,87 +43,37 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
         Number of genes removed.
     """
     exp_mat = obj.exp_mat
-    cell_counts = exp_mat.sum(axis=0)
-    r = cell_counts > minreads
-    exp_mat = exp_mat[exp_mat.columns[r]]
-    cr = np.sum(np.logical_not(r))
-    gr = 0
-    if verbose:
-        print('%s cells removed' % cr)
+    cell_counts = obj.meta_cells.total_reads
+    cells_remove = cell_counts < minreads
+    obj.meta_cells.status[cells_remove] = 'EXCLUDE'
+    #exp_mat = exp_mat[exp_mat.columns[r]]
+    #cr = np.sum(np.logical_not(r))
+    genes_removed = 0
     if minexpgenes > 0:
         if type(minexpgenes) == int:
-            genes_expressed = exp_mat.apply(lambda x: sum(x > 0), axis=1)
-            target_genes = genes_expressed[genes_expressed>minexpgenes].index
-            gr = np.sum(genes_expressed <= minexpgenes)
-            d = '{0:,g}'.format(gr)
-            exp_mat = exp_mat[exp_mat.index.isin(target_genes)]
-            if verbose:
-                print('Removed %s genes.' % d)
+            genes_exp = obj.meta_genes.expressed
+            genes_remove = genes_exp<minexpgenes
+            obj.meta_genes.status[genes_remove] = 'EXCLUDE'
         else:
-            genes_expressed = exp_mat.apply(lambda x: sum(x > 0)/len(x), axis=1)
-            gr = np.sum(genes_expressed <= minexpgenes)
-            d = '{0:,g}'.format(gr)
-            exp_mat = exp_mat[genes_expressed > minexpgenes]
-            if verbose:
-                print('Removed %s genes.' % d)
-    obj.exp_mat = exp_mat
+            genes_exp = obj.meta_genes.expressed_perc
+            genes_remove = genes_exp<minexpgenes
+            obj.meta_genes.status[genes_remove] = 'EXCLUDE'
     obj.set_assay(sys._getframe().f_code.co_name)
-    return cr, gr
+    if verbose:
+        s = '%s cells and %s genes were removed'
+        print(s % (np.sum(cells_remove), np.sum(genes_remove)))
+    return np.sum(cells_remove), np.sum(genes_remove)
 
-def remove_empty(obj, verbose=False):
-    """Removes empty cells and genes
+def find_mitochondrial_genes(obj, mito_pattern='^mt-', verbose=False):
+    """Find mitochondrial genes
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
-    verbose : boolean, optional
-        Be verbose or not (default: False).
-
-    Returns
-    -------
-    int
-        Number of empty cells removed.
-    int
-        Number of empty genes removed.
-    """
-    exp_mat = obj.exp_mat
-    data_zero = exp_mat == 0
-    
-    cells = data_zero.sum(axis=0)
-    genes = data_zero.sum(axis=1)
-    
-    total_genes = exp_mat.shape[0]
-    total_cells = exp_mat.shape[1]
-    
-    ecr=0
-    egr=0
-
-    if np.sum(cells == total_cells) > 0:
-        r = np.logical_not(cells == total_cells)
-        exp_mat = exp_mat[exp_mat.columns[r]]
-        ecr = np.sum(cells == total_cells)
-        if verbose:
-            print('%s empty cells will be removed' % (ecr))
-    if np.sum(genes == total_genes) > 0:
-        r = np.logical_not(genes == total_genes)
-        exp_mat = exp_mat.loc[exp_mat.index[r]]
-        egr = np.sum(genes == total_genes)
-        if verbose:
-            print('%s empty genes will be removed' % (egr))
-    obj.set_assay(sys._getframe().f_code.co_name)
-    return ecr, egr
-
-def detect_mito(obj, mito_pattern='^mt-', verbose=False):
-    """Remove mitochondrial genes
-
-    Parameters
-    ----------
-    obj : :class:`adobo.data.dataset`
-        A data class object.
-    mito_pattern : `str`, optional
+    mito_pattern : `str`
         A regular expression matching mitochondrial gene symbols (default: "^mt-")
-    verbose : boolean, optional
+    verbose : boolean
         Be verbose or not (default: False).
 
     Returns
@@ -132,20 +82,36 @@ def detect_mito(obj, mito_pattern='^mt-', verbose=False):
         Number of mitochondrial genes detected.
     """
     exp_mat = obj.exp_mat
-    mt_count = exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
-    if np.sum(mt_count) > 0:
-        exp_mito = exp_mat.loc[exp_mat.index[mt_count]]
-        exp_mat = exp_mat.loc[exp_mat.index[np.logical_not(mt_count)]]
-        obj.exp_mat = exp_mat
-        obj.exp_mito = exp_mito
-    nm = np.sum(mt_count)
+    mito = exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
+    obj.meta_genes['mitochondrial'] = mito
+    no_found = np.sum(mito)
     if verbose:
-        print('%s mitochondrial genes detected and removed' % nm)
+        print('%s mitochondrial genes detected' % no_found)
     obj.set_assay(sys._getframe().f_code.co_name)
-    return nm
+    return no_found
+
+def set_mitochondrial_genes(obj, genes):
+    """Set mitochondrial genes
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    genes : `list`
+        A list of mitochondrial genes.
+
+    Returns
+    -------
+    int
+        Number of genes found.
+    """
+    mito = obj.exp_mat.index.isin(genes)
+    obj.meta_genes['mitochondrial'] = mito
+    obj.set_assay(sys._getframe().f_code.co_name)
+    return np.sum(mito)
         
 def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
-    """Moves ercc (if present) to a separate container
+    """Flag ERCC spikes
 
     Parameters
     ----------
@@ -162,17 +128,14 @@ def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
         Number of detected ercc spikes.
     """
     exp_mat = obj.exp_mat
-    s = exp_mat.index.str.contains(ercc_pattern)
-    exp_ercc = exp_mat[s]
-    exp_mat = exp_mat[np.logical_not(s)]
-    nd = np.sum(s)
-    obj.exp_mat = exp_mat
-    obj.exp_ercc = exp_ercc
+    ercc = exp_mat.index.str.contains(ercc_pattern)
+    obj.meta_genes['ERCC'] = ercc
+    no_found = np.sum(ercc)
     obj.ercc_pattern = ercc_pattern
     obj.set_assay(sys._getframe().f_code.co_name)
     if verbose:
-        print('%s ercc spikes detected' % nd)
-    return nd
+        print('%s ercc spikes detected' % no_found)
+    return no_found
 
 def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     """Statistical detection of low quality cells using Mahalanobis distances
@@ -212,22 +175,20 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         object.
     """
     
-    if obj.exp_mito.shape[0] == 0:
+    if np.sum(exp.meta_genes.mitochondrial) == 0:
         raise Exception('No mitochondrial genes found. Run detect_mito() first.')
-    if obj.exp_ercc.shape[0] == 0:
-        raise Exception('No ercc spikes found. Run detect_ercc() first.')
+    if np.sum(exp.meta_genes.ERCC) == 0:
+        raise Exception('No ERCC spike-ins found. Run detect_ercc_spikes() first.')
     if type(rRNA_genes) == str:
         rRNA_genes = pd.read_csv(rRNA_genes, header=None)
-        rRNA_genes = rRNA_genes.iloc[:,0].values
+        obj.meta_genes['rRNA'] = obj.meta_genes.index.isin(rRNA_genes.iloc[:, 0])
+    
+    if not 'mito' in obj.meta_cells.columns:
+        pass
     
     data = obj.exp_mat
     data_mt = obj.exp_mito
     data_ercc = obj.exp_ercc
-
-    if not obj.get_assay('detect_ercc_spikes'):
-        raise Exception('auto_clean() needs ercc spikes')
-    if not obj.get_assay('detect_mito'):
-        raise Exception('No mitochondrial genes found. Run detect_mito() first.')
 
     reads_per_cell = data.sum(axis=0) # no. reads/cell
     no_genes_det = np.sum(data > 0, axis=0)

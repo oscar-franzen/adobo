@@ -43,6 +43,8 @@ class dataset:
     dr : `dict`
         A dict of :py:class:`pandas.DataFrame` containing results of dimensionality
         reduction.
+    meta_data : `pandas.DataFrame`
+        A data frame containing single cell meta data on a per-cell level.
     desc : `str`
         A string describing the dataset.
     """
@@ -62,7 +64,20 @@ class dataset:
         self.norm_ercc = pd.DataFrame()
         self.norm_method = ASSAY_NOT_DONE
         
-        self.norm_log2=False
+        self.norm_log2 = False
+        
+        # meta data for cells
+        self.meta_cells = pd.DataFrame(index=raw_mat.columns)
+        self.meta_cells['total_reads'] = raw_mat.sum(axis=0)        
+        self.meta_cells['status'] = ['OK']*raw_mat.shape[1]
+        
+        # meta data for genes
+        self.meta_genes = pd.DataFrame(index=raw_mat.index)
+        self.meta_genes['expressed'] = raw_mat.apply(lambda x: sum(x > 0), axis=1)
+        self.meta_genes['expressed_perc'] = raw_mat.apply(lambda x: sum(x > 0)/len(x), axis=1)
+        self.meta_genes['status'] = ['OK']*raw_mat.shape[0]
+        self.meta_genes['mitochondrial'] = [None]*raw_mat.shape[0]
+        self.meta_genes['ERCC'] = [None]*raw_mat.shape[0]
         
         # containing method and components for dimensionality reduction
         self.dr = {}
