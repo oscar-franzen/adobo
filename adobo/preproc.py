@@ -160,12 +160,12 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     rRNA_genes : `list` or `str`
         Either a list of rRNA genes or a string containing the path to a file containing
         the rRNA genes (one gene per line).
-    sd_thres : `float`, optional
+    sd_thres : `float`
         Number of standard deviations to consider significant, i.e. cells are low quality
         if this. Set to higher to remove fewer cells (default: 3).
-    seed : `float`, optional
+    seed : `float`
         For the random number generator (default: 42).
-    verbose : `bool`, optional
+    verbose : `bool`
         Be verbose or not (default: False).
 
     Returns
@@ -175,9 +175,9 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         object.
     """
     
-    if np.sum(exp.meta_genes.mitochondrial) == 0:
+    if np.sum(obj.meta_genes.mitochondrial) == 0:
         raise Exception('No mitochondrial genes found. Run detect_mito() first.')
-    if np.sum(exp.meta_genes.ERCC) == 0:
+    if np.sum(obj.meta_genes.ERCC) == 0:
         raise Exception('No ERCC spike-ins found. Run detect_ercc_spikes() first.')
     if type(rRNA_genes) == str:
         rRNA_genes = pd.read_csv(rRNA_genes, header=None)
@@ -189,28 +189,28 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         mito_sum = mito_mat.sum(axis=0)
         obj.meta_cells['mito'] = mito_sum
     if not 'ERCC' in obj.meta_cells.columns:
-        ercc = exp.meta_genes.ERCC[exp.meta_genes.ERCC]
+        ercc = obj.meta_genes.ERCC[obj.meta_genes.ERCC]
         ercc_mat = obj.exp_mat[obj.exp_mat.index.isin(ercc.index)]
         ercc_sum = ercc_mat.sum(axis=0)
         obj.meta_cells['ERCC'] = ercc_sum
+    if not 'rRNA' in obj.meta_cells.columns:
+        rrna_genes = obj.meta_genes.rRNA[obj.meta_genes.rRNA]
+        rrna_mat = obj.exp_mat[obj.exp_mat.index.isin(rrna_genes.index)]
+        rrna_sum = rrna_mat.sum(axis=0)
+        obj.meta_cells['rRNA'] = rrna_sum
     
-    data = obj.exp_mat
-    data_mt = obj.meta_cells.mito
-    data_ercc = obj.meta_cells.ERCC
+    #data = obj.exp_mat
+    inp_total_reads = obj.meta_cells.total_reads
+    inp_detected_genes = obj.meta_cells.detected_genes/inp_total_reads
+    inp_rrna = obj.meta_cells.rRNA/inp_total_reads
+    inp_mt = obj.meta_cells.mito/inp_total_reads
+    inp_ercc = obj.meta_cells.ERCC/inp_total_reads
 
-    reads_per_cell = obj.meta_cells.total_reads
-    no_genes_det = np.sum(data > 0, axis=0)
-    data_rRNA = data.loc[data.index.intersection(rRNA_genes)]
-    
-    perc_rRNA = data_rRNA.sum(axis=0)/reads_per_cell*100
-    perc_mt = data_mt.sum(axis=0)/reads_per_cell*100
-    perc_ercc = data_ercc.sum(axis=0)/reads_per_cell*100
-
-    qc_mat = pd.DataFrame({'reads_per_cell' : np.log(reads_per_cell),
-                           'no_genes_det' : no_genes_det,
-                           'perc_rRNA' : perc_rRNA,
-                           'perc_mt' : perc_mt,
-                           'perc_ercc' : perc_ercc})
+    qc_mat = pd.DataFrame({'reads_per_cell' : np.log(inp_total_reads),
+                           'no_genes_det' : inp_detected_genes,
+                           'perc_rRNA' : inp_rrna,
+                           'perc_mt' : inp_mt,
+                           'perc_ercc' : inp_ercc})
     robust_cov = MinCovDet(random_state=seed).fit(qc_mat)
     mahal_dists = robust_cov.mahalanobis(qc_mat)
 
@@ -221,10 +221,11 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     thres_upper = MD_mean + MD_sd * sd_thres
 
     res = (mahal_dists < thres_lower) | (mahal_dists > thres_upper)
-    low_quality_cells = data.columns[res].values
-    
-    if verbose:
-        print('%s low quality cell(s) identified' % len(low_quality_cells))
+    low_quality_cells = obj.exp_mat.columns[res].values
     obj.low_quality_cells = low_quality_cells
     obj.set_assay(sys._getframe().f_code.co_name)
+    r = obj.meta_cells.index.isin(low_quality_cells)
+    obj.meta_cells.status[r]='EXCLUDE'
+    if verbose:
+        print('%s low quality cell(s) identified' % len(low_quality_cells))
     return low_quality_cells
