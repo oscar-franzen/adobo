@@ -80,5 +80,27 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
 
-def two_dim_scatter(obj):
-    pass
+def cell_plot(obj, target='tsne'):
+    """Generates a 2d scatter plot from an embedding
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A data class object
+    target : `{'irlb', 'svd', 'norm'}`
+        What to run tSNE on.
+    filename : `str`, optional
+        Write plot to file.
+    title : `str`, optional
+        Title of the plot (default: "sequencing reads").
+
+    Returns
+    -------
+    None
+    """
+    if not target in obj.dr:
+        raise Exception('Target not found, run the appropriate assay first.')
+    X = obj.dr[target]
+    plt.clf()
+    plt.scatter(X.iloc[:, 0], X.iloc[:, 1], s=1, color='black')
+    plt.show()

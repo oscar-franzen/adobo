@@ -198,10 +198,11 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False,
                                  verbose=verbose,
                                  **args)
     emb = tsne.fit_transform(X)
+    emb = pd.DataFrame(emb)
     obj.dr['tsne'] = emb
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def umap(obj, target='irlb', seed=42, **args):
+def umap(obj, target='irlb', seed=42, verbose=False, **args):
     """
     Projects data to a two dimensional space using the UMAP algorithm.
 
@@ -235,7 +236,7 @@ def umap(obj, target='irlb', seed=42, **args):
             raise Exception('%s was not found, please run adobo.dr.pca(...) first.')
         else:
             X = obj.dr[target]
-    reducer = um.UMAP(random_state=seed, **args)
+    reducer = um.UMAP(random_state=seed, verbose=verbose, **args)
     emb = reducer.fit_transform(X)
     emb = pd.DataFrame(emb)
     obj.dr['umap'] = emb
