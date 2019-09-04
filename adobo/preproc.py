@@ -184,13 +184,21 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         obj.meta_genes['rRNA'] = obj.meta_genes.index.isin(rRNA_genes.iloc[:, 0])
     
     if not 'mito' in obj.meta_cells.columns:
-        pass
+        mt_genes = obj.meta_genes.mitochondrial[obj.meta_genes.mitochondrial]
+        mito_mat = obj.exp_mat[obj.exp_mat.index.isin(mt_genes.index)]
+        mito_sum = mito_mat.sum(axis=0)
+        obj.meta_cells['mito'] = mito_sum
+    if not 'ERCC' in obj.meta_cells.columns:
+        ercc = exp.meta_genes.ERCC[exp.meta_genes.ERCC]
+        ercc_mat = obj.exp_mat[obj.exp_mat.index.isin(ercc.index)]
+        ercc_sum = ercc_mat.sum(axis=0)
+        obj.meta_cells['ERCC'] = ercc_sum
     
     data = obj.exp_mat
-    data_mt = obj.exp_mito
-    data_ercc = obj.exp_ercc
+    data_mt = obj.meta_cells.mito
+    data_ercc = obj.meta_cells.ERCC
 
-    reads_per_cell = data.sum(axis=0) # no. reads/cell
+    reads_per_cell = obj.meta_cells.total_reads
     no_genes_det = np.sum(data > 0, axis=0)
     data_rRNA = data.loc[data.index.intersection(rRNA_genes)]
     

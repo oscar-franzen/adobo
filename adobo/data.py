@@ -13,6 +13,7 @@ import sys
 import os
 
 import pandas as pd
+import numpy as np
 
 from .constants import ASSAY_NOT_DONE
 
@@ -70,6 +71,7 @@ class dataset:
         self.meta_cells = pd.DataFrame(index=raw_mat.columns)
         self.meta_cells['total_reads'] = raw_mat.sum(axis=0)        
         self.meta_cells['status'] = ['OK']*raw_mat.shape[1]
+        self.meta_cells['detected_genes'] = np.sum(raw_mat > 0, axis=0)
         
         # meta data for genes
         self.meta_genes = pd.DataFrame(index=raw_mat.index)
