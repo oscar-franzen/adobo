@@ -13,6 +13,7 @@ from . import plotting
 from . import normalize
 from . import hvg
 from . import dr
+from . import bio
 
 debug = 0
 
