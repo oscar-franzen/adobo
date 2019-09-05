@@ -124,7 +124,7 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
         if verbose:
             print('Clustering has not been performed. Plotting anyway.')
     else:
-        cl = obj.clusters[len(obj.clusters)-1]
+        cl = obj.clusters[len(obj.clusters)-1]['cl']
     plt.clf()
     for i in range(len(np.unique(cl))):
         idx = np.array(cl) == i

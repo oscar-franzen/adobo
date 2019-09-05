@@ -146,7 +146,47 @@ def _leiden(obj, res=0.8, seed=42):
     #else:
     part = la.RBERVertexPartition
     cl = la.find_partition(g, part, n_iterations=10, resolution_parameter=res, seed=seed)
-    obj.clusters.append(cl.membership)
+    obj.clusters.append({ 'algo' : 'leiden', 'cl' : cl.membership })
+
+def _igraph(obj, clust_alg):
+    """
+    Runs clustering functions within igraph
+    
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A dataset class object.
+    clust_alg : `{'walktrap', 'spinglass'}`
+    
+    References
+    ----------
+    Pons & Latapy (2006) Computing Communities in Large NetworksUsing Random Walks,
+        Journal of Graph Algorithms and Applications
+    
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    nn = set(obj.snn_graph[obj.snn_graph.columns[0]])
+    g = ig.Graph()
+    g.add_vertices(len(nn))
+    g.vs['name'] = list(range(1, len(nn)+1))
+
+    ll = []
+    for i in obj.snn_graph.itertuples(index=False):
+        ll.append(tuple(i))
+    g.add_edges(ll)
+
+    if clust_alg == 'walktrap':
+        z = ig.Graph.community_walktrap(g)
+        cl = z.as_clustering(z.optimal_count).membership
+    elif clust_alg == 'spinglass':
+        z = ig.Graph.community_spinglass(g)
+        cl = z.membership
+    else:
+        raise Exception('Unsupported community detection algorithm specified.')
+    
+    obj.clusters.append({ 'algo' : clust_alg, 'cl' : cl })
 
 def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
              res=0.8, seed=42, verbose=False):
@@ -163,14 +203,14 @@ def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
     graph : `{'snn'}`
         Type of graph to generate. Only shared nearest neighbor (snn) supported at the
         moment.
-    clust_alg : `{'leiden'}`
-        Clustering algorithm to be used. Only leiden supported at the moment.
+    clust_alg : `{'leiden', 'walktrap', 'spinglass'}`
+        Clustering algorithm to be used.
     prune_snn : `float`
         Threshold for pruning the SNN graph, i.e. the edges  with lower value (Jaccard
         index) than this will be removed. Set to 0 to disable pruning. Increasing this
         value will result in fewer edges in the graph. Default: 0.067
     res : `float`
-        Resolution parameter for the Leiden algorithm, change to modify cluster
+        Resolution parameter for the Leiden algorithm _only_; change to modify cluster
         resolution. Default: 0.8
     seed : `int`
         For reproducibility.
@@ -179,16 +219,20 @@ def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
     
     References
     ----------
-    None.
+    Yang et al. (2016) A Comparative Analysis of Community Detection Algorithms on
+        Artificial Networks. Scientific Reports
     
     Returns
     -------
     Nothing. Modifies the passed object.
     """
-    if not clust_alg in ('leiden'):
-        raise Exception('Only leiden is supported at the moment (clust_alg="leiden").')
+    m = ('leiden', 'walktrap', 'spinglass')
+    if not clust_alg in m:
+        raise Exception('Supported community detection algorithms are: %s' % ', '.join(m))
     _knn(obj, k)
     _snn(obj, k, verbose)
     if clust_alg == 'leiden':
         _leiden(obj, res, seed)
+    else:
+        _igraph(obj, clust_alg)
     obj.set_assay(sys._getframe().f_code.co_name)
