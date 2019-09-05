@@ -158,5 +158,33 @@ Raw read counts matrix contains: %s genes and %s cells
             print('Log2 transformed? %s' % (self.norm_log2))
         s = 'Has HVG discovery been performed? %s' % self.get_assay('find_hvg', lang=True)
         print(s)
+
     def __repr__(self):
         return self._describe()
+    
+    def add_meta_data(self, dimension, key, data):
+        """Add meta data to the adobo object
+
+        Notes
+        -----
+        Meta data can be added to cells or genes.
+
+        Parameters
+        ----------
+        dimension : `{'cells', 'genes'}`
+            Should the data be added to cells or genes?
+        key : `str`
+            The variable name for your data. No whitespaces and special characters.
+        data : `list`
+            A list of data to add. The length must match the length of cells or genes.
+
+        Returns
+        -------
+        Nothing.
+        """
+        if not dimension in ('cells', 'genes'):
+            raise Exception('Dimension must be cells or genes.')
+        if dimension == 'cells':
+            self.meta_cells[key] = data
+        elif dimension == 'genes':
+            self.meta_genes[key] = data
