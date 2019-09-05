@@ -18,8 +18,8 @@ from sklearn.neighbors import KernelDensity
 import statsmodels.api as sm
 from statsmodels.nonparametric.kernel_regression import KernelReg
 
-from .log import warning
-from .stats import bw_nrd, row_geometric_mean, theta_ml, is_outlier
+from ._log import warning
+from ._stats import bw_nrd, row_geometric_mean, theta_ml, is_outlier
 
 def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     """Performs variance stabilizing normaliztion based on a negative binomial regression

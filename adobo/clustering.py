@@ -16,7 +16,7 @@ from scipy.sparse import coo_matrix
 import leidenalg as la
 import igraph as ig
 
-from .log import warning
+from ._log import warning
 
 def _knn(obj, k=10, target='irlb'):
     """

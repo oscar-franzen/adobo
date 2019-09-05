@@ -15,7 +15,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from .constants import ASSAY_NOT_DONE
+from ._constants import ASSAY_NOT_DONE
 
 class dataset:
     """

@@ -20,10 +20,10 @@ from scipy.optimize import minimize
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 
-from .stats import p_adjust_bh
 from .glm.glm import GLM
 from .glm.families import Gamma
-from .log import warning
+from ._stats import p_adjust_bh
+from ._log import warning
 
 import warnings
 warnings.filterwarnings("ignore")
