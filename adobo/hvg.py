@@ -462,6 +462,8 @@ def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     Nothing. Modifies the passed object.
     """
     data = obj.norm
+    if data.shape[0] == 0:
+        raise Exception('Data must be normalized first. Please run adobo.normalize.norm')
     data_ercc = obj.norm_ercc
 
     if method == 'seurat':

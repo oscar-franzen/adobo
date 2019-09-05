@@ -122,6 +122,8 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
     Nothing. Modifies the passed object.
     """
     data = obj.norm
+    if data.shape[0] == 0:
+        raise Exception('Data must be normalized first. Please run adobo.normalize.norm')
     hvg = obj.hvg
     if len(hvg)>0 and not allgenes:
         data = data[data.index.isin(hvg)]
@@ -188,7 +190,8 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False,
         X = obj.norm
     else:
         if not target in obj.dr:
-            raise Exception('%s was not found, please run adobo.dr.pca(...) first.')
+            e = '%s was not found, please run adobo.dr.pca(...) first.' % target
+            raise Exception(e)
         else:
             X = obj.dr[target]
     tsne = sklearn.manifold.TSNE(n_components=2,

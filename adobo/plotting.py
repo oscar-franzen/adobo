@@ -116,6 +116,8 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
         raise Exception('"target" must be one of %s' % ', '.join(targets))
     if not target in obj.dr:
         raise Exception('Target not found, run the appropriate assay first.')
+    if marker_size<0:
+        raise Exception('Marker size cannot be negative.')
     E = obj.dr[target]
     if len(obj.clusters) == 0:
         cl = [0]*X.shape[0]
@@ -129,5 +131,5 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
         e = E[idx]
         if cluster_colors == 'adobo':
             col = CLUSTER_COLORS_DEFAULT[i]
-        plt.scatter(e.iloc[:, 0], e.iloc[:, 1], s=1, color=col)
+        plt.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
     plt.show()

@@ -15,6 +15,7 @@ from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import coo_matrix
 import leidenalg as la
 import igraph as ig
+import sys
 
 from ._log import warning
 
