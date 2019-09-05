@@ -90,12 +90,14 @@ class dataset:
         return '%s genes and %s cells' % (genes, cells)
 
     def get_assay(self, name, lang=False):
+        """ Get info if a function has been applied. """
         if lang:
             return ('No','Yes')[name in self._assays]
         else:
             return name in self._assays
     
     def set_assay(self, name, key=1):
+        """ Set the assay that was applied. """
         self._assays[name] = key
     
     @property
@@ -123,6 +125,7 @@ class dataset:
         self._exp_ercc = val
     
     def _describe(self):
+        """ Helper function for __repr__. """
         genes = '{:,}'.format(self.exp_mat.shape[0])
         cells = '{:,}'.format(self.exp_mat.shape[1])
         s = """Description: %s
