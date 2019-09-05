@@ -44,8 +44,12 @@ class dataset:
     dr : `dict`
         A dict of :py:class:`pandas.DataFrame` containing results of dimensionality
         reduction.
-    meta_data : `pandas.DataFrame`
-        A data frame containing single cell meta data on a per-cell level.
+    meta_cells : `pandas.DataFrame`
+        A data frame containing meta data for cells.
+    meta_genes : `pandas.DataFrame`
+        A data frame containing meta data for genes.
+    clusters : `list`
+        Generated clusters.
     desc : `str`
         A string describing the dataset.
     """
@@ -83,6 +87,9 @@ class dataset:
         
         # containing method and components for dimensionality reduction
         self.dr = {}
+        
+        # containing clusters
+        self.clusters = []
     
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
