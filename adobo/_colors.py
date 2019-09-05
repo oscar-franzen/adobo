@@ -1,4 +1,7 @@
-def uniqueColors(n_colors):
+import numpy as np
+from sklearn.cluster import KMeans
+
+def uniqueColors(n_colors, seed=42):
     """
     Generates unique colors.
     C code is borrowed from the R package colorspace and ported to Python.

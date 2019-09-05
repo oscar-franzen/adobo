@@ -169,7 +169,7 @@ Raw read counts matrix contains: %s genes and %s cells
     def __repr__(self):
         return self._describe()
     
-    def add_meta_data(self, dimension, key, data):
+    def add_meta_data(self, axis, key, data):
         """Add meta data to the adobo object
 
         Notes
@@ -178,7 +178,7 @@ Raw read counts matrix contains: %s genes and %s cells
 
         Parameters
         ----------
-        dimension : `{'cells', 'genes'}`
+        axis : `{'cells', 'genes'}`
             Should the data be added to cells or genes?
         key : `str`
             The variable name for your data. No whitespaces and special characters.
@@ -189,9 +189,9 @@ Raw read counts matrix contains: %s genes and %s cells
         -------
         Nothing.
         """
-        if not dimension in ('cells', 'genes'):
+        if not axis in ('cells', 'genes'):
             raise Exception('Dimension must be cells or genes.')
-        if dimension == 'cells':
+        if axis == 'cells':
             self.meta_cells[key] = data
-        elif dimension == 'genes':
+        elif axis == 'genes':
             self.meta_genes[key] = data

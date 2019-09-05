@@ -11,6 +11,8 @@ Functions for plotting scRNA-seq data.
 import numpy as np
 import matplotlib.pyplot as plt
 
+from ._constants import CLUSTER_COLORS_DEFAULT
+
 def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
                            title='sequencing reads'):
     """Generates a bar plot of read counts per cell
@@ -80,24 +82,35 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
 
-def cell_plot(obj, target='tsne', marker_size=0.8):
+def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title=''):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
           A data class object
-    target : `{'irlb', 'svd', 'norm'}`
-        What to run tSNE on.
+    target : `{'tsne', 'umap', 'irlb', 'svd'}`
+        The embedding or dimensional reduction to use. Default: tsne
+    marker_size : `float`
+        The size of the markers.
+    cluster_colors : `{'default', 'random'}` or `list`
+        Can be: (i) a string "adobo" or "random"; (ii) a list of colors with the same
+        length as the number of cells (same order as cells occur in the normalized
+        matrix). If cluster_colors is set to "adobo", then colors are retrieved from
+        :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT` (but if the number of clusters
+        exceed 50, then random colors will be used). Default: adobo
+    title : `str`
+        Title of the plot.
     filename : `str`, optional
         Write plot to file.
-    title : `str`, optional
-        Title of the plot.
 
     Returns
     -------
     None
     """
+    targets = ('tsne', 'umap', 'irlb', 'svd')
+    if not target in targets:
+        raise Exception('"target" must be one of %s' % ', '.join(targets))
     if not target in obj.dr:
         raise Exception('Target not found, run the appropriate assay first.')
     X = obj.dr[target]
