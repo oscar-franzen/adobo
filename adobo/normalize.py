@@ -34,16 +34,16 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     data : :class:`pandas.DataFrame`
         A pandas data frame object containing raw read counts (rows=genes, columns=cells).
     min_cells : `int`
-        Minimum number of cells expressing a gene for the gene to be used (default: 10).
+        Minimum number of cells expressing a gene for the gene to be used. Default: 10
     gmean_eps : `float`
-        A small constant to avoid log(0)=-Inf (default: 1).
+        A small constant to avoid log(0)=-Inf. Default: 1
     n_genes : `int`
-        Number of genes to use when estimating parameters (default: 2000).
+        Number of genes to use when estimating parameters. Default: 2000
     
     References
     ----------
-        [0] https://cran.r-project.org/web/packages/sctransform/index.html
-        [1] https://www.biorxiv.org/content/10.1101/576827v1
+    [0] https://cran.r-project.org/web/packages/sctransform/index.html
+    [1] https://www.biorxiv.org/content/10.1101/576827v1
     
     Returns
     -------
@@ -154,12 +154,11 @@ def clr(data, axis='genes'):
     data : :class:`pandas.DataFrame`
         A pandas data frame object containing raw read counts (rows=genes, columns=cells).
     axis : {'genes', 'cells'}
-        Normalize over genes or cells (default: genes).
+        Normalize over genes or cells. Default: 'genes'
         
     References
     ----------
-    [0] Hafemeister et al. (2019)
-        https://www.biorxiv.org/content/10.1101/576827v1
+    Hafemeister et al. (2019) https://www.biorxiv.org/content/10.1101/576827v1
 
     Returns
     -------
@@ -177,7 +176,7 @@ def clr(data, axis='genes'):
     r = data.apply(lambda x : np.log1p(x/np.exp(sum(np.log1p(x[x>0]))/len(x))), axis=axis)
     return r
 
-def standard(data, scaling_factor):
+def standard(data, scaling_factor=10000):
     """Performs a standard normalization by scaling with the total read depth per cell and
     then multiplying with a scaling factor.
 
@@ -186,12 +185,12 @@ def standard(data, scaling_factor):
     data : :class:`pandas.DataFrame`
         A pandas data frame object containing raw read counts (rows=genes, columns=cells).
     scaling_factor : `int`
-        Scaling factor used to multiply the scaled counts with (default: 10000).
+        Scaling factor used to multiply the scaled counts with. Default: 10000
 
     References
     ----------
-    [0] Evans et al. (2018) Briefings in Bioinformatics
-        https://academic.oup.com/bib/article/19/5/776/3056951
+    Evans et al. (2018) Briefings in Bioinformatics
+    https://academic.oup.com/bib/article/19/5/776/3056951
 
     Returns
     -------
@@ -223,8 +222,8 @@ def rpkm(data, gene_lengths):
 
     References
     ----------
-    [0] Conesa et al. (2016) Genome Biology
-        https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0881-8
+    Conesa et al. (2016) Genome Biology
+    https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0881-8
 
     Returns
     -------
@@ -253,13 +252,13 @@ def rpkm(data, gene_lengths):
     return ret
 
 def fqn(data):
-    """Performs full quantile normalization (FQN). FQN was shown to perform well on single
-    cell data [1].
+    """Performs full quantile normalization (FQN)
     
     Notes
     -----
-    FQN was a popular normalization scheme for microarray data.
-    The present function does not handle ties well.
+    FQN was shown to perform well on single cell data [1] and was a popular
+    normalization scheme for microarray data. The present function does not handle ties
+    well.
 
     Parameters
     ----------
@@ -323,11 +322,12 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
         performs RPKM normalization and requires the `gene_lengths` parameter to be set.
         `fqn` performs a full-quantile normalization. `clr` performs centered log ratio
         normalization. `vsn` performs a variance stabilizing normalization.
+        Default: standard
     log2 : `bool`
-        Perform log2 transformation. Not done if method='vsn' (default: True)
+        Perform log2 transformation. Not applicable if method='vsn'. Default: True
     small_const : `float`
         A small constant to add to expression values to avoid log'ing genes with zero
-        expression (default: 1).
+        expression. Default: 1
     remove_low_qual : `bool`
         Remove low quality cells and uninformative genes identified by prior steps.
         Default: True
@@ -338,13 +338,13 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
         Normally gene lengths should be the combined length of exons for every gene. If
         gene_lengths is a `str` then it is taken as a filename and loaded; first column is
         gene names and second column is the length, field separator is one space.
-        `gene_lengths` needs to be set _only_ if method='rpkm'.
+        `gene_lengths` needs to be set _only_ if method='rpkm'. Default: None
     scaling_factor : `int`
         Scaling factor used to multiply the scaled counts with. Only used for
-        `method="depth"` (default: 10000).
+        `method="depth"`. Default: 10000
     axis : {'genes', 'cells'}
-        Only applicable when `method="clr"`, defines the axis to normalize across,
-        (default: 'genes').
+        Only applicable when `method="clr"`, defines the axis to normalize across.
+        Default: 'genes'
 
     References
     ----------

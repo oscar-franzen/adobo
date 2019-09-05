@@ -23,17 +23,17 @@ def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False
     filename : `str`
         Path to the file containing input data. Should be a matrix where
         columns are cells and rows are genes.
-    sep : `str`, optional
-        Character used to separate fields (default: "\\t").
-    header : `str`, optional
-        If the data file has a header. 0 means yes otherwise None (default: `0`).
-    column_id : {'auto', 'yes', 'no'}, optional
+    sep : `str`
+        Character used to separate fields. Default: "\\t"
+    header : `str`
+        If the data file has a header. 0 means yes otherwise None. Default: 0
+    column_id : {'auto', 'yes', 'no'}
         Whether the header (first line) of the file contains a column ID for the genes. If
-        this is the case, set this to auto or yes, otherwise no (default: auto).
+        this is the case, set this to auto or yes, otherwise no. Default: 'auto'
     desc : `str`
-        A description of the data, optional
-    verbose : `bool`, optional
-        To be verbose or not (default: False).
+        A description of the data
+    verbose : `bool`
+        To be verbose or not. Default: False
 
     Notes
     -----

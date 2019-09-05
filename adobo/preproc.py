@@ -27,13 +27,13 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
     obj : :class:`adobo.data.dataset`
         A data class object.
     minreads : `int`, optional
-        Minimum number of reads per cell required to keep the cell (default: 1000).
+        Minimum number of reads per cell required to keep the cell. Default: 1000
     minexpgenes : `str`, optional
         If this value is a float, then at least that fraction of cells must express the
         gene. If integer, then it denotes the minimum that number of cells must express
-        the gene (default: 0.001).
+        the gene. Default: 0.001
     verbose : `bool`, optional
-        Be verbose or not (default: False).
+        Be verbose or not. Default: False
 
     Returns
     -------
@@ -72,9 +72,9 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', verbose=False):
     obj : :class:`adobo.data.dataset`
         A data class object.
     mito_pattern : `str`
-        A regular expression matching mitochondrial gene symbols (default: "^mt-")
+        A regular expression matching mitochondrial gene symbols. Default: "^mt-"
     verbose : boolean
-        Be verbose or not (default: False).
+        Be verbose or not. Default: False
 
     Returns
     -------
@@ -118,9 +118,9 @@ def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     obj : :class:`adobo.data.dataset`
         A data class object.
     ercc_pattern : `str`, optional
-        A regular expression matching ercc gene symbols (default: "ercc[_-]\S+$").
+        A regular expression matching ercc gene symbols. Default: "ercc[_-]\S+$"
     verbose : `bool`, optional
-        Be verbose or not (default: False).
+        Be verbose or not. Default: False
 
     Returns
     -------
@@ -162,11 +162,11 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         the rRNA genes (one gene per line).
     sd_thres : `float`
         Number of standard deviations to consider significant, i.e. cells are low quality
-        if this. Set to higher to remove fewer cells (default: 3).
+        if this. Set to higher to remove fewer cells. Default: 3
     seed : `float`
-        For the random number generator (default: 42).
+        For the random number generator. Default: 42
     verbose : `bool`
-        Be verbose or not (default: False).
+        Be verbose or not. Default: False
 
     Returns
     -------
