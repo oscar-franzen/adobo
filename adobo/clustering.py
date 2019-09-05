@@ -156,12 +156,14 @@ def _igraph(obj, clust_alg):
     ----------
     obj : :class:`adobo.data.dataset`
         A dataset class object.
-    clust_alg : `{'walktrap', 'spinglass'}`
+    clust_alg : `{'walktrap', 'spinglass', 'multilevel', 'infomap', 'label_prop', 'leading_eigenvector'}`
     
     References
     ----------
     Pons & Latapy (2006) Computing Communities in Large NetworksUsing Random Walks,
         Journal of Graph Algorithms and Applications
+    Reichardt & Bornholdt (2006) Statistical mechanics of community detection,
+        Physical Review E
     
     Returns
     -------
@@ -183,6 +185,18 @@ def _igraph(obj, clust_alg):
     elif clust_alg == 'spinglass':
         z = ig.Graph.community_spinglass(g)
         cl = z.membership
+    elif clust_alg == 'multilevel':
+        z = ig.Graph.community_multilevel(g)
+        cl = z.membership
+    elif clust_alg == 'infomap':
+        z = ig.Graph.community_infomap(g)
+        cl = z.membership
+    elif clust_alg == 'label_prop':
+        z = ig.Graph.community_label_propagation(g)
+        cl = z.membership
+    elif clust_alg == 'leading_eigenvector':
+        z = ig.Graph.community_leading_eigenvector(g)
+        cl = z.membership
     else:
         raise Exception('Unsupported community detection algorithm specified.')
     
@@ -203,7 +217,8 @@ def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
     graph : `{'snn'}`
         Type of graph to generate. Only shared nearest neighbor (snn) supported at the
         moment.
-    clust_alg : `{'leiden', 'walktrap', 'spinglass'}`
+    clust_alg : `{'leiden', 'walktrap', 'spinglass', 'multilevel', 'infomap',
+                  'label_prop', 'leading_eigenvector'}`
         Clustering algorithm to be used.
     prune_snn : `float`
         Threshold for pruning the SNN graph, i.e. the edges  with lower value (Jaccard
@@ -226,7 +241,8 @@ def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
     -------
     Nothing. Modifies the passed object.
     """
-    m = ('leiden', 'walktrap', 'spinglass')
+    m = ('leiden', 'walktrap', 'spinglass', 'multilevel', 'infomap', 'label_prop',
+         'leading_eigenvector')
     if not clust_alg in m:
         raise Exception('Supported community detection algorithms are: %s' % ', '.join(m))
     _knn(obj, k)

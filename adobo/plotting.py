@@ -115,7 +115,9 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
     if not target in targets:
         raise Exception('"target" must be one of %s' % ', '.join(targets))
     if not target in obj.dr:
-        raise Exception('Target not found, run the appropriate assay first.')
+        v = ', '.join(obj.dr.keys())
+        q = 'Target "%s" was not found, the following are available: %s' % (target, v)
+        raise Exception(q)
     if marker_size<0:
         raise Exception('Marker size cannot be negative.')
     E = obj.dr[target]
