@@ -82,7 +82,8 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
 
-def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title=''):
+def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title='',
+              verbose=True):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -101,6 +102,8 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
         exceed 50, then random colors will be used). Default: adobo
     title : `str`
         Title of the plot.
+    verbose : `bool`
+        Be verbose or not. Default: True
     filename : `str`, optional
         Write plot to file.
 
@@ -113,7 +116,18 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
         raise Exception('"target" must be one of %s' % ', '.join(targets))
     if not target in obj.dr:
         raise Exception('Target not found, run the appropriate assay first.')
-    X = obj.dr[target]
+    E = obj.dr[target]
+    if len(obj.clusters) == 0:
+        cl = [0]*X.shape[0]
+        if verbose:
+            print('Clustering has not been performed. Plotting anyway.')
+    else:
+        cl = obj.clusters[len(obj.clusters)-1]
     plt.clf()
-    plt.scatter(X.iloc[:, 0], X.iloc[:, 1], s=1, color='black')
+    for i in range(len(np.unique(cl))):
+        idx = np.array(cl) == i
+        e = E[idx]
+        if cluster_colors == 'adobo':
+            col = CLUSTER_COLORS_DEFAULT[i]
+        plt.scatter(e.iloc[:, 0], e.iloc[:, 1], s=1, color=col)
     plt.show()
