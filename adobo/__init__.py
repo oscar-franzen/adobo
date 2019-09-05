@@ -14,6 +14,7 @@ from . import normalize
 from . import hvg
 from . import dr
 from . import bio
+from . import clustering
 
 debug = 0
 
