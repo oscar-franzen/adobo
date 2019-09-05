@@ -80,7 +80,7 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
 
-def cell_plot(obj, target='tsne'):
+def cell_plot(obj, target='tsne', marker_size=0.8):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -92,7 +92,7 @@ def cell_plot(obj, target='tsne'):
     filename : `str`, optional
         Write plot to file.
     title : `str`, optional
-        Title of the plot (default: "sequencing reads").
+        Title of the plot.
 
     Returns
     -------

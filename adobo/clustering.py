@@ -146,7 +146,6 @@ def _leiden(obj, res=0.8, seed=42):
     part = la.RBERVertexPartition
     cl = la.find_partition(g, part, n_iterations=10, resolution_parameter=res, seed=seed)
     obj.clusters.append(cl.membership)
-    #self.leiden_prep()
 
 def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
              res=0.8, seed=42, verbose=False):
@@ -191,3 +190,4 @@ def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
     _snn(obj, k, verbose)
     if clust_alg == 'leiden':
         _leiden(obj, res, seed)
+    obj.set_assay(sys._getframe().f_code.co_name)
