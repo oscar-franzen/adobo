@@ -304,7 +304,7 @@ def fqn(data):
     df = df.transpose()
     return df
 
-def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells=True,
+def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
          gene_lengths=None, scaling_factor=10000, axis='genes'):
     r"""Normalizes gene expression data
     
@@ -328,16 +328,17 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     small_const : `float`
         A small constant to add to expression values to avoid log'ing genes with zero
         expression (default: 1).
-    remove_low_qual_cells : `bool`
-        Remove low quality cells identified using :py:meth:`adobo.preproc.find_low_quality_cells`.
+    remove_low_qual : `bool`
+        Remove low quality cells and uninformative genes identified by prior steps.
+        Default: True
     gene_lengths : :class:`pandas.Series` or `str`
-        A :class:`pandas.Series` containing the gene lengths in base pairs and gene names set as index. The
-        names must match the gene names used in `data` (the order does not need to match
-        and any symbols not found in the data will be discarded). Normally gene lengths
-        should be the combined length of exons for every gene. If gene_lengths is a `str`
-        then it is taken as a filename and loaded; first column is gene names and second
-        column is the length, field separator is one space. gene_lengths is only needed
-        if method='rpkm'.
+        A :class:`pandas.Series` containing the gene lengths in base pairs and gene names
+        set as index. The names must match the gene names used in `data` (the order does
+        not need to match and any symbols not found in the data will be discarded).
+        Normally gene lengths should be the combined length of exons for every gene. If
+        gene_lengths is a `str` then it is taken as a filename and loaded; first column is
+        gene names and second column is the length, field separator is one space.
+        `gene_lengths` needs to be set _only_ if method='rpkm'.
     scaling_factor : `int`
         Scaling factor used to multiply the scaled counts with. Only used for
         `method="depth"` (default: 10000).
@@ -362,24 +363,23 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual_cells
     -------
     Nothing. Modifies the passed object.
     """
-    data = obj.exp_mat
-    if remove_low_qual_cells:
-        if not obj.get_assay('find_low_quality_cells'):
-            warning('remove_low_qual_cells set to True but find_low_quality_cells() has \
-not been performed')
-        else:
-            data = data.drop(obj.low_quality_cells, axis=1)
     # Check arguments
     if method == 'rpkm' and gene_lengths == None:
         raise Exception('The `gene_lengths` parameter needs to be set when method is RPKM.')
-    
+    data = obj.exp_mat
+    if remove_low_qual:
+        # Remove low quality cells
+        remove = obj.meta_cells.status[obj.meta_cells.status!='OK']
+        data = data.drop(remove.index, axis=1)
+        # Remove uninformative genes
+        remove = obj.meta_genes.status[obj.meta_genes.status!='OK']
+        data = data.drop(remove.index, axis=0)
     # Normalize ercc if available, because some HVG methods require normalized ercc spikes
     if obj._exp_ercc.shape[0] > 0:
         # some cells might have been removed in previous steps
         obj._exp_ercc = obj._exp_ercc.iloc[:, obj._exp_ercc.columns.isin(data.columns)]
         obj._exp_ercc = obj._exp_ercc.reindex(data.columns, axis=1)
         data = pd.concat([data, obj._exp_ercc])
-        
     if method == 'standard':
         norm = standard(data, scaling_factor)
         norm_method='standard'
@@ -397,7 +397,7 @@ not been performed')
         norm_method='vsn'
     else:
         raise Exception('Unknown normalization method.')
-    if log2 and method!='vsn':
+    if log2 and method != 'vsn':
         norm = np.log2(norm+small_const)
     obj.norm_log2 = log2
     if obj._exp_ercc.shape[0] > 0:

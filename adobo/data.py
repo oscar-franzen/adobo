@@ -126,10 +126,17 @@ class dataset:
         genes = '{:,}'.format(self.exp_mat.shape[0])
         cells = '{:,}'.format(self.exp_mat.shape[1])
         s = """Description: %s
-Raw read counts matrix contains: %s genes and %s cells""" % (self.desc, genes, cells)
+Raw read counts matrix contains: %s genes and %s cells
+""" % (self.desc, genes, cells)
 
         for key in self._assays:
             s += 'Done: %s (%s)\n' % (key, self._assays[key])
+        
+        if self.norm.shape[0] > 0:
+            genes = '{:,}'.format(self.norm.shape[0])
+            cells = '{:,}'.format(self.norm.shape[1])
+            q = (genes, cells)
+            s += "Normalized gene expression matrix contains: %s genes and %s cells" % q
         return s
     
     def assays(self):
