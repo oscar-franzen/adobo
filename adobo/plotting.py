@@ -84,7 +84,7 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
     plt.close()
 
 def cell_viz(obj, target='tsne', filename=None, marker_size=0.8, cluster_colors='adobo',
-             title='', verbose=True):
+             title='', legend=True, verbose=True):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -105,6 +105,8 @@ def cell_viz(obj, target='tsne', filename=None, marker_size=0.8, cluster_colors=
         exceed 50, then random colors will be used). Default: adobo
     title : `str`
         Title of the plot.
+    legend : `bool`
+        Add legend or not. Default: True
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -141,6 +143,9 @@ def cell_viz(obj, target='tsne', filename=None, marker_size=0.8, cluster_colors=
         e = E[idx]
         col = colors[i]
         plt.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
+    if legend:
+        plt.legend(list(range(n_clusters)), loc='upper left', markerscale=5, bbox_to_anchor=(1, 1))
+    plt.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
     else:
