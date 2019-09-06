@@ -48,7 +48,7 @@ def irlb(data_norm, ncomp=75, seed=42):
     `pd.DataFrame`
         A py:class:`pandas.DataFrame` containing the components (columns).
     `pd.DataFrame`
-        A py:class:`pandas.DataFrame` containing the contributions of every gene (columns).
+        A py:class:`pandas.DataFrame` containing the contributions of every gene (rows).
     """
     inp = data_norm
     lanc = irlbpy.lanczos(inp, nval=ncomp, maxit=1000, seed=seed)
@@ -80,7 +80,7 @@ def svd(data_norm, ncomp=75):
     `pd.DataFrame`
         A py:class:`pandas.DataFrame` containing the components (columns).
     `pd.DataFrame`
-        A py:class:`pandas.DataFrame` containing the contributions of every gene (columns).
+        A py:class:`pandas.DataFrame` containing the contributions of every gene (rows).
     """
     inp = data_norm
     inp = inp.transpose()
