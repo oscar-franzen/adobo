@@ -166,25 +166,26 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False,
     
     Notes
     -----
-    Calls :py:func:`sklearn.manifold.TSNE`.
+    It is recommended to perform this function on data in PCA space. This function calls
+    :py:func:`sklearn.manifold.TSNE`, and any additional parameters will be passed to it.
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
     target : `{'irlb', 'svd', 'norm'}`
-        What to run tSNE on.
+        What to run tSNE on. Default: 'irlb'
     perplexity : `float`
         From [1]: The perplexity is related to the number of nearest neighbors that
         is used in other manifold learning algorithms. Larger datasets usually require
         a larger perplexity. Consider selecting a value between 5 and 50. Different
-        values can result in significanlty different results.
+        values can result in significanlty different results. Default: 30
     n_iter : `int`
-        Number of iterations.
+        Number of iterations. Default: 2000
     seed : `int`
-        For reproducibility.
+        For reproducibility. Default: 42
     verbose : `bool`
-        Be verbose.
+        Be verbose. Default: False
 
     References
     ----------
@@ -207,6 +208,8 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False,
             raise Exception(e)
         else:
             X = obj.dr[target]
+    if verbose:
+        print('Running tSNE with perplexity %s' % perplexity)
     tsne = sklearn.manifold.TSNE(n_components=2,
                                  n_iter=n_iter,
                                  perplexity=perplexity,

@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
+from ._colors import unique_colors
 
 def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
                            title='sequencing reads'):
@@ -82,8 +83,8 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
 
-def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title='',
-              verbose=True):
+def cell_viz(obj, target='tsne', filename=None, marker_size=0.8, cluster_colors='adobo',
+             title='', verbose=True):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -92,10 +93,12 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
           A data class object
     target : `{'tsne', 'umap', 'irlb', 'svd'}`
         The embedding or dimensional reduction to use. Default: tsne
+    filename : `str`, optional
+        Name of an output file instead of showing on screen.
     marker_size : `float`
         The size of the markers.
     cluster_colors : `{'default', 'random'}` or `list`
-        Can be: (i) a string "adobo" or "random"; (ii) a list of colors with the same
+        Can be: (i) "adobo" or "random"; (ii) a list of colors with the same
         length as the number of cells (same order as cells occur in the normalized
         matrix). If cluster_colors is set to "adobo", then colors are retrieved from
         :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT` (but if the number of clusters
@@ -104,8 +107,6 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
         Title of the plot.
     verbose : `bool`
         Be verbose or not. Default: True
-    filename : `str`, optional
-        Write plot to file.
 
     Returns
     -------
@@ -122,19 +123,28 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
         raise Exception('Marker size cannot be negative.')
     E = obj.dr[target]
     if len(obj.clusters) == 0:
-        cl = [0]*X.shape[0]
+        cl = [0]*E.shape[0]
         if verbose:
             print('Clustering has not been performed. Plotting anyway.')
     else:
         cl = obj.clusters[len(obj.clusters)-1]['cl']
+    n_clusters = len(np.unique(cl))
+    if cluster_colors == 'adobo':
+        colors = CLUSTER_COLORS_DEFAULT
+    elif cluster_colors == 'random':
+        colors = unique_colors(n_clusters)
+    else:
+        colors = cluster_colors
     plt.clf()
-    for i in range(len(np.unique(cl))):
+    for i in range(n_clusters):
         idx = np.array(cl) == i
         e = E[idx]
-        if cluster_colors == 'adobo':
-            col = CLUSTER_COLORS_DEFAULT[i]
+        col = colors[i]
         plt.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
-    plt.show()
+    if filename != None:
+        plt.savefig(filename, **args)
+    else:
+        plt.show()
 
 def pca_contributors(obj, target='irlb', dim=range(0,5), top=10, filename=None,
                      fontsize=8, **args):
@@ -142,7 +152,8 @@ def pca_contributors(obj, target='irlb', dim=range(0,5), top=10, filename=None,
     
     Note
     ----
-    Additional parameters are passed into :py:func:`matplotlib.pyplot.savefig`.
+    Genes are ranked by their absolute value. Additional parameters are passed into
+    :py:func:`matplotlib.pyplot.savefig`.
     
     Parameters
     ----------

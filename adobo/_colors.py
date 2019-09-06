@@ -1,21 +1,28 @@
 import numpy as np
 from sklearn.cluster import KMeans
 
-def uniqueColors(n_colors, seed=42):
+def unique_colors(n_colors, seed=None):
     """
-    Generates unique colors.
+    Generates unique colors
+    
+    Note
+    ----
     C code is borrowed from the R package colorspace and ported to Python.
     The kmeans concept is borrowed from the R package randomcoloR.
 
-    Parameters:
-    n_colors (int): Number of colors to generate
+    Parameters
+    ----------
+    n_colors : `int`
+        Number of colors to generate
+    seed : `int`
+        For reproducibility.
 
-    Returns:
-    np.array: Colors as hex values
+    Returns
+    -------
+    list
+        Colors as hex values
     """
-    
-    np.random.seed(42)
-
+    np.random.seed(seed)
     # generate an array with random values
     color_space = np.random.rand(2000, 3)
 
