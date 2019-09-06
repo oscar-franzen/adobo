@@ -1,3 +1,14 @@
+# adobo.
+#
+# Description: An analysis framework for scRNA-seq data.
+#  How to use: https://github.com/oscar-franzen/adobo/
+#     Contact: Oscar Franzen <p.oscar.franzen@gmail.com>
+"""
+Summary
+-------
+Internal functions used for adobo colors.
+"""
+
 import numpy as np
 from sklearn.cluster import KMeans
 
