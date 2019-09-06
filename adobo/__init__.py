@@ -22,6 +22,7 @@ debug = 0
 __author__ = 'Oscar Franzen'
 __email__ = 'p.oscar.franzen@gmail.com'
 __version__ = '0.1'
+__url__ = 'https://oscar-franzen.github.io/adobo/'
 
 # color exceptions in the terminal
 def excepthook(type, value, tb):
@@ -39,3 +40,5 @@ def excepthook(type, value, tb):
     sys.stderr.write(highlight(tbtext, lexer, formatter))
 
 sys.excepthook = excepthook
+
+print('adobo version %s. Documentation: %s' % (__version__, __url__))
