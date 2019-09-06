@@ -144,7 +144,8 @@ def cell_viz(obj, target='tsne', filename=None, marker_size=0.8, cluster_colors=
         col = colors[i]
         plt.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
     if legend:
-        plt.legend(list(range(n_clusters)), loc='upper left', markerscale=5, bbox_to_anchor=(1, 1))
+        plt.legend(list(range(n_clusters)), loc='upper left', markerscale=5,
+                   bbox_to_anchor=(1, 1))
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
