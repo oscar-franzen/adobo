@@ -45,8 +45,8 @@ class dataset:
         A dict of :py:class:`pandas.DataFrame` containing components from dimensionality
         reduction.
     dr_gene_contr : `dict`
-        A dict of :py:class:`pandas.DataFrame` containing variable controbution to each
-        component. Useful for understanding the contribution of each gene to the PCA
+        A dict of :py:class:`pandas.DataFrame` containing variable contributions to each
+        component. Useful for understanding the contribution of each gene to PCA
         components.
     meta_cells : `pandas.DataFrame`
         A data frame containing meta data for cells.
