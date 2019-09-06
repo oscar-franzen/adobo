@@ -42,8 +42,12 @@ class dataset:
     hvg : `list`
         Containing highly variable genes.
     dr : `dict`
-        A dict of :py:class:`pandas.DataFrame` containing results of dimensionality
+        A dict of :py:class:`pandas.DataFrame` containing components from dimensionality
         reduction.
+    dr_gene_contr : `dict`
+        A dict of :py:class:`pandas.DataFrame` containing variable controbution to each
+        component. Useful for understanding the contribution of each gene to the PCA
+        components.
     meta_cells : `pandas.DataFrame`
         A data frame containing meta data for cells.
     meta_genes : `pandas.DataFrame`
@@ -85,8 +89,10 @@ class dataset:
         self.meta_genes['mitochondrial'] = [None]*raw_mat.shape[0]
         self.meta_genes['ERCC'] = [None]*raw_mat.shape[0]
         
-        # containing method and components for dimensionality reduction
+        # containing components from dimensionality reduction techniques
         self.dr = {}
+        # containing variable contribution to components
+        self.dr_gene_contr = {}
         
         # containing clusters
         self.clusters = []

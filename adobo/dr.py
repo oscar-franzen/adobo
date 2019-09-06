@@ -47,32 +47,40 @@ def irlb(data_norm, ncomp=75, seed=42):
     -------
     `pd.DataFrame`
         A py:class:`pandas.DataFrame` containing the components (columns).
+    `pd.DataFrame`
+        A py:class:`pandas.DataFrame` containing the contributions of every gene (columns).
     """
     inp = data_norm
     lanc = irlbpy.lanczos(inp, nval=ncomp, maxit=1000, seed=seed)
     # weighing by var
     comp = np.dot(lanc.V, np.diag(lanc.s))
     comp = pd.DataFrame(comp)
-    return comp
+    # gene contributions
+    contr = pd.DataFrame(np.abs(lanc.U), index=inp.index)
+    return comp, contr
 
 def svd(data_norm, ncomp=75):
-    """PCA via SVD
+    """Principal component analysis via singular value decomposition
     
     Parameters
     ----------
     data_norm : :class:`pandas.DataFrame`
-        A pandas data frame containing normalized gene expression data.
+        A pandas data frame containing normalized gene expression data. Preferrably this
+        should be a subset of the normalized gene expression matrix containing highly
+        variable genes.
     ncomp : `int`
         Number of components to return, optional.
     
     References
     ----------
-    https://stats.stackexchange.com/questions/79043/why-pca-of-data-by-means-of-svd-of-the-data
+    (SE) https://tinyurl.com/yyt6df5x
     
     Returns
     -------
     `pd.DataFrame`
         A py:class:`pandas.DataFrame` containing the components (columns).
+    `pd.DataFrame`
+        A py:class:`pandas.DataFrame` containing the contributions of every gene (columns).
     """
     inp = data_norm
     inp = inp.transpose()
@@ -81,10 +89,10 @@ def svd(data_norm, ncomp=75):
     d = s[1]
     s_d = d/np.sqrt(inp.shape[0]-1)
     retx = inp.dot(v)
-    retx = retx[:, 0:ncomp]
+    retx = retx.iloc[:, 0:ncomp]
     comp = retx
-    comp = pd.DataFrame(comp)
-    return comp
+    contr = pd.DataFrame(np.abs(v[:, 0:ncomp]), index=inp.columns)
+    return comp, contr
 
 def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False, seed=42):
     """Principal Component Analysis
@@ -119,7 +127,9 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
 
     Returns
     -------
-    Nothing. Modifies the passed object.
+    Nothing. Modifies the passed object. Results are stored in two dictonaries in the
+    passed object: `dr` (containing the components) and `dr_gene_contr` (containing
+    gene contributions to each component)
     """
     data = obj.norm
     if data.shape[0] == 0:
@@ -129,22 +139,25 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
         data = data[data.index.isin(hvg)]
         if verbose:
             print('Only using HVG genes (%s).' % data.shape[0])
-    data = data.transpose() # cells as rows and genes as labels
     if scale:
-        data = sklearn_scale(data, axis=0,   # over genes, i.e. features (columns)
-                             with_mean=True, # subtracting the column means
-                             with_std=True)  # scale the data to unit variance
-        data = data.transpose()
+        d_scaled = sklearn_scale(data.transpose(),  # cells as rows and genes as labels
+                                 axis=0,            # over genes, i.e. features (columns)
+                                 with_mean=True,    # subtracting the column means
+                                 with_std=True)     # scale the data to unit variance
+        d_scaled = pd.DataFrame(d_scaled.transpose(), index=data.index)
     if allgenes and verbose:
         print('Using all genes (%s).' % data.shape[0])
+    if verbose:
+        print('Running PCA using the %s method' % method)
     if method == 'irlb':
-        ret = irlb(data, ncomp, seed)
+        comp, contr = irlb(data, ncomp, seed)
     elif method == 'svd':
-        ret = svd(data, ncomp)
+        comp, contr = svd(data, ncomp)
     else:
         raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
-    ret.index = obj.norm.columns
-    obj.dr[method] = ret
+    #ret.index = obj.norm.columns
+    obj.dr[method] = comp
+    obj.dr_gene_contr[method] = contr
     obj.set_assay(sys._getframe().f_code.co_name, method)
 
 def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False, **args):
@@ -207,7 +220,20 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False,
 
 def umap(obj, target='irlb', seed=42, verbose=False, **args):
     """
-    Projects data to a two dimensional space using the UMAP algorithm.
+    Projects data to a two dimensional space using the UMAP algorithm, a non-linear
+    data reduction algorithm.
+    
+    Notes
+    -----
+    The UMAP output can be tweaked using these parameters (but there are also several
+    other parameters that can influence the outcome, see `help(umap.UMAP)`:
+    `n_neighbors`, Default: 15
+        This parameter controls the balances between local versus global structure.
+    `min_dist`, Default: 0.1
+        Controls how tightly points are packed together.
+    `metric`, Default: 'euclidean'
+        The metric to use to compute distances in high dimensional space.
+        
 
     Parameters
     ----------
