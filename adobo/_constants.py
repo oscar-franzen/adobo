@@ -23,3 +23,6 @@ CLUSTER_COLORS_DEFAULT = ['#5EECD9', '#E3B7E2', '#9BF236', '#DD61DF', '#D9BC96',
        '#59A78B', '#E197C4', '#54EA5D', '#E27742', '#5F6EE7', '#E6B8BB',
        '#84A1B2', '#B7EDA1', '#7FAADE', '#C3DEE4', '#AF7AE7', '#827A3E',
        '#A8B73F', '#E9E7DC']
+
+# for barplots
+YLW_CURRY='#fcc603'

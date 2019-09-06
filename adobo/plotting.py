@@ -11,7 +11,7 @@ Functions for plotting scRNA-seq data.
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ._constants import CLUSTER_COLORS_DEFAULT
+from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 
 def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
                            title='sequencing reads'):
@@ -135,3 +135,62 @@ def cell_plot(obj, target='tsne', marker_size=0.8, cluster_colors='adobo', title
             col = CLUSTER_COLORS_DEFAULT[i]
         plt.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
     plt.show()
+
+def pca_contributors(obj, target='irlb', dim=range(0,5), top=10, filename=None,
+                     fontsize=8, **args):
+    """Examine the top contributing genes for each PCA component
+    
+    Note
+    ----
+    Additional parameters are passed into :py:func:`matplotlib.pyplot.savefig`.
+    
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A data class object
+    target : `{'irlb', 'svd'}`
+        The dimensional reduction to use. Default: irlb
+    dim : :py:class:`range`
+        Specifies the components to plot. For example: range(0,5) specifies the first five.
+    top : `int`
+        Specifies the number of top scoring genes to include. Default: 10
+    fontsize : `int`
+        Specifies font size. Default: 8
+    color : `str`
+        Color of the bars. As a string or hex code. Default: "#fcc603"
+    filename : `str`, optional
+        Write to a file instead of showing the plot on screen.
+        
+    Returns
+    -------
+    None
+    """
+    if not target in obj.dr_gene_contr:
+        raise Exception('Target %s not found' % target)
+    if dim.stop > obj.dr_gene_contr[target].shape[1]:
+        raise Exception('Number of requested dimensions cannot be higher than the number \
+of generated PCA components.')
+    contr = obj.dr_gene_contr[target][dim]
+    
+    plt.rcdefaults()
+    f, ax = plt.subplots(1, contr.shape[1])
+    f.tight_layout()
+    f.subplots_adjust(wspace=1)
+    
+    #f.suptitle('%s' % target)
+    for k, d in contr.iteritems():
+        d = d.sort_values(ascending=False)
+        d = d.head(top)
+        y_pos = np.arange(len(d))
+        ax[k].barh(y_pos, d.values, color=YLW_CURRY)
+        ax[k].set_yticks(y_pos)
+        ax[k].set_yticklabels(d.index.values, fontsize=fontsize)
+        ax[k].set_xlabel('abs(PCA score)', fontsize=fontsize)
+        ax[k].set_title('comp. %s' % (k+1), fontsize=fontsize)
+        ax[k].invert_yaxis() # labels read top-to-bottom
+    
+    f.subplots_adjust(left=0.1, bottom=0.1)
+    if filename != None:
+        plt.savefig(filename, **args)
+    else:
+        plt.show()
