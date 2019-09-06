@@ -171,6 +171,8 @@ Raw read counts matrix contains: %s genes and %s cells
             print('Log2 transformed? %s' % (self.norm_log2))
         s = 'Has HVG discovery been performed? %s' % self.get_assay('find_hvg', lang=True)
         print(s)
+        cd = ', '.join([ item['algo'] for item in self.clusters ])
+        print('The following community detection methods have been invoked: %s' % cd)
 
     def __repr__(self):
         return self._describe()

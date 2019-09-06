@@ -83,7 +83,7 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
 
-def cell_viz(obj, target='tsne', filename=None, marker_size=0.8, cluster_colors='adobo',
+def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, cluster_colors='adobo',
              title='', legend=True, verbose=True):
     """Generates a 2d scatter plot from an embedding
 
@@ -91,8 +91,8 @@ def cell_viz(obj, target='tsne', filename=None, marker_size=0.8, cluster_colors=
     ----------
     obj : :class:`adobo.data.dataset`
           A data class object
-    target : `{'tsne', 'umap', 'irlb', 'svd'}`
-        The embedding or dimensional reduction to use. Default: tsne
+    reduction : `{'tsne', 'umap', 'irlb', 'svd'}`
+        The dimensional reduction to use. Default: tsne
     filename : `str`, optional
         Name of an output file instead of showing on screen.
     marker_size : `float`
@@ -114,16 +114,16 @@ def cell_viz(obj, target='tsne', filename=None, marker_size=0.8, cluster_colors=
     -------
     None
     """
-    targets = ('tsne', 'umap', 'irlb', 'svd')
-    if not target in targets:
-        raise Exception('"target" must be one of %s' % ', '.join(targets))
-    if not target in obj.dr:
-        v = ', '.join(obj.dr.keys())
-        q = 'Target "%s" was not found, the following are available: %s' % (target, v)
+    available_reductions = ('tsne', 'umap', 'irlb', 'svd')
+    if not reduction in available_reductions:
+        raise Exception('`reduction` must be one of %s' % ', '.join(available_reductions))
+    if not reduction in obj.dr:
+        t = (reduction, ', '.join(obj.dr.keys()))
+        q = 'Reduction "%s" was not found, the following have been generated: %s' % t
         raise Exception(q)
     if marker_size<0:
         raise Exception('Marker size cannot be negative.')
-    E = obj.dr[target]
+    E = obj.dr[reduction]
     if len(obj.clusters) == 0:
         cl = [0]*E.shape[0]
         if verbose:
