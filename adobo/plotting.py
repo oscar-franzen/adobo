@@ -83,8 +83,8 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
 
-def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, cluster_colors='adobo',
-             title='', legend=True, verbose=True):
+def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, font_size=8,
+             cluster_colors='adobo', title='', legend=True, verbose=True):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -97,6 +97,8 @@ def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, cluster_colo
         Name of an output file instead of showing on screen.
     marker_size : `float`
         The size of the markers.
+    font_size : `float`
+        Font size. Default: 8
     cluster_colors : `{'default', 'random'}` or `list`
         Can be: (i) "adobo" or "random"; (ii) a list of colors with the same
         length as the number of cells (same order as cells occur in the normalized
@@ -138,15 +140,18 @@ def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, cluster_colo
     else:
         colors = cluster_colors
     plt.clf()
+    f, ax = plt.subplots(1, 1)
     for i in range(n_clusters):
         idx = np.array(cl) == i
         e = E[idx]
         col = colors[i]
-        plt.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
+        ax.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
     if legend:
-        plt.legend(list(range(n_clusters)), loc='upper left', markerscale=5,
+        ax.legend(list(range(n_clusters)), loc='upper left', markerscale=5,
                    bbox_to_anchor=(1, 1))
-    plt.tight_layout()
+    ax.set_ylabel('Component 2', size=font_size)
+    ax.set_xlabel('Component 1', size=font_size)
+    f.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
     else:
@@ -205,7 +210,6 @@ of generated PCA components.')
         ax[k].set_xlabel('abs(PCA score)', fontsize=fontsize)
         ax[k].set_title('comp. %s' % (k+1), fontsize=fontsize)
         ax[k].invert_yaxis() # labels read top-to-bottom
-    
     f.subplots_adjust(left=0.1, bottom=0.1)
     if filename != None:
         plt.savefig(filename, **args)
