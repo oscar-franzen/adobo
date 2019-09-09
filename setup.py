@@ -17,7 +17,7 @@ setup(
         'leidenalg >= 0.7.0',
         'python-igraph >= 0.7.1',
         'scipy >= 1.3.0',
-        'umap >= 0.3.9',
+        'umap-learn >= 0.3.9',
         'statsmodels >= 0.10.1',
         'matplotlib >= 3.1.1'
     ],
