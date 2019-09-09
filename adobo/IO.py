@@ -33,7 +33,7 @@ def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False
     desc : `str`
         A description of the data
     save_filename : `str`
-        An output filename used when calling :py:func:`adobo.dataset.data.save()`.
+        An output filename used when calling :py:func:`adobo.data.dataset.save()`.
     verbose : `bool`
         To be verbose or not. Default: False
 
