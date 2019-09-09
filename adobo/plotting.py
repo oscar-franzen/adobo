@@ -10,6 +10,7 @@ Functions for plotting scRNA-seq data.
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
@@ -37,12 +38,16 @@ def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
     cell_counts = exp_mat.sum(axis=0)
     plt.clf()
     colors = [barcolor]*(len(cell_counts))
+    
+    plt.gca().get_yaxis().set_major_formatter(
+        matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
 
     plt.bar(np.arange(len(cell_counts)), sorted(cell_counts, reverse=True),
             color=colors)
     plt.ylabel('raw read counts')
     plt.xlabel('cells (sorted on highest to lowest)')
     plt.title(title)
+    plt.tight_layout()
     if filename:
         plt.savefig(filename, bbox_inches='tight')
     else:
