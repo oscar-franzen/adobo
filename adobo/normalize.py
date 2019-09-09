@@ -400,4 +400,5 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
         # Remove ERCC so that they are not included in downstream analyses
         norm = norm[np.logical_not(obj.meta_genes.ERCC)]
     obj.norm = norm
+    obj.norm_method = norm_method
     obj.set_assay(sys._getframe().f_code.co_name, norm_method)
