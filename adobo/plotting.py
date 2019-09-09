@@ -15,7 +15,7 @@ import matplotlib
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
-def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
+def reads_per_cell(obj, barcolor='#E69F00', filename=None,
                            title='sequencing reads'):
     """Generates a bar plot of read counts per cell
 
@@ -52,7 +52,7 @@ def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
     
-def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
+def genes_per_cell(obj, barcolor='#E69F00', filename=None,
                            title='expressed genes'):
     """Generates a bar plot of number of expressed genes per cell
 
@@ -87,8 +87,9 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
 
-def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, font_size=8,
-             cluster_colors='adobo', title='', legend=True, verbose=True):
+def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
+             marker_size=0.8, font_size=8, cluster_colors='adobo', title='', legend=True,
+             verbose=True):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -97,6 +98,9 @@ def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, font_size=8,
           A data class object
     reduction : `{'tsne', 'umap', 'irlb', 'svd'}`
         The dimensional reduction to use. Default: tsne
+    what_to_color : `{'clusters', 'nothing'}`
+        Specifies what to color. If this is 'clusters', then clustering results will be
+        colored. 'nothing' indicates not to color anything. Default: 'clusters'
     filename : `str`, optional
         Name of an output file instead of showing on screen.
     marker_size : `float`
@@ -120,6 +124,8 @@ def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, font_size=8,
     -------
     None
     """
+    if not what_to_color in ('clusters', 'nothing'):
+        raise Exception('`what_to_color` can be "clusters" or "nothing".')
     available_reductions = ('tsne', 'umap', 'irlb', 'svd')
     if not reduction in available_reductions:
         raise Exception('`reduction` must be one of %s' % ', '.join(available_reductions))
@@ -130,15 +136,17 @@ def cell_viz(obj, reduction='tsne', filename=None, marker_size=0.8, font_size=8,
     if marker_size<0:
         raise Exception('Marker size cannot be negative.')
     E = obj.dr[reduction]
-    if len(obj.clusters) == 0:
+    if what_to_color == 'nothing' or len(obj.clusters) == 0:
         cl = [0]*E.shape[0]
         if verbose:
             print('Clustering has not been performed. Plotting anyway.')
-    else:
+    elif what_to_color == 'clusters':
         cl = obj.clusters[len(obj.clusters)-1]['cl']
     n_clusters = len(np.unique(cl))
     if cluster_colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
+        if what_to_color == 'nothing':
+            colors = ['black']
     elif cluster_colors == 'random':
         colors = unique_colors(n_clusters)
     else:
