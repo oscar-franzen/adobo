@@ -77,11 +77,11 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
             genes_remove = genes_exp<minexpgenes
             obj.meta_genes.status[genes_remove] = 'EXCLUDE'
     obj.set_assay(sys._getframe().f_code.co_name)
+    r = np.sum(obj.meta_cells.status=='EXCLUDE')
     if verbose:
-        r = np.sum(obj.meta_cells.status[cells_remove]=='EXCLUDE')
         s = '%s cells and %s genes were removed'
         print(s % (r, np.sum(genes_remove)))
-    return np.sum(cells_remove), np.sum(genes_remove)
+    return r, np.sum(genes_remove)
 
 def find_mitochondrial_genes(obj, mito_pattern='^mt-', verbose=False):
     """Find mitochondrial genes
