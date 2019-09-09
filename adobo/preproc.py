@@ -19,7 +19,22 @@ def _warn(*args, **kwargs):
 import warnings
 warnings.warn = _warn
 
-def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
+def reset_filters(obj):
+    """Resets cell and gene filters
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    obj.meta_cells.status[obj.meta_cells.status!='OK'] = 'OK'
+    obj.meta_genes.status[obj.meta_genes.status!='OK'] = 'OK'
+
+def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=False):
     """Removes cells with too few reads and genes with very low expression
 
     Parameters
@@ -28,6 +43,8 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
         A data class object.
     minreads : `int`, optional
         Minimum number of reads per cell required to keep the cell. Default: 1000
+    maxreads : `int`, optional
+        Set a maximum number of reads allowed. Useful for filtering out suspected doublets.
     minexpgenes : `str`, optional
         If this value is a float, then at least that fraction of cells must express the
         gene. If integer, then it denotes the minimum that number of cells must express
@@ -46,8 +63,9 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
     cell_counts = obj.meta_cells.total_reads
     cells_remove = cell_counts < minreads
     obj.meta_cells.status[cells_remove] = 'EXCLUDE'
-    #exp_mat = exp_mat[exp_mat.columns[r]]
-    #cr = np.sum(np.logical_not(r))
+    if maxreads:
+        cells_remove = cell_counts > maxreads
+        obj.meta_cells.status[cells_remove] = 'EXCLUDE'
     genes_removed = 0
     if minexpgenes > 0:
         if type(minexpgenes) == int:
@@ -60,8 +78,9 @@ def simple_filter(obj, minreads=1000, minexpgenes=0.001, verbose=False):
             obj.meta_genes.status[genes_remove] = 'EXCLUDE'
     obj.set_assay(sys._getframe().f_code.co_name)
     if verbose:
+        r = np.sum(obj.meta_cells.status[cells_remove]=='EXCLUDE')
         s = '%s cells and %s genes were removed'
-        print(s % (np.sum(cells_remove), np.sum(genes_remove)))
+        print(s % (r, np.sum(genes_remove)))
     return np.sum(cells_remove), np.sum(genes_remove)
 
 def find_mitochondrial_genes(obj, mito_pattern='^mt-', verbose=False):
