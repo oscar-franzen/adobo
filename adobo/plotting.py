@@ -138,30 +138,35 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
     if marker_size<0:
         raise Exception('Marker size cannot be negative.')
     E = obj.dr[reduction]
-    if what_to_color == 'nothing' or len(obj.clusters) == 0:
+    if what_to_color == 'nothing':
         cl = [0]*E.shape[0]
-        if what_to_color == 'clusters' and verbose:
-            print('Clustering has not been performed. Plotting anyway.')
     elif what_to_color == 'clusters':
         cl = obj.clusters[len(obj.clusters)-1]['cl']
-    n_clusters = len(np.unique(cl))
+        groups = np.unique(cl)
+        if len(obj.clusters) == 0:
+            cl = [0]*E.shape[0]
+            if verbose:
+                print('Clustering has not been performed. Plotting anyway.')
+    else:
+        cl = obj.meta_cells.loc[obj.meta_cells.status=='OK', what_to_color].values
+        groups = np.unique(obj.meta_cells[what_to_color])
     if cluster_colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
         if what_to_color == 'nothing':
             colors = ['black']
     elif cluster_colors == 'random':
-        colors = unique_colors(n_clusters)
+        colors = unique_colors(groups)
     else:
         colors = cluster_colors
     plt.clf()
     f, ax = plt.subplots(1, 1)
-    for i in range(n_clusters):
-        idx = np.array(cl) == i
+    for i, k in enumerate(groups):
+        idx = np.array(cl) == k
         e = E[idx]
         col = colors[i]
         ax.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
     if legend:
-        ax.legend(list(range(n_clusters)), loc='upper left', markerscale=5,
+        ax.legend(list(groups), loc='upper left', markerscale=5,
                    bbox_to_anchor=(1, 1))
     ax.set_ylabel('Component 2', size=font_size)
     ax.set_xlabel('Component 1', size=font_size)
