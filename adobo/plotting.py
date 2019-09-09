@@ -88,8 +88,8 @@ def genes_per_cell(obj, barcolor='#E69F00', filename=None,
     plt.close()
 
 def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
-             marker_size=0.8, font_size=8, cluster_colors='adobo', title='', legend=True,
-             verbose=True):
+             marker_size=0.8, font_size=8, cluster_colors='adobo', title='',
+             legend=True, verbose=True):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -155,7 +155,7 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
         if what_to_color == 'nothing':
             colors = ['black']
     elif cluster_colors == 'random':
-        colors = unique_colors(groups)
+        colors = unique_colors(len(groups))
     else:
         colors = cluster_colors
     plt.clf()
@@ -170,6 +170,7 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
                    bbox_to_anchor=(1, 1))
     ax.set_ylabel('Component 2', size=font_size)
     ax.set_xlabel('Component 1', size=font_size)
+    plt.title(title)
     f.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
