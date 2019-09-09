@@ -11,6 +11,7 @@ This module contains a data storage class.
 
 import sys
 import os
+import joblib
 
 import pandas as pd
 import numpy as np
@@ -53,11 +54,12 @@ class dataset:
     desc : `str`
         A string describing the dataset.
     """
-    def __init__(self, raw_mat, desc='no desc set'):
+    def __init__(self, raw_mat, desc='no desc set', save_filename=None):
         # holding info about which assays have been done
         self.hvg = []
         self.hvg_method = ASSAY_NOT_DONE
         self.desc = desc
+        self.save_filename=save_filename
         
         self._assays = {}
         self.exp_mat = raw_mat
@@ -95,6 +97,27 @@ class dataset:
         genes = '{:,}'.format(self.exp_mat.shape[0])
         cells = '{:,}'.format(self.exp_mat.shape[1])
         return '%s genes and %s cells' % (genes, cells)
+    
+    def save(self, compress=True):
+        """Serialize the object
+
+        Notes
+        -----
+        Load the object data with joblib.load
+
+        Parameters
+        ----------
+        compress : `bool`
+            Save with data compression or not. Default: True
+
+        Returns
+        -------
+        Nothing.
+        """
+        if not self.save_filename:
+            raise Exception('No output filename set.')
+        else:
+            joblib.dump(self, filename=self.save_filename, compress=compress)
 
     def get_assay(self, name, lang=False):
         """ Get info if a function has been applied. """
