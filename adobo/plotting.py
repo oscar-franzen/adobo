@@ -38,10 +38,8 @@ def barplot_reads_per_cell(obj, barcolor='#E69F00', filename=None,
     cell_counts = exp_mat.sum(axis=0)
     plt.clf()
     colors = [barcolor]*(len(cell_counts))
-    
     plt.gca().get_yaxis().set_major_formatter(
         matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
-
     plt.bar(np.arange(len(cell_counts)), sorted(cell_counts, reverse=True),
             color=colors)
     plt.ylabel('raw read counts')
@@ -75,8 +73,9 @@ def barplot_genes_per_cell(obj, barcolor='#E69F00', filename=None,
     """
     exp_mat = obj.exp_mat
     genes_expressed = exp_mat.apply(lambda x: sum(x > 0), axis=0)
-
     plt.clf()
+    plt.gca().get_yaxis().set_major_formatter(
+        matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
     plt.bar(np.arange(len(genes_expressed)), sorted(genes_expressed, reverse=True),
             color=[barcolor]*len(genes_expressed))
     plt.ylabel('number of genes')
