@@ -160,7 +160,7 @@ Raw read counts matrix contains: %s genes and %s cells
         Displays a basic summary of the dataset and what analyses have been performed on
         it.
         """
-        if self.get_assay('detect_mito'):
+        if self.get_assay('find_mitochondrial_genes'):
             s = np.sum(self.meta_genes['mitochondrial'])
             print('Number of mitochondrial genes found: %s' % s)
         if self.get_assay('detect_ercc_spikes'):
