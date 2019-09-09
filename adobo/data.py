@@ -196,6 +196,7 @@ Raw read counts matrix contains: %s genes and %s cells
             The variable name for your data. No whitespaces and special characters.
         data : `list`
             A list of data to add. The length must match the length of cells or genes.
+            Data can be continuous or categorical.
 
         Returns
         -------
