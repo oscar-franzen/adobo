@@ -15,7 +15,7 @@ setup(
         'numpy >= 1.17.0',
         'scikit-learn >= 0.21.3',
         'leidenalg >= 0.7.0',
-        'igraph >= 0.7.1',
+        'python-igraph >= 0.7.1',
         'scipy >= 1.3.0',
         'umap >= 0.3.9',
         'statsmodels >= 0.10.1',
