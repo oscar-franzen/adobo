@@ -161,9 +161,10 @@ Raw read counts matrix contains: %s genes and %s cells
         it.
         """
         if self.get_assay('detect_mito'):
-            print('Number of mitochondrial genes found: %s' % self.exp_mito.shape[0])
+            s = np.sum(self.meta_genes['mitochondrial'])
+            print('Number of mitochondrial genes found: %s' % s)
         if self.get_assay('detect_ercc_spikes'):
-            print('Number of ERCC spikes found: %s ' % self.exp_ercc.shape[0])
+            print('Number of ERCC spikes found: %s ' % np.sum(self.meta_genes['ERCC']))
         if self.get_assay('find_low_quality_cells'):
             print('Number of low quality cells found: %s ' % self.low_quality_cells.shape[0])
         if self.get_assay('norm'):
