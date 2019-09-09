@@ -98,7 +98,7 @@ def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
           A data class object
     reduction : `{'tsne', 'umap', 'irlb', 'svd'}`
         The dimensional reduction to use. Default: tsne
-    what_to_color : `{'clusters', 'nothing'}`
+    what_to_color : `{'clusters', 'nothing'}` or a cellular meta data variable
         Specifies what to color. If this is 'clusters', then clustering results will be
         colored. 'nothing' indicates not to color anything. Default: 'clusters'
     filename : `str`, optional
@@ -124,8 +124,10 @@ def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
     -------
     None
     """
-    if not what_to_color in ('clusters', 'nothing'):
-        raise Exception('`what_to_color` can be "clusters" or "nothing".')
+    q = obj.meta_cells.columns.values
+    if not what_to_color in ('clusters', 'nothing') and not what_to_color in q:
+        raise Exception('`what_to_color` can be "clusters", "nothing" or the name of a \
+cellular meta data variable added with adobo.data.dataset.add_meta_data.')
     available_reductions = ('tsne', 'umap', 'irlb', 'svd')
     if not reduction in available_reductions:
         raise Exception('`reduction` must be one of %s' % ', '.join(available_reductions))
@@ -138,7 +140,7 @@ def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
     E = obj.dr[reduction]
     if what_to_color == 'nothing' or len(obj.clusters) == 0:
         cl = [0]*E.shape[0]
-        if verbose:
+        if what_to_color == 'clusters' and verbose:
             print('Clustering has not been performed. Plotting anyway.')
     elif what_to_color == 'clusters':
         cl = obj.clusters[len(obj.clusters)-1]['cl']
