@@ -27,10 +27,6 @@ class dataset:
         Holding information about what functions have been applied.
     exp_mat : :class:`pandas.DataFrame`
         Raw read count matrix.
-    _exp_mito : :class:`pandas.DataFrame`
-        Raw read count matrix containing mitochondrial genes.
-    _exp_ercc : :class:`pandas.DataFrame`
-        Raw read count matrix containing ERCC spikes.
     _low_quality_cells : `list`
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
     norm_log2 : `bool`
@@ -65,8 +61,6 @@ class dataset:
         
         self._assays = {}
         self.exp_mat = raw_mat
-        self._exp_ercc = pd.DataFrame()
-        self._exp_mito = pd.DataFrame()
         self._low_quality_cells = ASSAY_NOT_DONE
 
         self.norm = pd.DataFrame()
@@ -120,22 +114,6 @@ class dataset:
     @low_quality_cells.setter
     def low_quality_cells(self, val):
         self._low_quality_cells = val
-            
-    @property
-    def exp_mito(self):
-        return self._exp_mito
-
-    @exp_mito.setter
-    def exp_mito(self, val):
-        self._exp_mito = val
-    
-    @property
-    def exp_ercc(self):
-        return self._exp_ercc
-
-    @exp_ercc.setter
-    def exp_ercc(self, val):
-        self._exp_ercc = val
     
     def _describe(self):
         """ Helper function for __repr__. """

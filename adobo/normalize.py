@@ -374,12 +374,6 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
         # Remove uninformative genes
         remove = obj.meta_genes.status[obj.meta_genes.status!='OK']
         data = data.drop(remove.index, axis=0)
-    # Normalize ercc if available, because some HVG methods require normalized ercc spikes
-    if obj._exp_ercc.shape[0] > 0:
-        # some cells might have been removed in previous steps
-        obj._exp_ercc = obj._exp_ercc.iloc[:, obj._exp_ercc.columns.isin(data.columns)]
-        obj._exp_ercc = obj._exp_ercc.reindex(data.columns, axis=1)
-        data = pd.concat([data, obj._exp_ercc])
     if method == 'standard':
         norm = standard(data, scaling_factor)
         norm_method='standard'
@@ -400,9 +394,10 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
     if log2 and method != 'vsn':
         norm = np.log2(norm+small_const)
     obj.norm_log2 = log2
-    if obj._exp_ercc.shape[0] > 0:
-        s = norm.index.str.contains(obj.ercc_pattern)
-        obj.norm_ercc = norm[s]
-        norm = norm[np.logical_not(s)]
+    if np.any(obj.meta_genes.ERCC):
+        # Save normalized ERCC
+        obj.norm_ercc = norm[obj.meta_genes.ERCC]
+        # Remove ERCC so that they are not included in downstream analyses
+        norm = norm[np.logical_not(obj.meta_genes.ERCC)]
     obj.norm = norm
     obj.set_assay(sys._getframe().f_code.co_name, norm_method)
