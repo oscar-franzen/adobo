@@ -8,8 +8,9 @@ Summary
 -------
 Functions related to biology.
 """
-
-def cell_cycle_predict(obj, genes_s_phase, genes_g2m_phase):
+def cell_cycle_train(obj):
+    
+def cell_cycle_predict(obj):
     """Predicts cell cycle phase
 
     Parameters
