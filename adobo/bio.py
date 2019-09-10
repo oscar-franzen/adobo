@@ -9,6 +9,7 @@ Summary
 Functions related to biology.
 """
 def cell_cycle_train(obj):
+    pass
     
 def cell_cycle_predict(obj):
     """Predicts cell cycle phase
