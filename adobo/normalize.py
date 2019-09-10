@@ -217,8 +217,10 @@ def rpkm(data, gene_lengths):
         Should contain the gene lengths in base pairs and gene names set as index. The
         names must match the gene names used in `data`. Normally gene lengths should be
         the combined length of exons for every gene. If gene_lengths is a `str` then it is
-        taken as a filename and loaded; first column is gene names and second column is
-        the length, field separator is one space.
+        taken as a file path and loads it; first column is gene names and second column is
+        the length, field separator is one space; an alternative format is a single column
+        of combined exon lengths where the total number of rows matches the number of rows
+        in the raw read counts matrix and with the same order.
 
     References
     ----------
@@ -233,8 +235,16 @@ def rpkm(data, gene_lengths):
     
     mat = data
     if type(gene_lengths) == str:
-        gene_lengths = pd.read_csv(gene_lengths, header=None, sep=' ')
-        gene_lengths = pd.Series(gene_lengths[1].values, index=gene_lengths[0])
+        gene_lengths = pd.read_csv(gene_lengths, header=None, sep=' ', squeeze=True)
+        if type(gene_lengths) != pd.core.series.Series:
+            gene_lengths = pd.Series(gene_lengths[1].values, index=gene_lengths[0])
+        else:
+            gene_lengths.index = mat.index
+    # remove NaN
+    keep = np.logical_not(gene_lengths.isna())
+    gene_lengths = gene_lengths[keep]
+    mat = mat[keep]
+    
     # take the intersection
     mat = mat[mat.index.isin(gene_lengths.index)]
     gene_lengths = gene_lengths[gene_lengths.index.isin(mat.index)]
