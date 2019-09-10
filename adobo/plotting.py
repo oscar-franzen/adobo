@@ -132,8 +132,12 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
     if not reduction in available_reductions:
         raise Exception('`reduction` must be one of %s' % ', '.join(available_reductions))
     if not reduction in obj.dr:
-        t = (reduction, ', '.join(obj.dr.keys()))
-        q = 'Reduction "%s" was not found, the following have been generated: %s' % t
+        if len(obj.dr.keys()) > 0:
+            t = (reduction, ', '.join(obj.dr.keys()))
+            q = 'Reduction "%s" was not found, the following have been generated: %s' % t
+        else:
+            q = 'Reduction "%s" was not found. Run `ad.dr.tsne(...)` or \
+`ad.dr.umap(...)` first.' % reduction
         raise Exception(q)
     if marker_size<0:
         raise Exception('Marker size cannot be negative.')
@@ -149,7 +153,7 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
                 print('Clustering has not been performed. Plotting anyway.')
     else:
         cl = obj.meta_cells.loc[obj.meta_cells.status=='OK', what_to_color].values
-        groups = np.unique(obj.meta_cells[what_to_color])
+        groups = np.unique(cl)
     if colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
         if what_to_color == 'nothing':

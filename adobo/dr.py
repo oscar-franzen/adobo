@@ -133,14 +133,15 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
     """
     data = obj.norm
     if data.shape[0] == 0:
-        raise Exception('Data must be normalized first. Please run adobo.normalize.norm')
+        raise Exception('Data must be normalized first. Please run \
+`adobo.normalize.norm(...)`.')
     hvg = obj.hvg
     if len(hvg)>0 and not allgenes:
         data = data[data.index.isin(hvg)]
         if verbose:
             print('Only using HVG genes (%s).' % data.shape[0])
     if scale:
-        d_scaled = sklearn_scale(data.transpose(),  # cells as rows and genes as labels
+        d_scaled = sklearn_scale(data.transpose(),  # cells as rows and genes as columns
                                  axis=0,            # over genes, i.e. features (columns)
                                  with_mean=True,    # subtracting the column means
                                  with_std=True)     # scale the data to unit variance
@@ -204,7 +205,7 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False,
         X = obj.norm
     else:
         if not target in obj.dr:
-            e = '%s was not found, please run adobo.dr.pca(...) first.' % target
+            e = '%s was not found, please run `adobo.dr.pca(...)` first.' % target
             raise Exception(e)
         else:
             X = obj.dr[target]
@@ -265,7 +266,7 @@ def umap(obj, target='irlb', seed=42, verbose=False, **args):
         X = obj.norm
     else:
         if not target in obj.dr:
-            raise Exception('%s was not found, please run adobo.dr.pca(...) first.')
+            raise Exception('%s was not found, please run `adobo.dr.pca(...)` first.')
         else:
             X = obj.dr[target]
     reducer = um.UMAP(random_state=seed, verbose=verbose, **args)

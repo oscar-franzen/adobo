@@ -53,13 +53,17 @@ class dataset:
         Generated clusters.
     desc : `str`
         A string describing the dataset.
+    output_filename : `str`, optional
+        A filename that will be used when calling save().
     """
-    def __init__(self, raw_mat, desc='no desc set', save_filename=None):
+    def __init__(self, raw_mat, desc='no desc set', output_filename=None,
+                 input_filename=None):
         # holding info about which assays have been done
         self.hvg = []
         self.hvg_method = ASSAY_NOT_DONE
         self.desc = desc
-        self.save_filename=save_filename
+        self.output_filename=output_filename
+        self.input_filename=input_filename
         
         self._assays = {}
         self.exp_mat = raw_mat
@@ -114,10 +118,10 @@ class dataset:
         -------
         Nothing.
         """
-        if not self.save_filename:
+        if not self.output_filename:
             raise Exception('No output filename set.')
         else:
-            joblib.dump(self, filename=self.save_filename, compress=compress)
+            joblib.dump(self, filename=self.output_filename, compress=compress)
 
     def get_assay(self, name, lang=False):
         """ Get info if a function has been applied. """
@@ -142,9 +146,10 @@ class dataset:
         """ Helper function for __repr__. """
         genes = '{:,}'.format(self.exp_mat.shape[0])
         cells = '{:,}'.format(self.exp_mat.shape[1])
-        s = """Description: %s
+        s = """Filename (input): %s
+Description: %s
 Raw read counts matrix contains: %s genes and %s cells
-""" % (self.desc, genes, cells)
+""" % (self.input_filename, self.desc, genes, cells)
 
         for key in self._assays:
             s += 'Done: %s (%s)\n' % (key, self._assays[key])
