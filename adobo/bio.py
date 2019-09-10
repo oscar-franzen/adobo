@@ -110,11 +110,9 @@ def cell_cycle_predict(obj, clf, tr_features, retx=False):
     if len(X_found) == 0:
         raise Exception('No genes found.')
     X_found.index = X_g
-
     symb = pd.Series(symb)
     missing = symb[np.logical_not(symb.isin(X_g))]
     X_empty = pd.DataFrame(np.zeros((len(missing), X_found.shape[1])))
-    
     X_empty.index = missing
     X_empty.columns = X_found.columns
     X = pd.concat([X_found, X_empty])
