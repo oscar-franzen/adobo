@@ -23,6 +23,10 @@ import adobo.dr
 def cell_cycle_train(verbose=False):
     """Trains a cell cycle classifier using Stochastic Gradient Descent with data from
     Buettner et al.
+    
+    Notes
+    -----
+    Genes are selected from GO:0007049
 
     Parameters
     ----------
