@@ -144,6 +144,8 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
     E = obj.dr[reduction]
     if what_to_color == 'nothing':
         cl = [0]*E.shape[0]
+        groups = [0]
+        legend=False
     elif what_to_color == 'clusters':
         cl = obj.clusters[len(obj.clusters)-1]['cl']
         groups = np.unique(cl)

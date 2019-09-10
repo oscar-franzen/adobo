@@ -240,10 +240,10 @@ def rpkm(data, gene_lengths):
             gene_lengths = pd.Series(gene_lengths[1].values, index=gene_lengths[0])
         else:
             gene_lengths.index = mat.index
-    # remove NaN
-    keep = np.logical_not(gene_lengths.isna())
-    gene_lengths = gene_lengths[keep]
-    mat = mat[keep]
+            # remove NaN
+            keep = np.logical_not(gene_lengths.isna())
+            gene_lengths = gene_lengths[keep]
+            mat = mat[keep]
     
     # take the intersection
     mat = mat[mat.index.isin(gene_lengths.index)]
