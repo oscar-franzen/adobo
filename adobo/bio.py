@@ -8,8 +8,18 @@ Summary
 -------
 Functions related to biology.
 """
-def cell_cycle_train(obj):
-    pass
+
+import re
+import adobo._log
+import adobo.IO
+
+def cell_cycle_train():
+    path_pkg = re.sub('/_log.py', '', adobo._log.__file__)
+    path_data = path_pkg + '/data/Buettner_2015.mat'
+    path_gene_lengths = path_pkg + '/data/Buettner_2015.mat'
+    desc = 'Buettner et al. (2015) doi:10.1038/nbt.3102'
+    obj = adobo.IO.load_from_file(path_data, desc=desc)
+    return obj
     
 def cell_cycle_predict(obj):
     """Predicts cell cycle phase
