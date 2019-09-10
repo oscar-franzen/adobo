@@ -93,12 +93,23 @@ def cell_cycle_predict(obj, clf, tr_features, retx=False):
     Modifies the passed object. If `retx=True` a list is returned with predictions.
     """
     X = obj.norm
-    X_g = pd.Series([ i[0] for i in X.index.str.split('.') ])
     if X.index[0].rfind('ENSMUSG') < 0:
         raise Exception('Gene identifiers must use ENSG format.')
+    X_g = X.index
+    if re.search('ENSMUSG\d+\.\d+', X_g[0]):
+        X_g = X_g.str.extract('^(.*)\.[0-9]+$', expand=False)
+    if re.search('_ENSMUSG', X_g[0]):
+        X_g = X_g.str.extract('^\S+?_(\S+)$', expand=False)
     symb = [ i[1] for i in tr_features.str.split('_') ]
-    X_found = X[X_g.isin(symb).values]
-    X_found.index = [ i[0] for i in X_found.index.str.split('.') ]
+    X_found = X[X_g.isin(symb)]
+    X_g = X_found.index
+    if re.search('ENSMUSG\d+\.\d+', X_g[0]):
+        X_g = X_g.str.extract('^(.*)\.[0-9]+$', expand=False)
+    if re.search('_ENSMUSG', X_g[0]):
+        X_g = X_g.str.extract('^\S+?_(\S+)$', expand=False)
+    if len(X_found) == 0:
+        raise Exception('No genes found.')
+    X_found.index = X_g
 
     symb = pd.Series(symb)
     missing = symb[np.logical_not(symb.isin(X_g))]
