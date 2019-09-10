@@ -2,7 +2,7 @@
 #
 # Description: An analysis framework for scRNA-seq data.
 #  How to use: https://github.com/oscar-franzen/adobo/
-#     Contact: Oscar Franzen <p.oscar.franzen@gmail.com>
+#     Contact: Oscar Franzén <p.oscar.franzen@gmail.com>
 """
 Summary
 -------
@@ -14,7 +14,7 @@ import numpy as np
 
 from adobo import dataset
 
-def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False,
+def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False,
                    desc='no desc set', output_filename=None, input_filename=None, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
@@ -24,7 +24,8 @@ def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False
         Path to the file containing input data. Should be a matrix where
         columns are cells and rows are genes.
     sep : `str`
-        Character used to separate fields. Default: "\\t"
+        A character or regular expression used to separate fields. Default: "\\s"
+        (i.e. any white space character)
     header : `str`
         If the data file has a header. 0 means yes otherwise None. Default: 0
     column_id : {'auto', 'yes', 'no'}
@@ -50,9 +51,6 @@ def load_from_file(filename, sep='\t', header=0, column_id='auto', verbose=False
     """
     if not os.path.exists(filename):
         raise Exception('%s not found' % filename)
-    if len(sep)>1:
-        raise Exception('`sep` cannot be longer than 1, it should specify a single \
-character.')
     if not column_id in ('auto', 'yes', 'no'):
         raise Exception('"column_id" can only be set to "auto", "yes" or "no"')
     exp_mat = pd.read_csv(filename,
@@ -80,6 +78,8 @@ character.')
         raise Exception('Non-count values detected in data matrix.')
     rem = exp_mat.index.str.contains('^ArrayControl-[0-9]+', regex=True, case=False)
     exp_mat = exp_mat[np.logical_not(rem)]
+    exp_mat.index = exp_mat.index.str.replace('"', '')
+    exp_mat.columns = exp_mat.columns.str.replace('"', '')
     obj = dataset(exp_mat, desc, output_filename=output_filename, input_filename=filename)
     if verbose:
         genes = '{:,}'.format(exp_mat.shape[0])
