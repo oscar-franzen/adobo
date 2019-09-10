@@ -89,7 +89,7 @@ def genes_per_cell(obj, barcolor='#E69F00', filename=None,
 
 def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
              marker_size=0.8, font_size=8, colors='adobo', title='',
-             legend=True, verbose=True):
+             legend=True, verbose=False):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -108,11 +108,10 @@ def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
     font_size : `float`
         Font size. Default: 8
     colors : `{'default', 'random'}` or `list`
-        Can be: (i) "adobo" or "random"; (ii) a list of colors with the same
-        length as the number of cells (same order as cells occur in the normalized
-        matrix). If colors is set to "adobo", then colors are retrieved from
-        :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT` (but if the number of clusters
-        exceed 50, then random colors will be used). Default: adobo
+        Can be: (i) "adobo" or "random"; or (ii) a `list` of colors with the same
+        length as the number of factors. If colors is set to "adobo", then colors are
+        retrieved from :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT` (but if the
+        number of clusters exceed 50, then random colors will be used). Default: adobo
     title : `str`
         Title of the plot.
     legend : `bool`
@@ -162,6 +161,8 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
             colors = ['black']
     elif colors == 'random':
         colors = unique_colors(len(groups))
+        if verbose:
+            print('Using random colors: %s' % colors)
     else:
         colors = colors
     plt.clf()

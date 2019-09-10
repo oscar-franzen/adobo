@@ -103,11 +103,13 @@ class dataset:
         return '%s genes and %s cells' % (genes, cells)
     
     def save(self, compress=True):
-        """Serialize the object
+        """Serializes the object
 
         Notes
         -----
-        Load the object data with joblib.load
+        This is a method so that it is not needed to memorize the filename, instead the
+        filename was already specified when the object was created with the
+        `output_filename` parameter. Load the object data with `joblib.load`.
 
         Parameters
         ----------
