@@ -1,14 +1,18 @@
-from distutils.core import setup
+# adobo's setup script.
+# OF; Sept 2019
+
+from setuptools import setup, find_packages
 
 setup(
     name='adobo',
     version='0.1.0',
+    description='an analysis framework for single cell gene expression data',
     author='Oscar Franzén',
     author_email='p.oscar.franzen@gmail.com',
+    include_package_data=True,
     packages=['adobo', 'adobo.glm', 'adobo.irlbpy'],
     url='https://github.com/oscar-franzen/adobo',
     license='LICENSE.txt',
-    description='adobo is an analysis framework for single cell RNA sequencing data (scRNA-seq).',
     long_description=open('README.md').read(),
     install_requires=[
         'pandas >= 0.25.0',
