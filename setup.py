@@ -12,7 +12,7 @@ setup(
     include_package_data=True,
     packages=['adobo', 'adobo.glm', 'adobo.irlbpy'],
     url='https://github.com/oscar-franzen/adobo',
-    license='LICENSE.txt',
+    license='LICENSE',
     long_description=open('README.md').read(),
     install_requires=[
         'pandas >= 0.25.0',
