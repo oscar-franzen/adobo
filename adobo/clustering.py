@@ -2,13 +2,13 @@
 #
 # Description: An analysis framework for scRNA-seq data.
 #  How to use: https://github.com/oscar-franzen/adobo/
-#     Contact: Oscar Franzen <p.oscar.franzen@gmail.com>
+#     Contact: Oscar Franzén <p.oscar.franzen@gmail.com>
 """
 Summary
 -------
 This module contains functions to cluster data.
 """
-
+from collections import Counter
 import pandas as pd
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -205,7 +205,8 @@ def _igraph(obj, clust_alg):
     obj.clusters.append({ 'algo' : clust_alg, 'cl' : cl })
 
 def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
-             clust_alg='leiden', prune_snn=0.067, res=0.8, seed=42, verbose=False):
+             clust_alg='leiden', prune_snn=0.067, res=0.8, retx=True, seed=42,
+             verbose=False):
     """
     A wrapper function for generating single cell clusters from a shared nearest neighbor
     graph with the Leiden algorithm
@@ -233,6 +234,8 @@ def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
     res : `float`
         Resolution parameter for the Leiden algorithm _only_; change to modify cluster
         resolution. Default: 0.8
+    retx : `bool`
+        Return cluster sizes.
     seed : `int`
         For reproducibility.
     verbose : `bool`
@@ -245,7 +248,8 @@ def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
     
     Returns
     -------
-    Nothing. Modifies the passed object.
+    `dict`
+        A dict containing cluster sizes (number of cells), only retx is set to True.
     """
     m = ('leiden', 'walktrap', 'spinglass', 'multilevel', 'infomap', 'label_prop',
          'leading_eigenvector')
@@ -258,3 +262,5 @@ def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
     else:
         _igraph(obj, clust_alg)
     obj.set_assay(sys._getframe().f_code.co_name)
+    if retx:
+        return dict(Counter(obj.clusters[len(obj.clusters)-1]['cl']))
