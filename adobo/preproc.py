@@ -144,9 +144,15 @@ def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     obj.meta_genes['ERCC'] = ercc
     no_found = np.sum(ercc)
     obj.ercc_pattern = ercc_pattern
-    obj.set_assay(sys._getframe().f_code.co_name)
+    if no_found>0:
+        ercc = obj.meta_genes[obj.meta_genes.ERCC].index
+        ercc_counts = obj.exp_mat.loc[ercc, :]
+        ercc_counts = ercc_counts.sum(axis=0)
+        ercc_perc = ercc_counts / obj.meta_cells.total_reads*100
+        obj.add_meta_data(axis='cells', key='ercc_perc', data=ercc_perc, type_='cont')
     if verbose:
         print('%s ercc spikes detected' % no_found)
+    obj.set_assay(sys._getframe().f_code.co_name)
     return no_found
 
 def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):

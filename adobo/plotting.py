@@ -158,16 +158,16 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
         if cl.dtype.name == 'category':
             groups = np.unique(cl)
             cl = cl.values
-            if colors == 'adobo':
-                colors = CLUSTER_COLORS_DEFAULT
-                if what_to_color == 'nothing':
-                    colors = ['black']
-            elif colors == 'random':
-                colors = unique_colors(len(groups))
-                if verbose:
-                    print('Using random colors: %s' % colors)
-            else:
-                colors = colors
+    if colors == 'adobo':
+        colors = CLUSTER_COLORS_DEFAULT
+        if what_to_color == 'nothing':
+            colors = ['black']
+    elif colors == 'random':
+        colors = unique_colors(len(groups))
+        if verbose:
+            print('Using random colors: %s' % colors)
+    else:
+        colors = colors
     plt.clf()
     f, ax = plt.subplots(1, 1)
     if what_to_color in ('nothing', 'clusters') or cl.dtype.name == 'category':

@@ -19,7 +19,7 @@ import sys
 
 from ._log import warning
 
-def _knn(obj, k=10, target='irlb'):
+def _knn(obj, k=10, target='irlb', distance='euclidean'):
     """
     Nearest Neighbour Search. Finds the k number of near neighbours for each cell.
     
@@ -31,13 +31,15 @@ def _knn(obj, k=10, target='irlb'):
         Number of nearest neighbors. Default: 10
     target : `{'irlb', 'pca'}`
         The dimensionality reduction result to run the NN search on. Default: irlb
+    distance : `str`
+        Distance metric to use. See here for valid choices: https://tinyurl.com/y4bckf7w
         
     Returns
     -------
     Nothing. Modifies the passed object.
     """
     X = obj.dr[target]
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree')
+    nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree', metric=distance)
     nbrs.fit(X)
     indices = nbrs.kneighbors(X)[1]
     obj.nn_idx = indices+1
@@ -202,8 +204,8 @@ def _igraph(obj, clust_alg):
     
     obj.clusters.append({ 'algo' : clust_alg, 'cl' : cl })
 
-def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
-             res=0.8, seed=42, verbose=False):
+def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
+             clust_alg='leiden', prune_snn=0.067, res=0.8, seed=42, verbose=False):
     """
     A wrapper function for generating single cell clusters from a shared nearest neighbor
     graph with the Leiden algorithm
@@ -214,6 +216,10 @@ def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
         A dataset class object.
     k : `int`
         Number of nearest neighbors. Default: 10
+    distance : `str`
+        Distance metric to use. See here for valid choices: https://tinyurl.com/y4bckf7w
+    target : `{'irlb', 'pca'}`
+        The dimensionality reduction result to run on. Default: irlb
     graph : `{'snn'}`
         Type of graph to generate. Only shared nearest neighbor (snn) supported at the
         moment.
@@ -245,7 +251,7 @@ def generate(obj, k=10, graph='snn', clust_alg='leiden', prune_snn=0.067,
          'leading_eigenvector')
     if not clust_alg in m:
         raise Exception('Supported community detection algorithms are: %s' % ', '.join(m))
-    _knn(obj, k)
+    _knn(obj, k, target, distance)
     _snn(obj, k, verbose)
     if clust_alg == 'leiden':
         _leiden(obj, res, seed)
