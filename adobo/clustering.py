@@ -29,7 +29,7 @@ def _knn(obj, k=10, target='irlb', distance='euclidean'):
         A dataset class object.
     k : `int`
         Number of nearest neighbors. Default: 10
-    target : `{'irlb', 'pca'}`
+    target : `{'irlb', 'svd'}`
         The dimensionality reduction result to run the NN search on. Default: irlb
     distance : `str`
         Distance metric to use. See here for valid choices: https://tinyurl.com/y4bckf7w
@@ -218,7 +218,7 @@ def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
         Number of nearest neighbors. Default: 10
     distance : `str`
         Distance metric to use. See here for valid choices: https://tinyurl.com/y4bckf7w
-    target : `{'irlb', 'pca'}`
+    target : `{'irlb', 'svd'}`
         The dimensionality reduction result to run on. Default: irlb
     graph : `{'snn'}`
         Type of graph to generate. Only shared nearest neighbor (snn) supported at the
