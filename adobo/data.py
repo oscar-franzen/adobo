@@ -208,8 +208,8 @@ Raw read counts matrix contains: %s genes and %s cells
             A list of data to add. The length must match the length of cells or genes.
             Data can be continuous or categorical.
         type_ : `{'cat', 'cont'}`
-            Specify is the added data is categorical or continuous. `cat` means
-            categorical data and `cont` means continuous data. Default: 'cat'
+            Specify if data are categorical or continuous. `cat` means categorical data
+            and `cont` means continuous data. Default: 'cat'
 
         Returns
         -------
