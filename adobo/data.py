@@ -204,9 +204,9 @@ Raw read counts matrix contains: %s genes and %s cells
             Are the data for cells or genes?
         key : `str`
             The variable name for your data. No whitespaces and special characters.
-        data : `list`
-            A list of data to add. The length must match the length of cells or genes.
-            Data can be continuous or categorical.
+        data : `numpy.ndarray` or `list`
+            Data to add. The length must match the length of cells or genes. Data can be
+            continuous or categorical and this must be specified with `type_`.
         type_ : `{'cat', 'cont'}`
             Specify if data are categorical or continuous. `cat` means categorical data
             and `cont` means continuous data. Default: 'cat'
