@@ -23,6 +23,7 @@ setup(
         'scipy >= 1.3.0',
         'umap-learn >= 0.3.9',
         'statsmodels >= 0.10.1',
-        'matplotlib >= 3.1.1'
+        'matplotlib >= 3.1.1',
+        'seaborn >= 0.9.0'
     ],
 )

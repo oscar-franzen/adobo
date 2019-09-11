@@ -11,24 +11,24 @@ Functions for plotting scRNA-seq data.
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import seaborn as sns
 
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
-def reads_per_cell(obj, barcolor='#E69F00', filename=None,
-                           title='sequencing reads'):
+def reads_per_cell(obj, barcolor='#E69F00', title='sequencing reads', filename=None):
     """Generates a bar plot of read counts per cell
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
-    barcolor : `str`, optional
-        Color of the bars (default: "#E69F00").
+    barcolor : `str`
+        Color of the bars. Default: "#E69F00"
+    title : `str`
+        Title of the plot. Default: "sequencing reads"
     filename : `str`, optional
-        Write plot to file.
-    title : `str`, optional
-        Title of the plot (default: "sequencing reads").
+        Write plot to file instead of showing it on the screen.
 
     Returns
     -------
@@ -52,20 +52,19 @@ def reads_per_cell(obj, barcolor='#E69F00', filename=None,
         plt.show()
     plt.close()
     
-def genes_per_cell(obj, barcolor='#E69F00', filename=None,
-                           title='expressed genes'):
+def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=None):
     """Generates a bar plot of number of expressed genes per cell
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
           A data class object
-    barcolor : `str`, optional
-        Color of the bars (default: "#E69F00").
+    barcolor : `str`
+        Color of the bars. Default: "#E69F00"
+    title : `str`
+        Title of the plot. Default: "sequencing reads"
     filename : `str`, optional
-        Write plot to file.
-    title : `str`, optional
-        Title of the plot (default: "sequencing reads").
+        Write plot to file instead of showing it on the screen.
 
     Returns
     -------
@@ -155,8 +154,10 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
             if verbose:
                 print('Clustering has not been performed. Plotting anyway.')
     else:
-        cl = obj.meta_cells.loc[obj.meta_cells.status=='OK', what_to_color].values
-        groups = np.unique(cl)
+        cl = obj.meta_cells.loc[obj.meta_cells.status=='OK', what_to_color]
+        if cl.dtype.name == 'category':
+            groups = np.unique(cl)
+            cl = cl.values
     if colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
         if what_to_color == 'nothing':
@@ -169,14 +170,20 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
         colors = colors
     plt.clf()
     f, ax = plt.subplots(1, 1)
-    for i, k in enumerate(groups):
-        idx = np.array(cl) == k
-        e = E[idx]
-        col = colors[i]
-        ax.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
-    if legend:
-        ax.legend(list(groups), loc='upper left', markerscale=5,
-                   bbox_to_anchor=(1, 1))
+    if what_to_color in ('nothing', 'clusters') or cl.dtype.name == 'category':
+        for i, k in enumerate(groups):
+            idx = np.array(cl) == k
+            e = E[idx]
+            col = colors[i]
+            ax.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
+        if legend:
+            ax.legend(list(groups), loc='upper left', markerscale=5,
+                      bbox_to_anchor=(1, 1))
+    else:
+        # If data are continuous
+        cmap = sns.cubehelix_palette(as_cmap=True)
+        po = ax.scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size, c=cl.values)
+        f.colorbar(po)
     ax.set_ylabel('Component 2', size=font_size)
     ax.set_xlabel('Component 1', size=font_size)
     plt.title(title)
