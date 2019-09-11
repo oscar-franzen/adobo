@@ -83,8 +83,9 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
         print(s % (r, np.sum(genes_remove)))
     return r, np.sum(genes_remove)
 
-def find_mitochondrial_genes(obj, mito_pattern='^mt-', verbose=False):
-    """Find mitochondrial genes
+def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False):
+    """Find mitochondrial genes and adds percent mitochondrial expression of total
+    expression to the cellular meta data
 
     Parameters
     ----------
@@ -92,6 +93,8 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', verbose=False):
         A data class object.
     mito_pattern : `str`
         A regular expression matching mitochondrial gene symbols. Default: "^mt-"
+    genes : `list`, optional
+        Instead of using `mito_pattern`, specify a `list` of genes that are mitochondrial.
     verbose : boolean
         Be verbose or not. Default: False
 
@@ -101,33 +104,23 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', verbose=False):
         Number of mitochondrial genes detected.
     """
     exp_mat = obj.exp_mat
-    mito = exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
-    obj.meta_genes['mitochondrial'] = mito
-    no_found = np.sum(mito)
+    if genes is None:
+        mito = exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
+        obj.meta_genes['mitochondrial'] = mito
+    else:
+        mito = obj.exp_mat.index.isin(genes)
+        obj.meta_genes['mitochondrial'] = mito
+    no_found = np.sum(obj.meta_genes['mitochondrial'])
+    if no_found > 0:
+        mt = obj.meta_genes[obj.meta_genes.mitochondrial].index
+        mt_counts = obj.exp_mat.loc[mt, :]
+        mt_counts = mt_counts.sum(axis=0)
+        mito_perc = mt_counts / obj.meta_cells.total_reads*100
+        obj.add_meta_data(axis='cells', key='mito_perc', data=mito_perc, type_='cont')
     if verbose:
         print('%s mitochondrial genes detected' % no_found)
     obj.set_assay(sys._getframe().f_code.co_name)
     return no_found
-
-def set_mitochondrial_genes(obj, genes):
-    """Set mitochondrial genes
-
-    Parameters
-    ----------
-    obj : :class:`adobo.data.dataset`
-        A data class object.
-    genes : `list`
-        A list of mitochondrial genes.
-
-    Returns
-    -------
-    int
-        Number of genes found.
-    """
-    mito = obj.exp_mat.index.isin(genes)
-    obj.meta_genes['mitochondrial'] = mito
-    obj.set_assay(sys._getframe().f_code.co_name)
-    return np.sum(mito)
         
 def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     """Flag ERCC spikes
