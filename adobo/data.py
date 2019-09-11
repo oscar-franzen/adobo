@@ -201,7 +201,7 @@ Raw read counts matrix contains: %s genes and %s cells
         Parameters
         ----------
         axis : `{'cells', 'genes'}`
-            Should the data be added to cells or genes?
+            Are the data for cells or genes?
         key : `str`
             The variable name for your data. No whitespaces and special characters.
         data : `list`
