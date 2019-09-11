@@ -18,7 +18,7 @@ import umap as um
 
 from . import irlbpy
 
-def irlb(data_norm, ncomp=75, seed=42):
+def irlb(data_norm, ncomp=75, seed=None):
     """Truncated SVD by implicitly restarted Lanczos bidiagonalization
     
     Notes
@@ -32,9 +32,9 @@ def irlb(data_norm, ncomp=75, seed=42):
     data_norm : :class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
     ncomp : `int`
-        Number of components to return, optional.
+        Number of components to return. Default: 75
     seed : `int`
-        For reproducibility, optional.
+        For reproducibility. Default: None
     
     References
     ----------
@@ -69,7 +69,7 @@ def svd(data_norm, ncomp=75):
         should be a subset of the normalized gene expression matrix containing highly
         variable genes.
     ncomp : `int`
-        Number of components to return, optional.
+        Number of components to return. Default: 75
     
     References
     ----------
@@ -94,7 +94,8 @@ def svd(data_norm, ncomp=75):
     contr = pd.DataFrame(np.abs(v[:, 0:ncomp]), index=inp.columns)
     return comp, contr
 
-def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False, seed=42):
+def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
+        seed=None):
     """Principal Component Analysis
     
     Notes
@@ -119,7 +120,7 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
     verbose : `bool`
         Be noisy or not. Default: False
     seed : `int`
-        For reproducibility (only irlb). Default: 42
+        For reproducibility (only irlb). Default: None
 
     References
     ----------
