@@ -188,12 +188,15 @@ Raw read counts matrix contains: %s genes and %s cells
     def __repr__(self):
         return self._describe()
     
-    def add_meta_data(self, axis, key, data):
+    def add_meta_data(self, axis, key, data, type_='cat'):
         """Add meta data to the adobo object
 
         Notes
         -----
         Meta data can be added to cells or genes.
+        
+        The parameter name 'type_' has an underscore to avoid conflict with Python's
+        internal type keyword.
 
         Parameters
         ----------
@@ -204,14 +207,24 @@ Raw read counts matrix contains: %s genes and %s cells
         data : `list`
             A list of data to add. The length must match the length of cells or genes.
             Data can be continuous or categorical.
+        type_ : `{'cat', 'cont'}`
+            Specify is the added data is categorical or continuous. `cat` means
+            categorical data and `cont` means continuous data. Default: 'cat'
 
         Returns
         -------
         Nothing.
         """
+        if not type_ in ('cat', 'cont'):
+            raise Exception('`type_` can only be "cat" or "cont".')
+        if not type(data) in (np.ndarray, list):
+            raise Exception('`data` should be a numpy array or list.')
         if not axis in ('cells', 'genes'):
-            raise Exception('Dimension must be cells or genes.')
+            raise Exception('Dimension must be "cells" or "genes".')
         if axis == 'cells':
-            self.meta_cells[key] = data
+            target = self.meta_cells
         elif axis == 'genes':
-            self.meta_genes[key] = data
+            target = self.meta_genes
+        target[key] = data
+        if type_ == 'cat':
+            target[key] = target[key].astype('category')

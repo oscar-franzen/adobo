@@ -88,7 +88,7 @@ def genes_per_cell(obj, barcolor='#E69F00', filename=None,
     plt.close()
 
 def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
-             marker_size=0.8, font_size=8, colors='adobo', title='',
+             marker_size=0.8, font_size=8, colors='adobo', title=None,
              legend=True, verbose=False):
     """Generates a 2d scatter plot from an embedding
 
@@ -113,7 +113,7 @@ def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
         retrieved from :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT` (but if the
         number of clusters exceed 50, then random colors will be used). Default: adobo
     title : `str`
-        Title of the plot.
+        Title of the plot. By default the title is set to the reduction technique.
     legend : `bool`
         Add legend or not. Default: True
     verbose : `bool`
@@ -140,6 +140,8 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
         raise Exception(q)
     if marker_size<0:
         raise Exception('Marker size cannot be negative.')
+    if title == None:
+        title = reduction
     E = obj.dr[reduction]
     if what_to_color == 'nothing':
         cl = [0]*E.shape[0]
