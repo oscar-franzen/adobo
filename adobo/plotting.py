@@ -8,6 +8,8 @@ Summary
 -------
 Functions for plotting scRNA-seq data.
 """
+from collections import Counter
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -88,7 +90,7 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
 
 def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
              marker_size=0.8, font_size=8, colors='adobo', title=None,
-             legend=True, verbose=False):
+             legend=True, min_cluster_size=0, verbose=False):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -115,6 +117,9 @@ def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
         Title of the plot. By default the title is set to the reduction technique.
     legend : `bool`
         Add legend or not. Default: True
+    min_cluster_size : `int`
+        Can be used to prevent clusters below a certain number of cells to be plotted.
+        Only applicable if `what_to_color` is set to 'clusters'. Default: 0
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -149,6 +154,10 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
     elif what_to_color == 'clusters':
         cl = obj.clusters[len(obj.clusters)-1]['cl']
         groups = np.unique(cl)
+        if min_cluster_size > 0:
+            z = pd.Series(dict(Counter(cl)))
+            remove = z[z<min_cluster_size].index.values
+            groups = groups[np.logical_not(pd.Series(groups).isin(remove))]
         if len(obj.clusters) == 0:
             cl = [0]*E.shape[0]
             if verbose:
