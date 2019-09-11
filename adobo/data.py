@@ -188,6 +188,16 @@ Raw read counts matrix contains: %s genes and %s cells
     def __repr__(self):
         return self._describe()
     
+    def is_normalized(self):
+        """Checks if normalized data can be found
+
+        Returns
+        -------
+        `bool`
+            True if it is normalized otherwise False.
+        """
+        return True if self.norm.shape[0] > 0 else False
+    
     def add_meta_data(self, axis, key, data, type_='cat'):
         """Add meta data to the adobo object
 
@@ -204,8 +214,11 @@ Raw read counts matrix contains: %s genes and %s cells
             Are the data for cells or genes?
         key : `str`
             The variable name for your data. No whitespaces and special characters.
-        data : `numpy.ndarray` or `list`
-            Data to add. The length must match the length of cells or genes. Data can be
+        data : `numpy.ndarray`, `list` or `pandas.Series`
+            Data to add. Can be a basic Python `list`, a numpy array or a Pandas Series
+            with an index. If the data type is numpy array or list, then the length must
+            match the length of cells or genes. If the data type is a Pandas series, then
+            the length does not need to match as long as the index is there. Data can be
             continuous or categorical and this must be specified with `type_`.
         type_ : `{'cat', 'cont'}`
             Specify if data are categorical or continuous. `cat` means categorical data
@@ -217,7 +230,7 @@ Raw read counts matrix contains: %s genes and %s cells
         """
         if not type_ in ('cat', 'cont'):
             raise Exception('`type_` can only be "cat" or "cont".')
-        if not type(data) in (np.ndarray, list):
+        if not type(data) in (list, np.ndarray, pd.Series):
             raise Exception('`data` should be a numpy array or list.')
         if not axis in ('cells', 'genes'):
             raise Exception('Dimension must be "cells" or "genes".')

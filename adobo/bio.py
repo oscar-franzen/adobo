@@ -97,6 +97,9 @@ def cell_cycle_predict(obj, clf, tr_features, retx=False):
     Modifies the passed object. If `retx=True` a list is returned with predictions.
     """
     X = obj.norm
+    if not obj.is_normalized():
+        raise Exception('Data matrix is not normalized yet. Run `adobo.normalize.norm` \
+first')
     if X.index[0].rfind('ENSMUSG') < 0:
         raise Exception('Gene identifiers must use ENSG format.')
     X_g = X.index
@@ -128,7 +131,7 @@ def cell_cycle_predict(obj, clf, tr_features, retx=False):
                       with_mean=True,    # subtracting the column means
                       with_std=True)     # scale the data to unit variance    
     pred = clf.predict(X)
-    obj.meta_cells['cell_cycle'] = None
-    obj.meta_cells['cell_cycle'][obj.meta_cells.index.isin(obj.norm.columns)] = pred
+    srs = pd.Series(pred, dtype='category', index=obj.norm.columns)
+    obj.add_meta_data(axis='cells', key='cell_cycle', data=srs, type_='cat')
     if retx:
         return pred
