@@ -161,7 +161,7 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
     obj.dr_gene_contr[method] = contr
     obj.set_assay(sys._getframe().f_code.co_name, method)
 
-def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False, **args):
+def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=None, verbose=False, **args):
     """
     Projects data to a two dimensional space using the tSNE algorithm.
     
@@ -184,7 +184,7 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=42, verbose=False,
     n_iter : `int`
         Number of iterations. Default: 2000
     seed : `int`
-        For reproducibility. Default: 42
+        For reproducibility. Default: None
     verbose : `bool`
         Be verbose. Default: False
 
