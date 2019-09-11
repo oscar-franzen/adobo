@@ -182,8 +182,9 @@ cellular meta data variable added with adobo.data.dataset.add_meta_data.')
     else:
         # If data are continuous
         cmap = sns.cubehelix_palette(as_cmap=True)
-        po = ax.scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size, c=cl.values)
-        f.colorbar(po)
+        po = ax.scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size, c=cl.values, cmap=cmap)
+        cbar = f.colorbar(po)
+        cbar.set_label(what_to_color)
     ax.set_ylabel('Component 2', size=font_size)
     ax.set_xlabel('Component 1', size=font_size)
     plt.title(title)
