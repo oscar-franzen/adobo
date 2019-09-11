@@ -9,7 +9,9 @@ Summary
 Functions related to biology.
 """
 
+import os
 import re
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import SGDClassifier
@@ -27,6 +29,8 @@ def cell_cycle_train(verbose=False):
     Notes
     -----
     Genes are selected from GO:0007049
+    
+    Does only need to be executed once; the second time it is serialized from disk.
 
     Parameters
     ----------
@@ -50,25 +54,33 @@ def cell_cycle_train(verbose=False):
     path_data = path_pkg + '/data/Buettner_2015.mat'
     path_gene_lengths = path_pkg + '/data/Buettner_2015.mat.lengths'
     path_cc_genes = path_pkg + '/data/GO_0007049.txt' # cell cycle genes
-    desc = 'Buettner et al. (2015) doi:10.1038/nbt.3102'
-    B = adobo.IO.load_from_file(path_data, desc=desc)
-    adobo.preproc.detect_ercc_spikes(B, ercc_pattern='NA_ERCC-[0-9]+')
-    adobo.normalize.norm(B, method='rpkm', gene_lengths=path_gene_lengths)
-    cc_genes = pd.read_csv(path_cc_genes, sep='\t', header=None)
-    symb = pd.Series([ i[0] for i in B.norm.index.str.split('_') ])
-    norm_cc_mat = B.norm[symb.isin(cc_genes[1]).values]
-    X = norm_cc_mat.transpose() # cells as rows and genes as columns
-    X = sklearn_scale(X,
-                      axis=0,            # over genes, i.e. features (columns)
-                      with_mean=True,    # subtracting the column means
-                      with_std=True)     # scale the data to unit variance    
-    Y = [ i[0] for i in norm_cc_mat.columns.str.split('_') ]
-    
-    clf = SGDClassifier(loss='hinge', penalty='l2', max_iter=5, shuffle=True,
-                        verbose=verbose)
-    clf.fit(X, Y)
+    path_clf = path_pkg + '/data/cc_classifier.joblib'
+    if os.path.exists(path_clf):
+        clf, features = joblib.load(path_clf)
+        if verbose:
+            print('A trained classifier was found. Loading it from %s' % path_clf)
+    else:
+        desc = 'Buettner et al. (2015) doi:10.1038/nbt.3102'
+        B = adobo.IO.load_from_file(path_data, desc=desc)
+        adobo.preproc.detect_ercc_spikes(B, ercc_pattern='NA_ERCC-[0-9]+')
+        adobo.normalize.norm(B, method='rpkm', gene_lengths=path_gene_lengths)
+        cc_genes = pd.read_csv(path_cc_genes, sep='\t', header=None)
+        symb = pd.Series([ i[0] for i in B.norm.index.str.split('_') ])
+        norm_cc_mat = B.norm[symb.isin(cc_genes[1]).values]
+        X = norm_cc_mat.transpose() # cells as rows and genes as columns
+        X = sklearn_scale(X,
+                          axis=0,            # over genes, i.e. features (columns)
+                          with_mean=True,    # subtracting the column means
+                          with_std=True)     # scale the data to unit variance    
+        Y = [ i[0] for i in norm_cc_mat.columns.str.split('_') ]
+        
+        clf = SGDClassifier(loss='hinge', penalty='l2', max_iter=5, shuffle=True,
+                            verbose=verbose)
+        clf.fit(X, Y)
+        features = norm_cc_mat.index
+        joblib.dump([clf, features], path_clf)
     # np.sum(clf.predict(X) != Y)
-    return clf, norm_cc_mat.index
+    return clf, features
     
 def cell_cycle_predict(obj, clf, tr_features, retx=False):
     """Predicts cell cycle phase
