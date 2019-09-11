@@ -222,7 +222,7 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=None, verbose=Fals
     obj.dr['tsne'] = emb
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def umap(obj, target='irlb', seed=42, verbose=False, **args):
+def umap(obj, target='irlb', seed=None, verbose=False, **args):
     """
     Projects data to a two dimensional space using the UMAP algorithm, a non-linear
     data reduction algorithm.
@@ -237,18 +237,17 @@ def umap(obj, target='irlb', seed=42, verbose=False, **args):
         Controls how tightly points are packed together.
     `metric`, Default: 'euclidean'
         The metric to use to compute distances in high dimensional space.
-        
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
     target : `{'irlb', 'svd', 'norm'}`
-        What to run tSNE on.
+        What to run tSNE on. Default: 'irlb'
     seed : `int`
-        For reproducibility.
+        For reproducibility. Default: None
     verbose : `bool`
-        Be verbose.
+        Be verbose. Default: False
 
     References
     ----------
