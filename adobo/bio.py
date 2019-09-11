@@ -30,7 +30,7 @@ def cell_cycle_train(verbose=False):
     -----
     Genes are selected from GO:0007049
     
-    Does only need to be executed once; the second time it is serialized from disk.
+    Does only need to be trained once; the second time it is serialized from disk.
 
     Parameters
     ----------
