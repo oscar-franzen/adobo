@@ -88,121 +88,6 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
         plt.show()
     plt.close()
 
-def cell_viz(obj, reduction='tsne', what_to_color='clusters', filename=None,
-             marker_size=0.8, font_size=8, colors='adobo', title=None,
-             legend=True, min_cluster_size=0, verbose=False):
-    """Generates a 2d scatter plot from an embedding
-
-    Parameters
-    ----------
-    obj : :class:`adobo.data.dataset`
-          A data class object
-    reduction : `{'tsne', 'umap', 'irlb', 'svd'}`
-        The dimensional reduction to use. Default: tsne
-    what_to_color : `{'clusters', 'nothing'}` or a cellular meta data variable
-        Specifies what to color. If this is 'clusters', then clustering results will be
-        colored. 'nothing' indicates not to color anything. Default: 'clusters'
-    filename : `str`, optional
-        Name of an output file instead of showing on screen.
-    marker_size : `float`
-        The size of the markers.
-    font_size : `float`
-        Font size. Default: 8
-    colors : `{'default', 'random'}` or `list`
-        Can be: (i) "adobo" or "random"; or (ii) a `list` of colors with the same
-        length as the number of factors. If colors is set to "adobo", then colors are
-        retrieved from :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT` (but if the
-        number of clusters exceed 50, then random colors will be used). Default: adobo
-    title : `str`
-        Title of the plot. By default the title is set to the reduction technique.
-    legend : `bool`
-        Add legend or not. Default: True
-    min_cluster_size : `int`
-        Can be used to prevent clusters below a certain number of cells to be plotted.
-        Only applicable if `what_to_color` is set to 'clusters'. Default: 0
-    verbose : `bool`
-        Be verbose or not. Default: True
-
-    Returns
-    -------
-    None
-    """
-    q = obj.meta_cells.columns.values
-    if not what_to_color in ('clusters', 'nothing') and not what_to_color in q:
-        raise Exception('`what_to_color` can be "clusters", "nothing" or the name of a \
-cellular meta data variable added with adobo.data.dataset.add_meta_data.')
-    available_reductions = ('tsne', 'umap', 'irlb', 'svd')
-    if not reduction in available_reductions:
-        raise Exception('`reduction` must be one of %s' % ', '.join(available_reductions))
-    if not reduction in obj.dr:
-        if len(obj.dr.keys()) > 0:
-            t = (reduction, ', '.join(obj.dr.keys()))
-            q = 'Reduction "%s" was not found, the following have been generated: %s' % t
-        else:
-            q = 'Reduction "%s" was not found. Run `ad.dr.tsne(...)` or \
-`ad.dr.umap(...)` first.' % reduction
-        raise Exception(q)
-    if marker_size<0:
-        raise Exception('Marker size cannot be negative.')
-    if title == None:
-        title = reduction
-    E = obj.dr[reduction]
-    if what_to_color == 'nothing':
-        cl = [0]*E.shape[0]
-        groups = [0]
-        legend=False
-    elif what_to_color == 'clusters':
-        cl = obj.clusters[len(obj.clusters)-1]['cl']
-        groups = np.unique(cl)
-        if min_cluster_size > 0:
-            z = pd.Series(dict(Counter(cl)))
-            remove = z[z<min_cluster_size].index.values
-            groups = groups[np.logical_not(pd.Series(groups).isin(remove))]
-        if len(obj.clusters) == 0:
-            cl = [0]*E.shape[0]
-            if verbose:
-                print('Clustering has not been performed. Plotting anyway.')
-    else:
-        cl = obj.meta_cells.loc[obj.meta_cells.status=='OK', what_to_color]
-        if cl.dtype.name == 'category':
-            groups = np.unique(cl)
-            cl = cl.values
-    if colors == 'adobo':
-        colors = CLUSTER_COLORS_DEFAULT
-        if what_to_color == 'nothing':
-            colors = ['black']
-    elif colors == 'random':
-        colors = unique_colors(len(groups))
-        if verbose:
-            print('Using random colors: %s' % colors)
-    else:
-        colors = colors
-    plt.clf()
-    f, ax = plt.subplots(1, 1)
-    if what_to_color in ('nothing', 'clusters') or cl.dtype.name == 'category':
-        for i, k in enumerate(groups):
-            idx = np.array(cl) == k
-            e = E[idx]
-            col = colors[i]
-            ax.scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
-        if legend:
-            ax.legend(list(groups), loc='upper left', markerscale=5,
-                      bbox_to_anchor=(1, 1))
-    else:
-        # If data are continuous
-        cmap = sns.cubehelix_palette(as_cmap=True)
-        po = ax.scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size, c=cl.values, cmap=cmap)
-        cbar = f.colorbar(po)
-        cbar.set_label(what_to_color)
-    ax.set_ylabel('Component 2', size=font_size)
-    ax.set_xlabel('Component 1', size=font_size)
-    plt.title(title)
-    f.tight_layout()
-    if filename != None:
-        plt.savefig(filename, **args)
-    else:
-        plt.show()
-
 def pca_contributors(obj, target='irlb', dim=range(0,5), top=10, filename=None,
                      fontsize=8, **args):
     """Examine the top contributing genes for each PCA component
@@ -257,6 +142,179 @@ of generated PCA components.')
         ax[k].set_title('comp. %s' % (k+1), fontsize=fontsize)
         ax[k].invert_yaxis() # labels read top-to-bottom
     f.subplots_adjust(left=0.1, bottom=0.1)
+    if filename != None:
+        plt.savefig(filename, **args)
+    else:
+        plt.show()
+
+def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
+             genes=(), ncols=2, filename=None, marker_size=0.8, font_size=8,
+             colors='adobo', title=None, legend=True, min_cluster_size=0, verbose=False):
+    """Generates a 2d scatter plot from an embedding
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A data class object
+    reduction : `{'tsne', 'umap', 'irlb', 'svd'}`
+        The dimensional reduction to use. Default: tsne
+    clustering : `tuple`, optional
+        Specifies the clustering outcomes to plot.
+    metadata : `tuple`, optional
+        Specifies the metadata variables to plot.
+    genes : `tuple`, optional
+        Specifies genes to plot.
+    ncols : `int`
+        Number of columns in the plotting grid. Default: 2
+    filename : `str`, optional
+        Name of an output file instead of showing on screen.
+    marker_size : `float`
+        The size of the markers.
+    font_size : `float`
+        Font size. Default: 8
+    colors : `{'default', 'random'}` or `list`
+        Can be: (i) "adobo" or "random"; or (ii) a `list` of colors with the same
+        length as the number of factors. If colors is set to "adobo", then colors are
+        retrieved from :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT` (but if the
+        number of clusters exceed 50, then random colors will be used). Default: adobo
+    title : `str`
+        Title of the plot. By default the title is set to the reduction technique.
+    legend : `bool`
+        Add legend or not. Default: True
+    min_cluster_size : `int`
+        Can be used to prevent clusters below a certain number of cells to be plotted.
+        Only applicable if `what_to_color` is set to 'clusters'. Default: 0
+    verbose : `bool`
+        Be verbose or not. Default: True
+
+    Returns
+    -------
+    None
+    """
+    available_reductions = ('tsne', 'umap', 'irlb', 'svd')
+    if not reduction in available_reductions:
+        raise Exception('`reduction` must be one of %s.' % ', '.join(available_reductions))
+    if not reduction in obj.dr:
+        if len(obj.dr.keys()) > 0:
+            t = (reduction, ', '.join(obj.dr.keys()))
+            q = 'Reduction "%s" was not found, the following have been generated: %s' % t
+        else:
+            q = 'Reduction "%s" was not found. Run `ad.dr.tsne(...)` or \
+`ad.dr.umap(...)` first.' % reduction
+    if ncols < 1 or ncols > 50:
+        raise Exception('`ncols` has an invalid value.')
+    if marker_size<0:
+        raise Exception('`marker_size` cannot be negative.')
+    if title == None:
+        title = reduction
+    # cast to tuple if necessary
+    if type(clustering) == str:
+        clustering = (clustering,)
+    if type(metadata) == str:
+        metadata = (metadata,)
+    if type(genes) == str:
+        genes = (genes,)
+    for k in clustering:
+        if not k in obj.clusters:
+            raise Exception('Clustering "%s" not found.' % k)
+    for k in metadata:
+        if not k in obj.meta_cells.columns:
+            raise Exception('Meta data variable "%s" not found.' % k)
+    
+    # setup colors
+    if colors == 'adobo':
+        colors = CLUSTER_COLORS_DEFAULT
+        #if what_to_color == 'nothing':
+        #    colors = ['black']
+    elif colors == 'random':
+        colors = unique_colors(len(groups))
+        if verbose:
+            print('Using random colors: %s' % colors)
+    else:
+        colors = colors
+    n_plots = len(clustering) + len(metadata) + len(genes)
+    # setup plotting grid
+    plt.rc('xtick', labelsize=font_size)
+    plt.rc('ytick', labelsize=font_size)
+    fig, aa = plt.subplots(nrows=int(np.ceil(n_plots/ncols)),
+                           ncols=n_plots if n_plots < ncols else ncols,
+                           figsize=(10,10))
+    if not type(aa) is np.ndarray:
+        aa = np.array([aa])
+    aa = aa.flatten()
+    # turn off unused axes
+    i = len(aa)-n_plots
+    for p in np.arange(i):
+        aa[len(aa)-p-1].axis('off')
+    
+    # the embedding
+    E = obj.dr[reduction]
+    
+    # plot index
+    pl_idx = 0
+
+    # plot clusterings
+    for cl_algo in clustering:
+        cl = obj.clusters[cl_algo]
+        groups = np.unique(cl)
+        
+        if min_cluster_size > 0:
+            z = pd.Series(dict(Counter(cl)))
+            remove = z[z<min_cluster_size].index.values
+            groups = groups[np.logical_not(pd.Series(groups).isin(remove))]
+        
+        for i, k in enumerate(groups):
+            idx = np.array(cl) == k
+            e = E[idx]
+            col = colors[i]
+            aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
+        aa[pl_idx].set_title(cl_algo, size=font_size)
+        if legend:
+            aa[pl_idx].legend(list(groups), loc='upper left', markerscale=5,
+                              bbox_to_anchor=(1, 1),
+                              prop={'size': 5})
+        pl_idx += 1
+    
+    # plot meta data variables
+    for meta_var in metadata:
+        m_d = obj.meta_cells.loc[obj.meta_cells.status=='OK', meta_var]
+        if m_d.dtype.name == 'category':
+            groups = np.unique(m_d)
+            for i, k in enumerate(groups):
+                idx = np.array(m_d) == k
+                e = E[idx]
+                col = colors[i]
+                aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size, color=col)
+            if legend:
+                aa[pl_idx].legend(list(groups), loc='upper left', markerscale=5,
+                                  bbox_to_anchor=(1, 1),
+                                  prop={'size': 7})
+        else:
+            # If data are continuous
+            cmap = sns.cubehelix_palette(as_cmap=True)
+            po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
+                                    c=m_d.values, cmap=cmap)
+            cbar = fig.colorbar(po, ax=aa[pl_idx])
+            #cbar.set_label('foobar')
+        aa[pl_idx].set_title(meta_var, size=font_size)
+        pl_idx += 1
+    
+    # plot genes
+    for gene in genes:
+        ge = obj.norm.loc[gene, :]
+        cmap = sns.cubehelix_palette(as_cmap=True)
+        po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
+                                c=ge.values, cmap=cmap)
+        cbar = fig.colorbar(po, ax=aa[pl_idx])
+        aa[pl_idx].set_title(gene, size=font_size)
+        pl_idx += 1
+    
+    for ax in aa:
+        ax.set_ylabel('%s component 2' % reduction, size=font_size)
+        ax.set_xlabel('%s component 1' % reduction, size=font_size)
+    #plt.title(title)
+    #fig.tight_layout()
+    plt.subplots_adjust(wspace=0.4, hspace=0.3)
     if filename != None:
         plt.savefig(filename, **args)
     else:

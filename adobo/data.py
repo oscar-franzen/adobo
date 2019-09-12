@@ -49,7 +49,7 @@ class dataset:
         A data frame containing meta data for cells.
     meta_genes : `pandas.DataFrame`
         A data frame containing meta data for genes.
-    clusters : `list`
+    clusters : `dict`
         Generated clusters.
     desc : `str`
         A string describing the dataset.
@@ -95,7 +95,7 @@ class dataset:
         self.dr_gene_contr = {}
         
         # containing clusters
-        self.clusters = []
+        self.clusters = {}
     
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
@@ -182,8 +182,8 @@ Raw read counts matrix contains: %s genes and %s cells
         print(s)
         if self.get_assay('pca'):
             print('pca has been performed')
-        cd = ', '.join([ item['algo'] for item in self.clusters ])
-        print('The following community detection methods have been invoked: %s' % cd)
+        #cd = ', '.join([ item['algo'] for item in self.clusters ])
+        #print('The following community detection methods have been invoked: %s' % cd)
 
     def __repr__(self):
         return self._describe()

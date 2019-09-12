@@ -148,7 +148,7 @@ def _leiden(obj, res=0.8, seed=42):
     #else:
     part = la.RBERVertexPartition
     cl = la.find_partition(g, part, n_iterations=10, resolution_parameter=res, seed=seed)
-    obj.clusters.append({ 'algo' : 'leiden', 'cl' : cl.membership })
+    obj.clusters['leiden'] = cl.membership
 
 def _igraph(obj, clust_alg):
     """
@@ -201,8 +201,7 @@ def _igraph(obj, clust_alg):
         cl = z.membership
     else:
         raise Exception('Unsupported community detection algorithm specified.')
-    
-    obj.clusters.append({ 'algo' : clust_alg, 'cl' : cl })
+    obj.clusters[clust_alg] = cl
 
 def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
              clust_alg='leiden', prune_snn=0.067, res=0.8, retx=True, seed=42,
@@ -263,4 +262,4 @@ def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
         _igraph(obj, clust_alg)
     obj.set_assay(sys._getframe().f_code.co_name)
     if retx:
-        return dict(Counter(obj.clusters[len(obj.clusters)-1]['cl']))
+        return dict(Counter(obj.clusters[clust_alg]))
