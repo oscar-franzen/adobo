@@ -72,8 +72,8 @@ def seurat(data, ngenes=1000, num_bins=20):
     ret = np.array(top_hvg.index)
     return ret
 
-def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ngenes=1000,
-              verbose=False):
+def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
+              minBiolDisp=0.5, verbose=False):
     """Implements the method of Brennecke et al. (2013) to identify highly variable genes
     
     Notes
@@ -113,7 +113,6 @@ def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ng
         data_norm = 2**data_norm-1
         ercc = 2**ercc-1
     ercc = ercc.dropna(axis=1, how='all')
-
     # technical gene (spikes)
     meansSp = ercc.mean(axis=1)
     varsSp = ercc.var(axis=1)
@@ -146,7 +145,6 @@ def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, minBiolDisp=0.5, ng
 
     psia1theta = a1
     minBiolDisp = minBiolDisp**2
-
     m = ercc.shape[1]
     cv2th = a0+minBiolDisp+a0*minBiolDisp
 
@@ -469,7 +467,8 @@ def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     if method == 'seurat':
         hvg = seurat(data, ngenes)
     elif method == 'brennecke':
-        hvg = brennecke(data, obj.norm_log2, data_ercc, fdr, ngenes, verbose)
+        hvg = brennecke(data_norm=data, log2=obj.norm_log2, ercc=data_ercc, fdr=fdr,
+                        ngenes=ngenes, minBiolDisp=0.5, verbose=verbose)
     elif method == 'scran':
         hvg = scran(data, data_ercc, obj.norm_log2, ngenes)
     elif method == 'chen2016':
