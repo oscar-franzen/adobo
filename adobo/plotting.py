@@ -225,6 +225,9 @@ def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
     for k in metadata:
         if not k in obj.meta_cells.columns:
             raise Exception('Meta data variable "%s" not found.' % k)
+    for gene in genes:
+        if not gene in obj.norm.index:
+            raise Exception('%s was not found in the gene expression matrix' % gene)
     # setup colors
     if colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
