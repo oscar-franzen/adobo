@@ -88,8 +88,8 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
         plt.show()
     plt.close()
 
-def pca_contributors(obj, target='irlb', dim=range(0,5), top=10, filename=None,
-                     fontsize=8, **args):
+def pca_contributors(obj, target='irlb', dim=range(0,2), top=10, color='#fcc603',
+                     fontsize=6, fig_size=(10, 5), filename=None, **args):
     """Examine the top contributing genes for each PCA component
     
     Note
@@ -107,10 +107,12 @@ def pca_contributors(obj, target='irlb', dim=range(0,5), top=10, filename=None,
         Specifies the components to plot. For example: range(0,5) specifies the first five.
     top : `int`
         Specifies the number of top scoring genes to include. Default: 10
-    fontsize : `int`
-        Specifies font size. Default: 8
     color : `str`
         Color of the bars. As a string or hex code. Default: "#fcc603"
+    fontsize : `int`
+        Specifies font size. Default: 8
+    fig_size : `tuple`
+        Figure size in inches. Default: (10, 10)
     filename : `str`, optional
         Write to a file instead of showing the plot on screen.
         
@@ -126,8 +128,7 @@ of generated PCA components.')
     contr = obj.dr_gene_contr[target][dim]
     
     plt.rcdefaults()
-    f, ax = plt.subplots(1, contr.shape[1])
-    f.tight_layout()
+    f, ax = plt.subplots(1, contr.shape[1], figsize=fig_size)
     f.subplots_adjust(wspace=1)
     
     #f.suptitle('%s' % target)
@@ -141,7 +142,8 @@ of generated PCA components.')
         ax[k].set_xlabel('abs(PCA score)', fontsize=fontsize)
         ax[k].set_title('comp. %s' % (k+1), fontsize=fontsize)
         ax[k].invert_yaxis() # labels read top-to-bottom
-    f.subplots_adjust(left=0.1, bottom=0.1)
+    #f.subplots_adjust(left=0.1, bottom=0.1)
+    plt.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
     else:
@@ -149,7 +151,8 @@ of generated PCA components.')
 
 def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
              genes=(), ncols=2, filename=None, marker_size=0.8, font_size=8,
-             colors='adobo', title=None, legend=True, min_cluster_size=0, verbose=False):
+             colors='adobo', title=None, legend=True, min_cluster_size=0,
+             fig_size=(10, 10), verbose=False):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -184,6 +187,8 @@ def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
     min_cluster_size : `int`
         Can be used to prevent clusters below a certain number of cells to be plotted.
         Only applicable if `what_to_color` is set to 'clusters'. Default: 0
+    fig_size : `tuple`
+        Figure size in inches. Default: (10, 10)
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -220,7 +225,6 @@ def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
     for k in metadata:
         if not k in obj.meta_cells.columns:
             raise Exception('Meta data variable "%s" not found.' % k)
-    
     # setup colors
     if colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
@@ -238,7 +242,7 @@ def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
     plt.rc('ytick', labelsize=font_size)
     fig, aa = plt.subplots(nrows=int(np.ceil(n_plots/ncols)),
                            ncols=n_plots if n_plots < ncols else ncols,
-                           figsize=(10,10))
+                           figsize=fig_size)
     if not type(aa) is np.ndarray:
         aa = np.array([aa])
     aa = aa.flatten()
@@ -246,13 +250,10 @@ def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
     i = len(aa)-n_plots
     for p in np.arange(i):
         aa[len(aa)-p-1].axis('off')
-    
     # the embedding
     E = obj.dr[reduction]
-    
     # plot index
     pl_idx = 0
-
     # plot clusterings
     for cl_algo in clustering:
         cl = obj.clusters[cl_algo]
@@ -274,7 +275,6 @@ def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
                               bbox_to_anchor=(1, 1),
                               prop={'size': 5})
         pl_idx += 1
-    
     # plot meta data variables
     for meta_var in metadata:
         m_d = obj.meta_cells.loc[obj.meta_cells.status=='OK', meta_var]
@@ -298,7 +298,6 @@ def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
             #cbar.set_label('foobar')
         aa[pl_idx].set_title(meta_var, size=font_size)
         pl_idx += 1
-    
     # plot genes
     for gene in genes:
         ge = obj.norm.loc[gene, :]
@@ -308,7 +307,6 @@ def cell_viz(obj, reduction='tsne', clustering=('leiden',), metadata=(),
         cbar = fig.colorbar(po, ax=aa[pl_idx])
         aa[pl_idx].set_title(gene, size=font_size)
         pl_idx += 1
-    
     for ax in aa:
         ax.set_ylabel('%s component 2' % reduction, size=font_size)
         ax.set_xlabel('%s component 1' % reduction, size=font_size)
