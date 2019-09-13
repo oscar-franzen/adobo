@@ -21,8 +21,8 @@ from statsmodels.nonparametric.kernel_regression import KernelReg
 from ._log import warning
 from ._stats import bw_nrd, row_geometric_mean, theta_ml, is_outlier
 
-def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
-    """Performs variance stabilizing normaliztion based on a negative binomial regression
+def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
+    """Performs variance stabilizing normalization based on a negative binomial regression
     model with regularized parameters
     
     Notes
@@ -52,7 +52,7 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     """
     
     bw_adjust = 3 # Kernel bandwidth adjustment factor
-    
+
     # numericals functions
     log10 = np.log10
     log = np.log
@@ -67,17 +67,17 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
     cell_attr['log_gene'] = log10(cell_attr.genes)
     cell_attr['umi_per_gene'] = cell_attr.counts/cell_attr.genes
     cell_attr['log_umi_per_gene'] = log10(cell_attr.umi_per_gene)
-    
+
     genes_cell_count = (data>0).sum(axis=1)
-    genes = genes_cell_count[genes_cell_count>=10].index
+    genes = genes_cell_count[genes_cell_count>=min_cells].index
     X = data[data.index.isin(genes)]
     genes_log_gmean = log10(row_geometric_mean(X, gmean_eps))
-    
+
     cells_step1 = X.columns
     genes_step1 = X.index
     genes_log_gmean_step1 = genes_log_gmean
     data_step1 = cell_attr
-    
+
     if n_genes < len(genes_step1):
         bw = bw_nrd(genes_log_gmean_step1)
         kde = KernelDensity(bandwidth=bw, kernel='gaussian')
@@ -88,7 +88,7 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
         X = X.loc[X.index.isin(genes_step1), X.columns.isin(cells_step1)]
         X = X.reindex(genes_step1)
         genes_log_gmean_step1 = log10(row_geometric_mean(X, gmean_eps))
-    
+
     model_pars = []
     for g in genes_step1:
         y = X.loc[g,:]
@@ -102,49 +102,64 @@ def vsn(data, min_cells=10, gmean_eps=1, n_genes=2000):
                            'theta' : theta,
                            'log_umi' : coef['log_umi'],
                            'const' : coef['const']})
+
     model_pars = pd.DataFrame(model_pars)
     model_pars.index = model_pars['gene']
     model_pars = model_pars.drop('gene', axis=1)
     model_pars.theta = log10(model_pars.theta)
-    
+
     # remove outliers
     outliers = model_pars.apply(lambda x : is_outlier(x, genes_log_gmean_step1), axis=0)
     outliers = outliers.any(axis=1)
     model_pars = model_pars[np.logical_not(outliers.values)]
-    
+
     genes_step1 = model_pars.index.values
     genes_log_gmean_step1 = genes_log_gmean_step1[np.logical_not(outliers.values)]
-    
+
     x_points = np.maximum(genes_log_gmean, min(genes_log_gmean_step1))
     x_points = np.minimum(x_points, max(genes_log_gmean_step1))
-    
+
     model_pars_fit = model_pars.apply(
         lambda x : KernelReg(x, genes_log_gmean_step1, bw='aic', var_type='c').fit(x_points)[0],
         axis = 0
     )
-    
+
     model_pars_fit.index = x_points.index
     model_pars.theta = 10**model_pars.theta
     model_pars_fit.theta = 10**model_pars_fit.theta
     model_pars_final = model_pars_fit
-    
+
     regressor_data_final = pd.DataFrame({'const' : [1]*len(cell_attr['log_umi']),
                                          'log_umi' : cell_attr['log_umi']})
-    
-    mu = exp(np.dot(model_pars_final.loc[:, ('const','log_umi')],
+
+    coefs = model_pars_final.loc[:, ('const','log_umi')]
+    mu = exp(np.dot(coefs,
              regressor_data_final.transpose()))
     y = data[data.index.isin(model_pars_final.index)]
-    
+
     # pearson residuals
     mu2 = pd.DataFrame(mu**2)
     t = (y-mu)
-    n = sqrt((mu+mu2.div(model_pars_final.loc[:, 'theta'].values, axis=0)))
-    
+    variance = mu+mu2.div(model_pars_final.loc[:, 'theta'].values, axis=0)
+    n = sqrt(variance)
+
     n.index = t.index
     n.columns = t.columns
-    
     pr = t/n
-    return pr
+
+    coefs = model_pars_final.loc[:, ('const','log_umi')]
+    theta = model_pars_final.loc[:, ('theta')]
+    med = np.median(cell_attr['log_umi'])
+    
+    # correct counts
+    regressor_data = pd.DataFrame({'const' : [1]*len(cell_attr['log_umi']),
+                                   'log_umi' : [med]*len(cell_attr['log_umi']) })
+    mu = exp(np.dot(coefs, regressor_data.transpose()))
+    variance = mu+pd.DataFrame(mu**2).div(theta.values, axis=0)
+    variance.index=pr.index
+    variance.columns=pr.columns
+    corrected_data = mu + pr * sqrt(variance)
+    return abs(round(corrected_data))
 
 def clr(data, axis='genes'):
     """Performs centered log ratio normalization similar to Seurat
