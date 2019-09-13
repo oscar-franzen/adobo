@@ -27,7 +27,8 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     
     Notes
     -----
-    Adopts a subset of the functionality of `vst` in the R package sctransform [0].
+    Use only with UMI counts. Adopts a subset of the functionality of `vst` in the R
+    package `sctransform`.
     
     Parameters
     ----------
@@ -42,13 +43,13 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     
     References
     ----------
-    [0] https://cran.r-project.org/web/packages/sctransform/index.html
-    [1] https://www.biorxiv.org/content/10.1101/576827v1
+    https://cran.r-project.org/web/packages/sctransform/index.html
+    https://www.biorxiv.org/content/10.1101/576827v1
     
     Returns
     -------
     :class:`pandas.DataFrame`
-        A normalized data matrix with same dimensions as before.
+        A data matrix with adjusted counts.
     """
     
     bw_adjust = 3 # Kernel bandwidth adjustment factor
