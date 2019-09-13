@@ -349,7 +349,7 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
         normalization. `vsn` performs a variance stabilizing normalization.
         Default: standard
     log2 : `bool`
-        Perform log2 transformation. Not applicable if method='vsn'. Default: True
+        Perform log2 transformation. Default: True
     small_const : `float`
         A small constant to add to expression values to avoid log'ing genes with zero
         expression. Default: 1
@@ -416,7 +416,7 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
         norm_method='vsn'
     else:
         raise Exception('Unknown normalization method.')
-    if log2 and method != 'vsn':
+    if log2:
         norm = np.log2(norm+small_const)
     obj.norm_log2 = log2
     if np.any(obj.meta_genes.ERCC):
