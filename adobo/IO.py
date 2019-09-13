@@ -80,7 +80,8 @@ def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False
     exp_mat = exp_mat[np.logical_not(rem)]
     exp_mat.index = exp_mat.index.str.replace('"', '')
     exp_mat.columns = exp_mat.columns.str.replace('"', '')
-    obj = dataset(exp_mat, desc, output_filename=output_filename, input_filename=filename)
+    obj = dataset(exp_mat, desc, output_filename=output_filename,
+                  input_filename=filename, verbose=verbose)
     if verbose:
         genes = '{:,}'.format(exp_mat.shape[0])
         cells = '{:,}'.format(exp_mat.shape[1])

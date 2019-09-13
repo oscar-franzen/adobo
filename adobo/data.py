@@ -57,7 +57,7 @@ class dataset:
         A filename that will be used when calling save().
     """
     def __init__(self, raw_mat, desc='no desc set', output_filename=None,
-                 input_filename=None):
+                 input_filename=None, verbose=False):
         # holding info about which assays have been done
         self.hvg = []
         self.hvg_method = ASSAY_NOT_DONE
@@ -66,7 +66,7 @@ class dataset:
         self.input_filename=input_filename
         
         self._assays = {}
-        self.exp_mat = raw_mat
+        self.exp_mat = raw_mat.astype(pd.SparseDtype("int", 0))
         self._low_quality_cells = ASSAY_NOT_DONE
 
         self.norm = pd.DataFrame()
@@ -96,6 +96,25 @@ class dataset:
         
         # containing clusters
         self.clusters = {}
+        
+        if verbose:
+            print('Memory usage of loaded data: %s MB' % self.df_mem_usage('exp_mat'))
+    
+    def df_mem_usage(self, var):
+        """Memory usage for a data frame in mega bytes
+
+        Parameters
+        ----------
+        var : `str`
+            Variable name as a string.
+
+        Returns
+        -------
+        `float`
+            Mega bytes used with two decimals.
+        """
+        df = getattr(self, var)
+        return '%.2f' % (df.memory_usage().sum()/1024/1024)
     
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.exp_mat.shape[0])
