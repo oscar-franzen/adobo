@@ -266,7 +266,8 @@ def umap(obj, target='irlb', seed=None, verbose=False, **args):
         X = obj.norm
     else:
         if not target in obj.dr:
-            raise Exception('%s was not found, please run `adobo.dr.pca(...)` first.')
+            e = '%s was not found, please run `adobo.dr.pca(...)` first.' % target
+            raise Exception(e)
         else:
             X = obj.dr[target]
     reducer = um.UMAP(random_state=seed, verbose=verbose, **args)
