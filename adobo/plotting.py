@@ -88,7 +88,7 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
         plt.show()
     plt.close()
 
-def pca_contributors(obj, target='irlb', dim=range(0,2), top=10, color='#fcc603',
+def pca_contributors(obj, target='irlb', dim=[0,2], top=10, color='#fcc603',
                      fontsize=6, fig_size=(10, 5), filename=None, **args):
     """Examine the top contributing genes for each PCA component
     
@@ -103,8 +103,8 @@ def pca_contributors(obj, target='irlb', dim=range(0,2), top=10, color='#fcc603'
           A data class object
     target : `{'irlb', 'svd'}`
         The dimensional reduction to use. Default: irlb
-    dim : :py:class:`range`
-        Specifies the components to plot. For example: range(0,5) specifies the first five.
+    dim : `list`
+        A list of indices specifying components to plot. First component has index zero.
     top : `int`
         Specifies the number of top scoring genes to include. Default: 10
     color : `str`
@@ -122,7 +122,7 @@ def pca_contributors(obj, target='irlb', dim=range(0,2), top=10, color='#fcc603'
     """
     if not target in obj.dr_gene_contr:
         raise Exception('Target %s not found' % target)
-    if dim.stop > obj.dr_gene_contr[target].shape[1]:
+    if max(dim) > obj.dr_gene_contr[target].shape[1]:
         raise Exception('Number of requested dimensions cannot be higher than the number \
 of generated PCA components.')
     contr = obj.dr_gene_contr[target][dim]
@@ -130,18 +130,21 @@ of generated PCA components.')
     plt.rcdefaults()
     f, ax = plt.subplots(1, contr.shape[1], figsize=fig_size)
     f.subplots_adjust(wspace=1)
-    
+    if type(ax) != np.ndarray:
+        ax = [ax]
     #f.suptitle('%s' % target)
+    idx = 0
     for k, d in contr.iteritems():
         d = d.sort_values(ascending=False)
         d = d.head(top)
         y_pos = np.arange(len(d))
-        ax[k].barh(y_pos, d.values, color=YLW_CURRY)
-        ax[k].set_yticks(y_pos)
-        ax[k].set_yticklabels(d.index.values, fontsize=fontsize)
-        ax[k].set_xlabel('abs(PCA score)', fontsize=fontsize)
-        ax[k].set_title('comp. %s' % (k+1), fontsize=fontsize)
-        ax[k].invert_yaxis() # labels read top-to-bottom
+        ax[idx].barh(y_pos, d.values, color=YLW_CURRY)
+        ax[idx].set_yticks(y_pos)
+        ax[idx].set_yticklabels(d.index.values, fontsize=fontsize)
+        ax[idx].set_xlabel('abs(PCA score)', fontsize=fontsize)
+        ax[idx].set_title('comp. %s' % (k+1), fontsize=fontsize)
+        ax[idx].invert_yaxis() # labels read top-to-bottom
+        idx += 1
     #f.subplots_adjust(left=0.1, bottom=0.1)
     plt.tight_layout()
     if filename != None:
