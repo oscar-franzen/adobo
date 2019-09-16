@@ -268,13 +268,14 @@ def rpkm(data, gene_lengths):
     # gene length in kilobases
     kb = gene_lengths/1000
 
-    def _foo(x):
+    def _per_cell(x):
         s = sum(x)/10**6
         rpm = x/s
         rpkm = rpm/kb
         return rpkm
 
-    ret = mat.apply(_foo, axis=0)
+    ret = pd.DataFrame([_per_cell(i[1]) for i in mat.transpose().iterrows()]).transpose()
+    ret.columns = mat.columns
     return ret
 
 def fqn(data):
