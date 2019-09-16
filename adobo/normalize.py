@@ -213,7 +213,7 @@ def standard(data, scaling_factor=10000):
     :class:`pandas.DataFrame`
         A normalized data matrix with same dimensions as before.
     """
-    col_sums = data.apply(lambda x: sum(x), axis=0)
+    col_sums = [ np.sum(i[1]) for i in data.transpose().iterrows() ]
     data_norm = (data / col_sums) * scaling_factor
     return data_norm
 
