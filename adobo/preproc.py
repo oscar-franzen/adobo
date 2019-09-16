@@ -142,6 +142,7 @@ def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     count_data = obj.count_data
     ercc = count_data.index.str.contains(ercc_pattern)
     obj.meta_genes['ERCC'] = ercc
+    obj.meta_genes[ercc] = 'EXCLUDE'
     no_found = np.sum(ercc)
     obj.ercc_pattern = ercc_pattern
     if no_found>0:
