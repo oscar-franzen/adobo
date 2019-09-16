@@ -474,7 +474,7 @@ def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     elif method == 'chen2016':
         hvg = chen2016(data, obj.norm_log2, fdr, ngenes)
     elif method == 'mm':
-        hvg = mm(obj.exp_mat, obj.norm_log2, fdr, ngenes)
+        hvg = mm(obj.count_data, obj.norm_log2, fdr, ngenes)
     else:
         raise Exception('Unknown HVG method specified. Valid choices are: seurat, \
 brennecke, scran, chen2016, mm')

@@ -59,7 +59,7 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
     int
         Number of genes removed.
     """
-    exp_mat = obj.exp_mat
+    count_data = obj.count_data
     cell_counts = obj.meta_cells.total_reads
     cells_remove = cell_counts < minreads
     obj.meta_cells.status[cells_remove] = 'EXCLUDE'
@@ -103,17 +103,17 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False
     int
         Number of mitochondrial genes detected.
     """
-    exp_mat = obj.exp_mat
+    count_data = obj.count_data
     if genes is None:
-        mito = exp_mat.index.str.contains(mito_pattern, regex=True, case=False)
+        mito = count_data.index.str.contains(mito_pattern, regex=True, case=False)
         obj.meta_genes['mitochondrial'] = mito
     else:
-        mito = obj.exp_mat.index.isin(genes)
+        mito = obj.count_data.index.isin(genes)
         obj.meta_genes['mitochondrial'] = mito
     no_found = np.sum(obj.meta_genes['mitochondrial'])
     if no_found > 0:
         mt = obj.meta_genes[obj.meta_genes.mitochondrial].index
-        mt_counts = obj.exp_mat.loc[mt, :]
+        mt_counts = obj.count_data.loc[mt, :]
         mt_counts = mt_counts.sum(axis=0)
         mito_perc = mt_counts / obj.meta_cells.total_reads*100
         obj.add_meta_data(axis='cells', key='mito_perc', data=mito_perc, type_='cont')
@@ -139,14 +139,14 @@ def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     int
         Number of detected ercc spikes.
     """
-    exp_mat = obj.exp_mat
-    ercc = exp_mat.index.str.contains(ercc_pattern)
+    count_data = obj.count_data
+    ercc = count_data.index.str.contains(ercc_pattern)
     obj.meta_genes['ERCC'] = ercc
     no_found = np.sum(ercc)
     obj.ercc_pattern = ercc_pattern
     if no_found>0:
         ercc = obj.meta_genes[obj.meta_genes.ERCC].index
-        ercc_counts = obj.exp_mat.loc[ercc, :]
+        ercc_counts = obj.count_data.loc[ercc, :]
         ercc_counts = ercc_counts.sum(axis=0)
         ercc_perc = ercc_counts / obj.meta_cells.total_reads*100
         obj.add_meta_data(axis='cells', key='ercc_perc', data=ercc_perc, type_='cont')
@@ -203,21 +203,21 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     
     if not 'mito' in obj.meta_cells.columns:
         mt_genes = obj.meta_genes.mitochondrial[obj.meta_genes.mitochondrial]
-        mito_mat = obj.exp_mat[obj.exp_mat.index.isin(mt_genes.index)]
+        mito_mat = obj.count_data[obj.count_data.index.isin(mt_genes.index)]
         mito_sum = mito_mat.sum(axis=0)
         obj.meta_cells['mito'] = mito_sum
     if not 'ERCC' in obj.meta_cells.columns:
         ercc = obj.meta_genes.ERCC[obj.meta_genes.ERCC]
-        ercc_mat = obj.exp_mat[obj.exp_mat.index.isin(ercc.index)]
+        ercc_mat = obj.count_data[obj.count_data.index.isin(ercc.index)]
         ercc_sum = ercc_mat.sum(axis=0)
         obj.meta_cells['ERCC'] = ercc_sum
     if not 'rRNA' in obj.meta_cells.columns:
         rrna_genes = obj.meta_genes.rRNA[obj.meta_genes.rRNA]
-        rrna_mat = obj.exp_mat[obj.exp_mat.index.isin(rrna_genes.index)]
+        rrna_mat = obj.count_data[obj.count_data.index.isin(rrna_genes.index)]
         rrna_sum = rrna_mat.sum(axis=0)
         obj.meta_cells['rRNA'] = rrna_sum
     
-    #data = obj.exp_mat
+    #data = obj.count_data
     inp_total_reads = obj.meta_cells.total_reads
     inp_detected_genes = obj.meta_cells.detected_genes/inp_total_reads
     inp_rrna = obj.meta_cells.rRNA/inp_total_reads
@@ -239,7 +239,7 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     thres_upper = MD_mean + MD_sd * sd_thres
 
     res = (mahal_dists < thres_lower) | (mahal_dists > thres_upper)
-    low_quality_cells = obj.exp_mat.columns[res].values
+    low_quality_cells = obj.count_data.columns[res].values
     obj.low_quality_cells = low_quality_cells
     obj.set_assay(sys._getframe().f_code.co_name)
     r = obj.meta_cells.index.isin(low_quality_cells)

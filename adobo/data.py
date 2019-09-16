@@ -26,7 +26,7 @@ class dataset:
     ----------
     _assays : `dict`
         Holding information about what functions have been applied.
-    exp_mat : :class:`pandas.DataFrame`
+    count_data : :class:`pandas.DataFrame`
         Raw read count matrix.
     _low_quality_cells : `list`
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
@@ -66,7 +66,7 @@ class dataset:
         self.input_filename=input_filename
         
         self._assays = {}
-        self.exp_mat = raw_mat.astype(pd.SparseDtype("int", 0))
+        self.count_data = raw_mat.astype(pd.SparseDtype("int", 0))
         self._low_quality_cells = ASSAY_NOT_DONE
 
         self.norm = pd.DataFrame()
@@ -98,7 +98,7 @@ class dataset:
         self.clusters = {}
         
         if verbose:
-            print('Memory usage of loaded data: %s MB' % self.df_mem_usage('exp_mat'))
+            print('Memory usage of loaded data: %s MB' % self.df_mem_usage('count_data'))
     
     def df_mem_usage(self, var):
         """Memory usage for a data frame in mega bytes
@@ -117,8 +117,8 @@ class dataset:
         return '%.2f' % (df.memory_usage().sum()/1024/1024)
     
     def _print_raw_dimensions(self):
-        genes = '{:,}'.format(self.exp_mat.shape[0])
-        cells = '{:,}'.format(self.exp_mat.shape[1])
+        genes = '{:,}'.format(self.count_data.shape[0])
+        cells = '{:,}'.format(self.count_data.shape[1])
         return '%s genes and %s cells' % (genes, cells)
     
     def save(self, compress=True):
@@ -165,8 +165,8 @@ class dataset:
     
     def _describe(self):
         """ Helper function for __repr__. """
-        genes = '{:,}'.format(self.exp_mat.shape[0])
-        cells = '{:,}'.format(self.exp_mat.shape[1])
+        genes = '{:,}'.format(self.count_data.shape[0])
+        cells = '{:,}'.format(self.count_data.shape[1])
         s = """Filename (input): %s
 Description: %s
 Raw read counts matrix contains: %s genes and %s cells

@@ -36,8 +36,8 @@ def reads_per_cell(obj, barcolor='#E69F00', title='sequencing reads', filename=N
     -------
     None
     """
-    exp_mat = obj.exp_mat
-    cell_counts = exp_mat.sum(axis=0)
+    count_data = obj.count_data
+    cell_counts = count_data.sum(axis=0)
     plt.clf()
     colors = [barcolor]*(len(cell_counts))
     plt.gca().get_yaxis().set_major_formatter(
@@ -72,8 +72,8 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
     -------
     None
     """
-    exp_mat = obj.exp_mat
-    genes_expressed = [ np.sum(r[1]>0) for r in exp_mat.transpose().iterrows() ]
+    count_data = obj.count_data
+    genes_expressed = [ np.sum(r[1]>0) for r in count_data.transpose().iterrows() ]
     plt.clf()
     plt.gca().get_yaxis().set_major_formatter(
         matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))

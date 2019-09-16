@@ -392,7 +392,7 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
     # Check arguments
     if method == 'rpkm' and gene_lengths == None:
         raise Exception('The `gene_lengths` parameter needs to be set when method is RPKM.')
-    data = obj.exp_mat
+    data = obj.count_data
     if remove_low_qual:
         # Remove low quality cells
         remove = obj.meta_cells.status[obj.meta_cells.status!='OK']
