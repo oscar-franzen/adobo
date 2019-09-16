@@ -88,7 +88,7 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
         plt.show()
     plt.close()
 
-def pca_contributors(obj, target='irlb', dim=[0,2], top=10, color='#fcc603',
+def pca_contributors(obj, target='irlb', dim=[0, 1, 2], top=10, color='#fcc603',
                      fontsize=6, fig_size=(10, 5), filename=None, **args):
     """Examine the top contributing genes for each PCA component
     
