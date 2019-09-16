@@ -73,7 +73,7 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
     None
     """
     exp_mat = obj.exp_mat
-    genes_expressed = exp_mat.apply(lambda x: sum(x > 0), axis=0)
+    genes_expressed = [ np.sum(r[1]>0) for r in exp_mat.transpose().iterrows() ]
     plt.clf()
     plt.gca().get_yaxis().set_major_formatter(
         matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
