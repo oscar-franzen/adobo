@@ -159,7 +159,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     else:
         plt.show()
 
-def cell_viz(obj, reduction='tsne', name=(), clustering=('leiden',), metadata=(),
+def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
              genes=(), filename=None, marker_size=0.8, font_size=8, colors='adobo',
              title=None, legend=True, min_cluster_size=10,
              fig_size=(10, 10), verbose=False):
@@ -208,6 +208,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=('leiden',), metadata=()
     None
     """
     available_reductions = ('tsne', 'umap', 'pca')
+    D = obj.norm_data
     if not reduction in available_reductions:
         raise Exception('`reduction` must be one of %s.' % ', '.join(available_reductions))
     if marker_size<0:
@@ -221,9 +222,17 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=('leiden',), metadata=()
         genes = (genes,)
     if type(name) == str:
         name = (name,)
+    if len(clustering) == 0:
+        clustering = tuple({'q' : list(D[item]['clusters'].keys()) for item in D}['q'])
     # setup colors
     if colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
+    elif colors == 'random':
+        colors = unique_colors(len(groups))
+        if verbose:
+            print('Using random colors: %s' % colors)
+    else:
+        colors = colors
     n_plots = len(clustering) + len(metadata) + len(genes) # per row
     if n_plots == 1:
         n_plots = 2
@@ -231,9 +240,9 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=('leiden',), metadata=()
     plt.rc('ytick', labelsize=font_size)
     targets = {}
     if len(name) == 0:
-        targets = obj.norm_data
+        targets = D
     else:
-        targets[name] = obj.norm_data[name]
+        targets[name] = D[name]
     # setup plotting grid
     fig, aa = plt.subplots(nrows=len(targets),
                            ncols=n_plots,
@@ -243,10 +252,16 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=('leiden',), metadata=()
     for row, l in enumerate(targets):
         item = targets[l]
         # the embedding
-        E = item['dr']['tsne']['embedding']
+        if not reduction in item['dr']:
+            q = 'Reduction "%s" was not found. Run `ad.dr.tsne(...)` or \
+`ad.dr.umap(...)` first.' % reduction
+            raise Exception(q)
+        E = item['dr'][reduction]['embedding']
         pl_idx = 0 # plot index
         # plot clusterings
         for cl_algo in clustering:
+            if not cl_algo in item['clusters']:
+                raise Exception('Clustering "%s" not found.' % cl_algo)
             cl = item['clusters'][cl_algo]['membership']
             groups = np.unique(cl)
             if min_cluster_size > 0:
@@ -268,6 +283,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=('leiden',), metadata=()
             pl_idx += 1
         # plot meta data variables
         for meta_var in metadata:
+            if not meta_var in obj.meta_cells.columns:
+                raise Exception('Meta data variable "%s" not found.' % k)
             m_d = obj.meta_cells.loc[obj.meta_cells.status=='OK', meta_var]
             if m_d.dtype.name == 'category':
                 groups = np.unique(m_d)
@@ -291,6 +308,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=('leiden',), metadata=()
             pl_idx += 1
         # plot genes
         for gene in genes:
+            if not gene in item['data'].index:
+                raise Exception('"%s" was not found in the gene expression matrix' % gene)
             ge = item['data'].loc[gene, :]
             cmap = sns.cubehelix_palette(as_cmap=True)
             po = aa[row][pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
@@ -298,6 +317,9 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=('leiden',), metadata=()
             cbar = fig.colorbar(po, ax=aa[row][pl_idx])
             aa[row][pl_idx].set_title(gene, size=font_size)
             pl_idx += 1
+        # turn off unused axes
+        if (len(clustering) + len(metadata) + len(genes)) == 1:
+            aa[row][1].axis('off')
     plt.subplots_adjust(wspace=0.4, hspace=0.3)
     if filename != None:
         plt.savefig(filename, **args)
