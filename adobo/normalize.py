@@ -330,8 +330,8 @@ def fqn(data):
     df = df.transpose()
     return df
 
-def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
-         gene_lengths=None, scaling_factor=10000, axis='genes'):
+def norm(obj, method='standard', name=None, log2=True, small_const=1,
+         remove_low_qual=True, gene_lengths=None, scaling_factor=10000, axis='genes'):
     r"""Normalizes gene expression data
     
     Notes
@@ -350,6 +350,10 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
         `fqn` performs a full-quantile normalization. `clr` performs centered log ratio
         normalization. `vsn` performs a variance stabilizing normalization.
         Default: standard
+    name : `str`
+        A choosen name for the normalization. It is used for storing and retrieving this
+        normalization for plotting later. If `None` or an empty string, then it is set to
+        the value of `method`.
     log2 : `bool`
         Perform log2 transformation. Default: True
     small_const : `float`
@@ -390,7 +394,8 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
     -------
     Nothing. Modifies the passed object.
     """
-    # Check arguments
+    if name is None or name == '':
+        name = method
     if method == 'rpkm' and gene_lengths == None:
         raise Exception('The `gene_lengths` parameter needs to be set when method is RPKM.')
     data = obj.count_data
@@ -420,12 +425,16 @@ def norm(obj, method='standard', log2=True, small_const=1, remove_low_qual=True,
         raise Exception('Unknown normalization method.')
     if log2:
         norm = np.log2(norm+small_const)
-    obj.norm_log2 = log2
+    ne = None
     if np.any(obj.meta_genes.ERCC):
         # Save normalized ERCC
-        obj.norm_ercc = norm[obj.meta_genes.ERCC]
+        ne = norm[obj.meta_genes.ERCC]
         # Remove ERCC so that they are not included in downstream analyses
         norm = norm[np.logical_not(obj.meta_genes.ERCC)]
-    obj.norm = norm
-    obj.norm_method = norm_method
+    obj.norm_data[name] = {'data' : norm,
+                           'method' : method,
+                           'log2' : log2,
+                           'norm_ercc' : ne,
+                           'dr' : {},
+                           'clusters' : {}}
     obj.set_assay(sys._getframe().f_code.co_name, norm_method)

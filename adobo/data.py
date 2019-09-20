@@ -30,27 +30,12 @@ class dataset:
         Raw read count matrix.
     _low_quality_cells : `list`
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
-    norm_log2 : `bool`
-        True if log2 transform was performed on the normalized data, otherwise False.
-    norm_method : `str`
-        Containing the method used for normalization.
-    norm : :class:`pandas.DataFrame`
-        Normalized gene expression data.
-    hvg : `list`
-        Containing highly variable genes.
-    dr : `dict`
-        A dict of :py:class:`pandas.DataFrame` containing components from dimensionality
-        reduction.
-    dr_gene_contr : `dict`
-        A dict of :py:class:`pandas.DataFrame` containing variable contributions to each
-        component. Useful for understanding the contribution of each gene to PCA
-        components.
+    norm_data : `dict`
+        Stores all analysis results. A nested dictionary.
     meta_cells : `pandas.DataFrame`
         A data frame containing meta data for cells.
     meta_genes : `pandas.DataFrame`
         A data frame containing meta data for genes.
-    clusters : `dict`
-        Generated clusters.
     desc : `str`
         A string describing the dataset.
     output_filename : `str`, optional
@@ -68,12 +53,9 @@ class dataset:
         self._assays = {}
         self.count_data = raw_mat.astype(pd.SparseDtype("int", 0))
         self._low_quality_cells = ASSAY_NOT_DONE
-
-        self.norm = pd.DataFrame()
-        self.norm_ercc = pd.DataFrame()
-        self.norm_method = ASSAY_NOT_DONE
         
-        self.norm_log2 = False
+        # the nested dictionary containing results and analyses
+        self.norm_data = {}
         
         # meta data for cells
         self.meta_cells = pd.DataFrame(index=raw_mat.columns)
@@ -88,14 +70,6 @@ class dataset:
         self.meta_genes['status'] = ['OK']*raw_mat.shape[0]
         self.meta_genes['mitochondrial'] = [None]*raw_mat.shape[0]
         self.meta_genes['ERCC'] = [None]*raw_mat.shape[0]
-        
-        # containing components from dimensionality reduction techniques
-        self.dr = {}
-        # containing variable contribution to components
-        self.dr_gene_contr = {}
-        
-        # containing clusters
-        self.clusters = {}
         
         if verbose:
             print('Memory usage of loaded data: %s MB' % self.df_mem_usage('count_data'))
@@ -175,11 +149,11 @@ Raw read counts matrix contains: %s genes and %s cells
         for key in self._assays:
             s += 'Done: %s (%s)\n' % (key, self._assays[key])
         
-        if self.norm.shape[0] > 0:
-            genes = '{:,}'.format(self.norm.shape[0])
-            cells = '{:,}'.format(self.norm.shape[1])
-            q = (genes, cells)
-            s += "Normalized gene expression matrix contains: %s genes and %s cells" % q
+        #if self.norm.shape[0] > 0:
+        #    genes = '{:,}'.format(self.norm.shape[0])
+        #    cells = '{:,}'.format(self.norm.shape[1])
+        #    q = (genes, cells)
+        #    s += "Normalized gene expression matrix contains: %s genes and %s cells" % q
         return s
     
     def assays(self):
@@ -194,9 +168,9 @@ Raw read counts matrix contains: %s genes and %s cells
             print('Number of ERCC spikes found: %s ' % np.sum(self.meta_genes['ERCC']))
         if self.get_assay('find_low_quality_cells'):
             print('Number of low quality cells found: %s ' % self.low_quality_cells.shape[0])
-        if self.get_assay('norm'):
-            print('Normalization method: %s ' % self.norm_method)
-            print('Log2 transformed? %s' % (self.norm_log2))
+        #if self.get_assay('norm'):
+        #    print('Normalization method: %s ' % self.norm_method)
+        #    print('Log2 transformed? %s' % (self.norm_log2))
         s = 'Has HVG discovery been performed? %s' % self.get_assay('find_hvg', lang=True)
         print(s)
         if self.get_assay('pca'):
@@ -215,7 +189,7 @@ Raw read counts matrix contains: %s genes and %s cells
         `bool`
             True if it is normalized otherwise False.
         """
-        return True if self.norm.shape[0] > 0 else False
+        return True if len(self.norm_data) > 0 else False
     
     def add_meta_data(self, axis, key, data, type_='cat'):
         """Add meta data to the adobo object

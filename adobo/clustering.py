@@ -19,14 +19,14 @@ import sys
 
 from ._log import warning
 
-def _knn(obj, k=10, target='irlb', distance='euclidean'):
+def knn(comp, k=10, distance='euclidean'):
     """
     Nearest Neighbour Search. Finds the k number of near neighbours for each cell.
     
     Parameters
     ----------
-    obj : :class:`adobo.data.dataset`
-        A dataset class object.
+    comp : :py:class:`pandas.DataFrame`
+        A pandas data frame containing PCA components.
     k : `int`
         Number of nearest neighbors. Default: 10
     target : `{'irlb', 'svd'}`
@@ -36,15 +36,16 @@ def _knn(obj, k=10, target='irlb', distance='euclidean'):
         
     Returns
     -------
-    Nothing. Modifies the passed object.
+    numpy.ndarray
+        Array containing indices.
     """
-    X = obj.dr[target]
     nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree', metric=distance)
-    nbrs.fit(X)
-    indices = nbrs.kneighbors(X)[1]
-    obj.nn_idx = indices+1
+    nbrs.fit(comp)
+    indices = nbrs.kneighbors(comp)[1]
+    nn_idx = indices+1
+    return nn_idx
 
-def _snn(obj, k=10, prune_snn=0.067, verbose=False):
+def snn(nn_idx, k=10, prune_snn=0.067, verbose=False):
     """
     Computes a Shared Nearest Neighbor (SNN) graph
     
@@ -55,8 +56,8 @@ def _snn(obj, k=10, prune_snn=0.067, verbose=False):
     
     Parameters
     ----------
-    obj : :class:`adobo.data.dataset`
-        A dataset class object.
+    nn_idx : :py:class:`numpy.ndarray`
+        Numpy array generated using knn()
     k : `int`
         Number of nearest neighbors. Default: 10
     prune_snn : `float`        
@@ -74,23 +75,23 @@ def _snn(obj, k=10, prune_snn=0.067, verbose=False):
     -------
     Nothing. Modifies the passed object.
     """
-    k_param = k
     # create sparse matrix from tuples
-    melted = pd.DataFrame(obj.nn_idx).melt(id_vars=[0])[[0, 'value']]
+    melted = pd.DataFrame(nn_idx).melt(id_vars=[0])[[0, 'value']]
 
     rows = np.array(melted[melted.columns[0]])
     cols = np.array(melted[melted.columns[1]])
     d = [1]*len(rows)
 
-    ll = list(range(1, obj.nn_idx.shape[0]+1))
+    ll = list(range(1, nn_idx.shape[0]+1))
     rows = np.array(list(melted[melted.columns[0]].values) + ll)
     cols = np.array(list(melted[melted.columns[1]]) + ll)
 
     d = [1]*len(rows)
     knn_sparse = coo_matrix((d, (rows-1, cols-1)),
-                            shape=(obj.nn_idx.shape[0], obj.nn_idx.shape[0]))
+                            shape=(nn_idx.shape[0], nn_idx.shape[0]))
     snn_sparse = knn_sparse*knn_sparse.transpose()
     cx = coo_matrix(snn_sparse)
+    
     node1 = []
     node2 = []
     pruned_count = 0
@@ -106,19 +107,20 @@ def _snn(obj, k=10, prune_snn=0.067, verbose=False):
     if verbose:
         print('%.2f%% (n=%s) of links pruned' % (perc_pruned,
                                                  '{:,}'.format(pruned_count)))
-    if perc_pruned > 80:
-        warning('more than 80% of the edges were pruned')
+    if verbose and perc_pruned > 80:
+        warning('More than 80% of the edges were pruned')
     df = pd.DataFrame({'source_node' : node1, 'target_node' : node2})
-    obj.snn_graph = df
+    snn_graph = df
+    return snn_graph
 
-def _leiden(obj, res=0.8, seed=42):
+def leiden(snn_graph, res=0.8, seed=42):
     """
     Runs the Leiden algorithm
     
     Parameters
     ----------
-    obj : :class:`adobo.data.dataset`
-        A dataset class object.
+    snn_graph : :py:class:`pandas.DataFrame`
+        Source and target nodes.
     res : `float`
         Resolution parameter, change to modify cluster resolution. Default: 0.8
     seed : `int`
@@ -134,13 +136,12 @@ def _leiden(obj, res=0.8, seed=42):
     Nothing. Modifies the passed object.
     """
     # construct the graph object
-    nn = set(obj.snn_graph[obj.snn_graph.columns[0]])
+    nn = set(snn_graph[snn_graph.columns[0]])
     g = ig.Graph()
     g.add_vertices(len(nn))
     g.vs['name'] = list(range(1, len(nn)+1))
-
     ll = []
-    for i in obj.snn_graph.itertuples(index=False):
+    for i in snn_graph.itertuples(index=False):
         ll.append(tuple(i))
     g.add_edges(ll)
     #if self.params == 'ModularityVertexPartition':
@@ -148,17 +149,18 @@ def _leiden(obj, res=0.8, seed=42):
     #else:
     part = la.RBERVertexPartition
     cl = la.find_partition(g, part, n_iterations=10, resolution_parameter=res, seed=seed)
-    obj.clusters['leiden'] = cl.membership
+    return cl.membership
 
-def _igraph(obj, clust_alg):
+def igraph(snn_graph, clust_alg):
     """
     Runs clustering functions within igraph
     
     Parameters
     ----------
-    obj : :class:`adobo.data.dataset`
-        A dataset class object.
+    snn_graph : :py:class:`pandas.DataFrame`
+        Source and target nodes.
     clust_alg : `{'walktrap', 'spinglass', 'multilevel', 'infomap', 'label_prop', 'leading_eigenvector'}`
+        Specifies the community detection algorithm.
     
     References
     ----------
@@ -171,13 +173,13 @@ def _igraph(obj, clust_alg):
     -------
     Nothing. Modifies the passed object.
     """
-    nn = set(obj.snn_graph[obj.snn_graph.columns[0]])
+    nn = set(snn_graph[snn_graph.columns[0]])
     g = ig.Graph()
     g.add_vertices(len(nn))
     g.vs['name'] = list(range(1, len(nn)+1))
 
     ll = []
-    for i in obj.snn_graph.itertuples(index=False):
+    for i in snn_graph.itertuples(index=False):
         ll.append(tuple(i))
     g.add_edges(ll)
 
@@ -201,11 +203,10 @@ def _igraph(obj, clust_alg):
         cl = z.membership
     else:
         raise Exception('Unsupported community detection algorithm specified.')
-    obj.clusters[clust_alg] = cl
+    return cl
 
-def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
-             clust_alg='leiden', prune_snn=0.067, res=0.8, retx=True, seed=42,
-             verbose=False):
+def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg='leiden',
+             prune_snn=0.067, res=0.8, seed=42, verbose=False):
     """
     A wrapper function for generating single cell clusters from a shared nearest neighbor
     graph with the Leiden algorithm
@@ -216,6 +217,9 @@ def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
         A dataset class object.
     k : `int`
         Number of nearest neighbors. Default: 10
+    name : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on all normalizations available.
     distance : `str`
         Distance metric to use. See here for valid choices: https://tinyurl.com/y4bckf7w
     target : `{'irlb', 'svd'}`
@@ -233,8 +237,6 @@ def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
     res : `float`
         Resolution parameter for the Leiden algorithm _only_; change to modify cluster
         resolution. Default: 0.8
-    retx : `bool`
-        Return cluster sizes.
     seed : `int`
         For reproducibility.
     verbose : `bool`
@@ -254,12 +256,27 @@ def generate(obj, k=10, distance='euclidean', target='irlb', graph='snn',
          'leading_eigenvector')
     if not clust_alg in m:
         raise Exception('Supported community detection algorithms are: %s' % ', '.join(m))
-    _knn(obj, k, target, distance)
-    _snn(obj, k, verbose)
-    if clust_alg == 'leiden':
-        _leiden(obj, res, seed)
+    if not obj.norm_data:
+        raise Exception('Run normalization first before running umap. See here: \
+https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
+    targets = {}
+    if name is None or name == '':
+        targets = obj.norm_data
     else:
-        _igraph(obj, clust_alg)
-    obj.set_assay(sys._getframe().f_code.co_name)
-    if retx:
-        return dict(Counter(obj.clusters[clust_alg]))
+        targets[name] = obj.norm_data[name]
+    print(targets.keys())
+    for l in targets:
+        item = targets[l]
+        if verbose:
+            print('Running clustering on the %s normalization' % l)
+        comp = item['dr']['pca']['comp']
+        nn_idx = knn(comp, k, distance)
+        snn_graph = snn(nn_idx, k, prune_snn, verbose)
+        if clust_alg == 'leiden':
+            cl = leiden(snn_graph, res, seed)
+        else:
+            cl = igraph(snn_graph, clust_alg)
+        obj.norm_data[l]['clusters'][clust_alg] = {'membership' : cl}
+        obj.set_assay('clustering')
+        if verbose:
+            print(dict(Counter(cl)))

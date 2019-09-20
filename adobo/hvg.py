@@ -354,7 +354,7 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     Parameters
     ----------
     data : :class:`pandas.DataFrame`
-        A pandas data frame containing raw read counts.
+        A pandas data frame containing normalized counts.
     fdr : `float`
         False Discovery Rate considered significant.
     ngenes : `int`
@@ -427,7 +427,7 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     filt = res[res['padj'] < fdr]['gene']
     return res.head(ngenes)['gene']
 
-def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
+def find_hvg(obj, method='seurat', name=None, ngenes=1000, fdr=0.1, verbose=False):
     """Finding highly variable genes
     
     Notes
@@ -441,6 +441,9 @@ def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
           A dataset class object.
     method : `{'seurat', 'brennecke', 'scran', 'chen2016', 'mm'}`
         Specifies the method to be used.
+    name : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on all normalizations available.
     ngenes : `int`
         Number of genes to return.
     fdr : `float`
@@ -459,24 +462,34 @@ def find_hvg(obj, method='seurat', ngenes=1000, fdr=0.1, verbose=False):
     -------
     Nothing. Modifies the passed object.
     """
-    data = obj.norm
-    if data.shape[0] == 0:
-        raise Exception('Data must be normalized first. Please run adobo.normalize.norm')
-    data_ercc = obj.norm_ercc
-
-    if method == 'seurat':
-        hvg = seurat(data, ngenes)
-    elif method == 'brennecke':
-        hvg = brennecke(data_norm=data, log2=obj.norm_log2, ercc=data_ercc, fdr=fdr,
-                        ngenes=ngenes, minBiolDisp=0.5, verbose=verbose)
-    elif method == 'scran':
-        hvg = scran(data, data_ercc, obj.norm_log2, ngenes)
-    elif method == 'chen2016':
-        hvg = chen2016(data, obj.norm_log2, fdr, ngenes)
-    elif method == 'mm':
-        hvg = mm(obj.count_data, obj.norm_log2, fdr, ngenes)
+    if not obj.norm_data:
+        raise Exception('Run normalization first before running find_hvg. See here: \
+https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
+    targets = {}
+    if name is None or name == '':
+        targets = obj.norm_data
     else:
-        raise Exception('Unknown HVG method specified. Valid choices are: seurat, \
-brennecke, scran, chen2016, mm')
-    obj.hvg = hvg
+        targets[name] = obj.norm_data[name]
+    for k in targets:
+        item = targets[k]
+        if verbose:
+            print('Running on the %s normalization' % k)
+        data = item['data']
+        data_ercc = item.get('norm_ercc', None)
+        log2 = item['log2']
+        if method == 'seurat':
+            hvg = seurat(data, ngenes)
+        elif method == 'brennecke':
+            hvg = brennecke(data_norm=data, log2=log2, ercc=data_ercc, fdr=fdr,
+                            ngenes=ngenes, minBiolDisp=0.5, verbose=verbose)
+        elif method == 'scran':
+            hvg = scran(data, data_ercc, log2, ngenes)
+        elif method == 'chen2016':
+            hvg = chen2016(data, log2, fdr, ngenes)
+        elif method == 'mm':
+            hvg = mm(data, log2, fdr, ngenes)
+        else:
+            raise Exception('Unknown HVG method specified. Valid choices are: seurat, \
+brennecke, scran, chen2016 and mm')
+        obj.norm_data[k]['hvg'] = {'genes' : hvg, 'method' : method}
     obj.set_assay(sys._getframe().f_code.co_name, method)

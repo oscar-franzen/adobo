@@ -122,7 +122,7 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False
     obj.set_assay(sys._getframe().f_code.co_name)
     return no_found
         
-def detect_ercc_spikes(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
+def find_ercc(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     """Flag ERCC spikes
 
     Parameters

@@ -17,6 +17,7 @@ import sklearn.manifold
 import umap as um
 
 from . import irlbpy
+from ._log import warning
 
 def irlb(data_norm, ncomp=75, seed=None):
     """Truncated SVD by implicitly restarted Lanczos bidiagonalization
@@ -29,7 +30,7 @@ def irlb(data_norm, ncomp=75, seed=None):
     
     Parameters
     ----------
-    data_norm : :class:`pandas.DataFrame`
+    data_norm : :py:class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
     ncomp : `int`
         Number of components to return. Default: 75
@@ -39,8 +40,7 @@ def irlb(data_norm, ncomp=75, seed=None):
     References
     ----------
     Baglama et al (2005) Augmented Implicitly Restarted Lanczos Bidiagonalization Methods
-    SIAM Journal on Scientific Computing
-    
+        SIAM Journal on Scientific Computing
     https://github.com/bwlewis/irlbpy
     
     Returns
@@ -94,8 +94,8 @@ def svd(data_norm, ncomp=75):
     contr = pd.DataFrame(np.abs(v[:, 0:ncomp]), index=inp.columns)
     return comp, contr
 
-def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
-        seed=None):
+def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
+        verbose=False, seed=None):
     """Principal Component Analysis
     
     Notes
@@ -111,6 +111,9 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
           A dataset class object.
     method : `{'irlb', 'svd'}`
         Method to use for PCA. This does not matter much. Default: irlb
+    name : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on all normalizations available.
     ncomp : `int`
         Number of components to return. Default: 75
     allgenes : `bool`
@@ -132,37 +135,45 @@ def pca(obj, method='irlb', ncomp=75, allgenes=False, scale=True, verbose=False,
     passed object: `dr` (containing the components) and `dr_gene_contr` (containing
     gene contributions to each component)
     """
-    data = obj.norm
-    if data.shape[0] == 0:
-        raise Exception('Data must be normalized first. Please run \
-`adobo.normalize.norm(...)`.')
-    hvg = obj.hvg
-    if len(hvg)>0 and not allgenes:
-        data = data[data.index.isin(hvg)]
-        if verbose:
-            print('Only using HVG genes (%s).' % data.shape[0])
-    if scale:
-        d_scaled = sklearn_scale(data.transpose(),  # cells as rows and genes as columns
-                                 axis=0,            # over genes, i.e. features (columns)
-                                 with_mean=True,    # subtracting the column means
-                                 with_std=True)     # scale the data to unit variance
-        d_scaled = pd.DataFrame(d_scaled.transpose(), index=data.index)
-    if allgenes and verbose:
-        print('Using all genes (%s).' % data.shape[0])
-    if verbose:
-        print('Running PCA using the %s method' % method)
-    if method == 'irlb':
-        comp, contr = irlb(data, ncomp, seed)
-    elif method == 'svd':
-        comp, contr = svd(data, ncomp)
+    if not obj.norm_data:
+        raise Exception('Run normalization first before running pca. See here: \
+https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
+    targets = {}
+    if name is None or name == '':
+        targets = obj.norm_data
     else:
-        raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
-    #ret.index = obj.norm.columns
-    obj.dr[method] = comp
-    obj.dr_gene_contr[method] = contr
-    obj.set_assay(sys._getframe().f_code.co_name, method)
+        targets[name] = obj.norm_data[name]
+    
+    for k in targets:
+        item = targets[k]
+        data = item['data']
+        if not allgenes:
+            hvg = item['hvg']['genes']
+            data = data[data.index.isin(hvg)]
+        elif verbose:
+            print('Using all genes')
+        if scale:
+            d_scaled = sklearn_scale(
+                            data.transpose(),  # cells as rows and genes as columns
+                            axis=0,            # over genes, i.e. features (columns)
+                            with_mean=True,    # subtracting the column means
+                            with_std=True)     # scale the data to unit variance
+            d_scaled = pd.DataFrame(d_scaled.transpose(), index=data.index)
+        if verbose:
+            print('Running PCA on the %s normalization (dimensions %s)' % (k, data.shape))
+        if method == 'irlb':
+            comp, contr = irlb(data, ncomp, seed)
+        elif method == 'svd':
+            comp, contr = svd(data, ncomp)
+        else:
+            raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
+        obj.norm_data[k]['dr']['pca'] = {'comp' : comp,
+                                         'contr' : contr,
+                                         'method' : method}
+        obj.set_assay(sys._getframe().f_code.co_name, method)
 
-def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=None, verbose=False, **args):
+def tsne(obj, run_on_PCA=True, name=None, perplexity=30, n_iter=2000, seed=None,
+         verbose=False, **args):
     """
     Projects data to a two dimensional space using the tSNE algorithm.
     
@@ -175,8 +186,12 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=None, verbose=Fals
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
-    target : `{'irlb', 'svd', 'norm'}`
-        What to run tSNE on. Default: 'irlb'
+    run_on_PCA : `bool`
+        To run tSNE on PCA components or not. If False then runs on the entire normalized
+        gene expression matrix. Default: True
+    name : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on all normalizations available.
     perplexity : `float`
         From [1]: The perplexity is related to the number of nearest neighbors that
         is used in other manifold learning algorithms. Larger datasets usually require
@@ -191,39 +206,46 @@ def tsne(obj, target='irlb', perplexity=30, n_iter=2000, seed=None, verbose=Fals
 
     References
     ----------
-    [0] van der Maaten, L.J.P.; Hinton, G.E. Visualizing High-Dimensional Data
-    Using t-SNE. Journal of Machine Learning Research 9:2579-2605, 2008.
-    
-    [1] https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html
+    van der Maaten, L.J.P.; Hinton, G.E. Visualizing High-Dimensional Data
+        Using t-SNE. Journal of Machine Learning Research 9:2579-2605, 2008.
+    https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html
 
     Returns
     -------
     Nothing. Modifies the passed object.
     """
-    if not target in ('irlb', 'svd', 'norm'):
-        raise Exception('target can be one of: "irlb", "svd" or "norm"')
-    if target == 'norm':
-        X = obj.norm
+    if not obj.norm_data:
+        raise Exception('Run normalization first before running tsne. See here: \
+https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
+    targets = {}
+    if name is None or name == '':
+        targets = obj.norm_data
     else:
-        if not target in obj.dr:
-            e = '%s was not found, please run `adobo.dr.pca(...)` first.' % target
-            raise Exception(e)
+        targets[name] = obj.norm_data[name]
+    if verbose and not run_on_PCA:
+        warning('Running tSNE on the entire gene expression matrix is not recommended.')
+    for k in targets:
+        item = targets[k]
+        if not run_on_PCA:
+            X = item['data']
         else:
-            X = obj.dr[target]
-    if verbose:
-        print('Running tSNE with perplexity %s' % perplexity)
-    tsne = sklearn.manifold.TSNE(n_components=2,
-                                 n_iter=n_iter,
-                                 perplexity=perplexity,
-                                 random_state=seed,
-                                 verbose=verbose,
-                                 **args)
-    emb = tsne.fit_transform(X)
-    emb = pd.DataFrame(emb)
-    obj.dr['tsne'] = emb
+            X = item['dr']['pca']['comp']
+        if verbose:
+            print('Running tSNE (perplexity %s) on the %s normalization' % (perplexity, k))
+        tsne = sklearn.manifold.TSNE(n_components=2,
+                                     n_iter=n_iter,
+                                     perplexity=perplexity,
+                                     random_state=seed,
+                                     verbose=verbose,
+                                     **args)
+        emb = tsne.fit_transform(X)
+        emb = pd.DataFrame(emb)
+        obj.norm_data[k]['dr']['tsne'] = {'embedding' : emb,
+                                          'perplexity' : perplexity,
+                                          'n_iter' : n_iter}
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def umap(obj, target='irlb', seed=None, verbose=False, **args):
+def umap(obj, run_on_PCA=True, name=None, seed=None, verbose=False, **args):
     """
     Projects data to a two dimensional space using the UMAP algorithm, a non-linear
     data reduction algorithm.
@@ -243,8 +265,12 @@ def umap(obj, target='irlb', seed=None, verbose=False, **args):
     ----------
     obj : :class:`adobo.data.dataset`
           A dataset class object.
-    target : `{'irlb', 'svd', 'norm'}`
-        What to run tSNE on. Default: 'irlb'
+    run_on_PCA : `bool`
+        To run tSNE on PCA components or not. If False then runs on the entire normalized
+        gene expression matrix. Default: True
+    name : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on all normalizations available.
     seed : `int`
         For reproducibility. Default: None
     verbose : `bool`
@@ -252,9 +278,8 @@ def umap(obj, target='irlb', seed=None, verbose=False, **args):
 
     References
     ----------
-    McInnes L, Healy J, Melville J, arxiv, 2018
-
-    https://arxiv.org/abs/1802.03426
+    McInnes L, Healy J, Melville J (2018) UMAP: Uniform Manifold Approximation and
+        Projection for Dimension Reduction, https://arxiv.org/abs/1802.03426
     https://github.com/lmcinnes/umap
     https://umap-learn.readthedocs.io/en/latest/
 
@@ -262,16 +287,26 @@ def umap(obj, target='irlb', seed=None, verbose=False, **args):
     -------
     Nothing. Modifies the passed object.
     """
-    if target == 'norm':
-        X = obj.norm
+    if not obj.norm_data:
+        raise Exception('Run normalization first before running umap. See here: \
+https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
+    targets = {}
+    if name is None or name == '':
+        targets = obj.norm_data
     else:
-        if not target in obj.dr:
-            e = '%s was not found, please run `adobo.dr.pca(...)` first.' % target
-            raise Exception(e)
+        targets[name] = obj.norm_data[name]
+    if verbose and not run_on_PCA:
+        warning('Running UMAP on the entire gene expression matrix is not recommended.')
+    for k in targets:
+        item = targets[k]
+        if not run_on_PCA:
+            X = item['data']
         else:
-            X = obj.dr[target]
-    reducer = um.UMAP(random_state=seed, verbose=verbose, **args)
-    emb = reducer.fit_transform(X)
-    emb = pd.DataFrame(emb)
-    obj.dr['umap'] = emb
+            X = item['dr']['pca']['comp']
+        if verbose:
+            print('Running UMAP on the %s normalization' % k)
+        reducer = um.UMAP(random_state=seed, verbose=verbose, **args)
+        emb = reducer.fit_transform(X)
+        emb = pd.DataFrame(emb)
+        obj.norm_data[k]['dr']['umap'] = {'embedding' : emb }
     obj.set_assay(sys._getframe().f_code.co_name)
