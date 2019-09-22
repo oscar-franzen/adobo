@@ -136,7 +136,14 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     for row, k in enumerate(targets):
         item = targets[k]
         if verbose:
-            print('Running clustering on the %s normalization' % k)
+            print('Plotting the %s normalization' % k)
+        if not 'pca' in item['dr']:
+            if verbose:
+                print('pca deocmposition not found for the %s normalization' % k)
+            for d in dim:
+                ax[row][d].axis('off')
+            continue
+        
         contr = item['dr']['pca']['contr'][dim]
         idx = 0
         for i, d in contr.iteritems():
@@ -207,10 +214,10 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     -------
     None
     """
-    available_reductions = ('tsne', 'umap', 'pca')
+    avail_reductions = ('tsne', 'umap', 'pca')
     D = obj.norm_data
-    if not reduction in available_reductions:
-        raise Exception('`reduction` must be one of %s.' % ', '.join(available_reductions))
+    if not reduction in avail_reductions:
+        raise Exception('`reduction` must be one of %s.' % ', '.join(avail_reductions))
     if marker_size<0:
         raise Exception('`marker_size` cannot be negative.')
     # cast to tuple if necessary
@@ -224,6 +231,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         name = (name,)
     if len(clustering) == 0:
         clustering = tuple({'q' : list(D[item]['clusters'].keys()) for item in D}['q'])
+    if len(clustering) == 0:
+        raise Exception('No clusterings found. Run `adobo.clustering.generate` first.')
     # setup colors
     if colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
