@@ -38,17 +38,17 @@ class dataset:
         A data frame containing meta data for genes.
     desc : `str`
         A string describing the dataset.
-    output_filename : `str`, optional
+    output_file : `str`, optional
         A filename that will be used when calling save().
     """
-    def __init__(self, raw_mat, desc='no desc set', output_filename=None,
-                 input_filename=None, verbose=False):
+    def __init__(self, raw_mat, desc='no desc set', output_file=None, input_file=None,
+                 verbose=False):
         # holding info about which assays have been done
         self.hvg = []
         self.hvg_method = ASSAY_NOT_DONE
         self.desc = desc
-        self.output_filename=output_filename
-        self.input_filename=input_filename
+        self.output_file=output_file
+        self.input_file=input_file
         
         self._assays = {}
         self.count_data = raw_mat.astype(pd.SparseDtype("int", 0))
@@ -102,7 +102,7 @@ class dataset:
         -----
         This is a method so that it is not needed to memorize the filename, instead the
         filename was already specified when the object was created with the
-        `output_filename` parameter. Load the object data with `joblib.load`.
+        `output_file` parameter. Load the object data with `joblib.load`.
 
         Parameters
         ----------
@@ -113,10 +113,10 @@ class dataset:
         -------
         Nothing.
         """
-        if not self.output_filename:
+        if not self.output_file:
             raise Exception('No output filename set.')
         else:
-            joblib.dump(self, filename=self.output_filename, compress=compress)
+            joblib.dump(self, filename=self.output_file, compress=compress)
 
     def get_assay(self, name, lang=False):
         """ Get info if a function has been applied. """
@@ -144,7 +144,7 @@ class dataset:
         s = """Filename (input): %s
 Description: %s
 Raw read counts matrix contains: %s genes and %s cells
-""" % (self.input_filename, self.desc, genes, cells)
+""" % (self.input_file, self.desc, genes, cells)
 
         for key in self._assays:
             s += 'Done: %s (%s)\n' % (key, self._assays[key])

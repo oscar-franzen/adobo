@@ -396,4 +396,5 @@ def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(
         aa[i].plot(cs)
         aa[i].set_ylabel('cumulative variance (percent of total)')
         aa[i].set_xlabel('components')
+        aa[i].set_title(k)
     plt.show()

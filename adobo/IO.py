@@ -15,7 +15,7 @@ import numpy as np
 from adobo import dataset
 
 def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False,
-                   desc='no desc set', output_filename=None, input_filename=None, **args):
+                   desc='no desc set', output_file=None, input_file=None, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
     Parameters
@@ -33,7 +33,7 @@ def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False
         this is the case, set this to auto or yes, otherwise no. Default: 'auto'
     desc : `str`
         A description of the data
-    output_filename : `str`
+    output_file : `str`
         An output filename used when calling :py:func:`adobo.data.dataset.save()`.
     verbose : `bool`
         To be verbose or not. Default: False
@@ -80,8 +80,8 @@ def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False
     count_data = count_data[np.logical_not(rem)]
     count_data.index = count_data.index.str.replace('"', '')
     count_data.columns = count_data.columns.str.replace('"', '')
-    obj = dataset(count_data, desc, output_filename=output_filename,
-                  input_filename=filename, verbose=verbose)
+    obj = dataset(count_data, desc, output_file=output_file, input_file=filename,
+                  verbose=verbose)
     if verbose:
         genes = '{:,}'.format(count_data.shape[0])
         cells = '{:,}'.format(count_data.shape[1])
