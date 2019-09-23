@@ -381,6 +381,8 @@ def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(
     else:
         aa = aa.flatten()
     for i, k in enumerate(targets):
+        if verbose:
+            print('Running %s' % k)
         item = targets[k]
         X = item['data']
         d_scaled = sklearn_scale(
