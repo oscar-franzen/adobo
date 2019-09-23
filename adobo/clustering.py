@@ -264,7 +264,6 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         targets = obj.norm_data
     else:
         targets[name] = obj.norm_data[name]
-    print(targets.keys())
     for l in targets:
         item = targets[l]
         if verbose:
