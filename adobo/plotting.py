@@ -343,7 +343,7 @@ def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(
     
     Notes
     -----
-    To be used for determining the number of principal components to include.
+    Can be used for determining the number of principal components to include.
 
     Parameters
     ----------
