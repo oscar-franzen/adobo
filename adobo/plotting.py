@@ -14,7 +14,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import seaborn as sns
+from sklearn.preprocessing import scale as sklearn_scale
 
+from .dr import svd
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
@@ -122,7 +124,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         
     Returns
     -------
-    Nothing.
+    Nothing
     """
     targets = {}
     if name is None or name == '':
@@ -334,3 +336,64 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         plt.savefig(filename, **args)
     else:
         plt.show()
+
+def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(10, 10),
+              verbose=True):
+    """Generates a PCA elbow plot
+    
+    Notes
+    -----
+    To be used for determining the number of principal components to include.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A data class object
+    name : `tuple`
+        A tuple of normalization to use. If it has the length zero, then all available
+        normalizations will be used.
+    comp_max : `int`
+        Maximum number of components to include.
+    filename : `str`, optional
+        Name of an output file instead of showing on screen.
+    font_size : `float`
+        Font size. Default: 8
+    fig_size : `tuple`
+        Figure size in inches. Default: (10, 10)
+    verbose : `bool`
+        Be verbose or not. Default: True
+
+    Returns
+    -------
+    Nothing.
+    """
+    targets = {}
+    if len(name) == 0 or name == '':
+        targets = obj.norm_data
+    else:
+        targets[name] = obj.norm_data[name]
+    # setup plotting grid
+    fig, aa = plt.subplots(nrows=1,
+                           ncols=len(targets),
+                           figsize=fig_size)
+    if len(targets) == 1:
+        aa = [aa]
+    else:
+        aa = aa.flatten()
+    for i, k in enumerate(targets):
+        item = targets[k]
+        X = item['data']
+        d_scaled = sklearn_scale(
+                        X.transpose(),  # cells as rows and genes as columns
+                        axis=0,            # over genes, i.e. features (columns)
+                        with_mean=True,    # subtracting the column means
+                        with_std=True)     # scale the data to unit variance
+        d_scaled = pd.DataFrame(d_scaled.transpose(), index=X.index)
+        sdev = svd(d_scaled, ncomp=None, only_sdev=True)
+        var = sdev**2
+        pvar = var/sum(var)
+        cs = np.cumsum(pvar)[0:comp_max]
+        aa[i].plot(cs)
+        aa[i].set_ylabel('cumulative variance (percent of total)')
+        aa[i].set_xlabel('components')
+    plt.show()

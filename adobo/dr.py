@@ -59,7 +59,7 @@ def irlb(data_norm, ncomp=75, seed=None):
     contr = pd.DataFrame(np.abs(lanc.U), index=inp.index)
     return comp, contr
 
-def svd(data_norm, ncomp=75):
+def svd(data_norm, ncomp=75, only_sdev=False):
     """Principal component analysis via singular value decomposition
     
     Parameters
@@ -70,6 +70,8 @@ def svd(data_norm, ncomp=75):
         variable genes.
     ncomp : `int`
         Number of components to return. Default: 75
+    only_sdev : `bool`
+        Only return the standard deviation of the components. Default: False
     
     References
     ----------
@@ -78,21 +80,31 @@ def svd(data_norm, ncomp=75):
     Returns
     -------
     `pd.DataFrame`
-        A py:class:`pandas.DataFrame` containing the components (columns).
+        A py:class:`pandas.DataFrame` containing the components (columns). Only if
+        only_sdev=False.
     `pd.DataFrame`
         A py:class:`pandas.DataFrame` containing the contributions of every gene (rows).
+        Only if only_sdev=False.
+    `pd.DataFrame`
+        A py:class:`pandas.DataFrame` containing standard deviations of components. Only
+        if only_sdev is set to True.
     """
     inp = data_norm
+    nfeatures = inp.shape[0]
     inp = inp.transpose()
-    s = scipy.linalg.svd(inp)
-    v = s[2].transpose()
-    d = s[1]
-    s_d = d/np.sqrt(inp.shape[0]-1)
-    retx = inp.dot(v)
-    retx = retx.iloc[:, 0:ncomp]
-    comp = retx
-    contr = pd.DataFrame(np.abs(v[:, 0:ncomp]), index=inp.columns)
-    return comp, contr
+    compute_uv = not only_sdev
+    s = scipy.linalg.svd(inp, compute_uv=compute_uv)
+    if only_sdev:
+        sdev = s/np.sqrt(nfeatures-1)
+        return sdev
+    else:
+        v = s[2].transpose()
+        d = s[1]
+        retx = inp.dot(v)
+        retx = retx.iloc[:, 0:ncomp]
+        comp = retx
+        contr = pd.DataFrame(np.abs(v[:, 0:ncomp]), index=inp.columns)
+        return comp, contr
 
 def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
         verbose=False, seed=None):
