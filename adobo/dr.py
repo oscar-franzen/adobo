@@ -257,21 +257,16 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
                                           'n_iter' : n_iter}
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def umap(obj, run_on_PCA=True, name=None, seed=None, verbose=False, **args):
+def umap(obj, run_on_PCA=True, name=None, n_neighbors=15, distance='euclidean',
+         n_epochs=None, learning_rate=1.0, min_dist=0.1, spread=1.0, seed=None,
+         verbose=False, **args):
     """
-    Projects data to a two dimensional space using the UMAP algorithm, a non-linear
-    data reduction algorithm.
+    Projects data to a low-dimensional space using the Uniform Manifold Approximation
+    and Projection (UMAP) algorithm
     
     Notes
     -----
-    The UMAP output can be tweaked using these parameters (but there are also several
-    other parameters that can influence the outcome, see `help(umap.UMAP)`:
-    `n_neighbors`, Default: 15
-        This parameter controls the balances between local versus global structure.
-    `min_dist`, Default: 0.1
-        Controls how tightly points are packed together.
-    `metric`, Default: 'euclidean'
-        The metric to use to compute distances in high dimensional space.
+    UMAP is a non-linear data reduction algorithm.
 
     Parameters
     ----------
@@ -283,6 +278,25 @@ def umap(obj, run_on_PCA=True, name=None, seed=None, verbose=False, **args):
     name : `str`
         The name of the normalization to operate on. If this is empty or None then the
         function will be applied on all normalizations available.
+    n_neighbors : `int`
+        The size of local neighborhood (in terms of number of neighboring sample points)
+        used for manifold approximation. Larger values result in more global views of the
+        manifold, while smaller values result in more local data being preserved.
+        In general values should be in the range 2 to 100. Default: 15
+    distance : `str`
+        The metric to use to compute distances in high dimensional space.
+        Default: 'euclidean'
+    n_epochs : `int`
+        The number of training epochs to be used in optimizing the low dimensional
+        embedding. Larger values result in more accurate embeddings. If None is specified
+        a value will be selected based on the size of the input dataset (200 for large
+        datasets, 500 for small). Default: None
+    learning_rate : `float`
+        The initial learning rate for the embedding optimization. Default: 1.0
+    min_dist : `float`
+        The effective minimum distance between embedded points. Default: 0.1
+    spread : `float`
+        The effective scale of embedded points. Default: 1.0
     seed : `int`
         For reproducibility. Default: None
     verbose : `bool`
@@ -317,7 +331,10 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             X = item['dr']['pca']['comp']
         if verbose:
             print('Running UMAP on the %s normalization' % k)
-        reducer = um.UMAP(random_state=seed, verbose=verbose, **args)
+        reducer = um.UMAP(random_state=seed, verbose=verbose, n_neighbors=n_neighbors,
+                          metric=distance, n_epochs=n_epochs,
+                          learning_rate=learning_rate, min_dist=min_dist, spread=spread,
+                          **args)
         emb = reducer.fit_transform(X)
         emb = pd.DataFrame(emb)
         obj.norm_data[k]['dr']['umap'] = {'embedding' : emb }
