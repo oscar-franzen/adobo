@@ -1,12 +1,12 @@
 # adobo's setup script.
 # OF; Sept 2019
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
 setup(
     name='adobo',
-    version='0.1.0',
-    description='an analysis framework for single cell gene expression data',
+    version='0.2.0',
+    description='An analysis framework for single cell gene expression data.',
     author='Oscar Franzén',
     author_email='p.oscar.franzen@gmail.com',
     include_package_data=True,
@@ -26,4 +26,6 @@ setup(
         'matplotlib >= 3.1.1',
         'seaborn >= 0.9.0'
     ],
+    ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
+                           extra_compile_args=['-fPIC','-lm'])]
 )
