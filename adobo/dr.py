@@ -160,8 +160,11 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         item = targets[k]
         data = item['data']
         if not allgenes:
-            hvg = item['hvg']['genes']
-            data = data[data.index.isin(hvg)]
+            if not 'hvg' in item:
+                raise Exception('Run find_hvg first.')
+            else:
+                hvg = item['hvg']['genes']
+                data = data[data.index.isin(hvg)]
         elif verbose:
             print('Using all genes')
         if scale:
@@ -172,7 +175,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
                             with_std=True)     # scale the data to unit variance
             d_scaled = pd.DataFrame(d_scaled.transpose(), index=data.index)
         if verbose:
-            print('Running PCA on the %s normalization (dimensions %s)' % (k, data.shape))
+            v = (method, k, data.shape)
+            print('Running PCA (method=%s) on the %s normalization (dimensions %s)' % v)
         if method == 'irlb':
             comp, contr = irlb(data, ncomp, seed)
         elif method == 'svd':

@@ -9,9 +9,21 @@ Summary
 Functions for pre-processing scRNA-seq data.
 """
 import sys
+import ctypes
+import numpy.ctypeslib as npct
 import numpy as np
 import pandas as pd
 from sklearn.covariance import MinCovDet
+from sklearn.preprocessing import scale as sklearn_scale
+from scipy.stats import dgamma
+from scipy.stats import norm
+from scipy.optimize import root
+from scipy.special import digamma
+from sklearn.linear_model import ElasticNet
+
+from .clustering import knn, snn, leiden
+from .hvg import seurat
+from .dr import irlb
 
 # Suppress warnings from sklearn
 def _warn(*args, **kwargs):
@@ -248,3 +260,224 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     if verbose:
         print('%s low quality cell(s) identified' % len(low_quality_cells))
     return low_quality_cells
+
+def impute(obj, drop_thre = 0.5, verbose=True):
+    """Impute dropouts using Li (2018) Nature Communications
+    
+    Notes
+    -----
+    Not parallelized yet. The slowest part is fitting the ElasticNet model for every cell.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    drop_thre : `float`
+        Drop threshold.
+    verbose : `bool`
+        Be verbose or not. Default: True
+    
+    References
+    ----------
+    LI & Li (2018) An accurate and robust imputation method scImpute for single-cell
+        RNA-seq data https://www.nature.com/articles/s41467-018-03405-7
+        https://github.com/Vivianstats/scImpute
+
+    Returns
+    -------
+        Modifies the passed object.
+    """
+    ext = ctypes.cdll.LoadLibrary('/home/rand/Temp/pdf.so')
+    ext.dgamma.argtypes = [npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS'),
+                           ctypes.c_int,
+                           ctypes.c_double,
+                           ctypes.c_double,
+                           npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')]
+    ext.dnorm.argtypes = [npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS'),
+                          ctypes.c_int,
+                          ctypes.c_double,
+                          ctypes.c_double,
+                          npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')]
+    # normalize
+    raw = obj.count_data
+    col_sums = 10**6/np.array([np.sum(i[1]) for i in raw.transpose().iterrows()])
+    raw = raw*col_sums
+    lnorm = np.log10(raw+1.01)
+    lnorm_imp = lnorm.copy()
+    # estimate subpopulations
+    hvg = seurat(lnorm, ngenes=1000) # get hvg
+    lnorm_hvg = lnorm[lnorm.index.isin(hvg)]
+    d_scaled = sklearn_scale(lnorm_hvg.transpose(),  # cells as rows and genes as columns
+                             axis=0,                 # over genes, i.e. features (columns)
+                             with_mean=True,         # subtracting the column means
+                             with_std=True)          # scale the data to unit variance
+    d_scaled = pd.DataFrame(d_scaled.transpose(), index=lnorm_hvg.index)
+    comp, _ = irlb(d_scaled)
+    # estimating subpopulations
+    nn_idx = knn(comp)
+    snn_graph = snn(nn_idx)
+    cl = np.array(leiden(snn_graph))
+    # estimate model parameters
+    nclust = len(np.unique(cl))
+    
+    def weight(x, params):
+        inp = x
+        g_out = np.zeros(len(inp))
+        n_out = np.zeros(len(inp))
+        # takes scale as input (rate=1/scale)
+        ext.dgamma(np.array(inp), len(inp), params[1], 1/params[2], g_out)
+        # SLOW (scipy.stats): dgamma.pdf(x, a=params[1], scale=1, loc=0)
+        pz1 = params[0] * g_out
+        ext.dnorm(np.array(inp), len(inp), params[3], params[4], n_out)
+        # SLOW (scipy.stats): norm.pdf(x, params[3], params[4])
+        pz2 = (1-params[0])*n_out
+        pz = pz1/(pz1+pz2)
+        pz[pz1 == 0] = 0
+        return np.array([pz, 1-pz])
+    
+    def update_gmm_pars(x, wt):
+        tp_s = np.sum(wt)
+        tp_t = np.sum(wt * x)
+        tp_u = np.sum(wt * np.log(x))
+        tp_v = -tp_u / tp_s - np.log(tp_s / tp_t)
+        if tp_v <= 0:
+            alpha = 20
+        else:
+            alpha0 = (3 - tp_v + np.sqrt((tp_v - 3)**2 + 24 * tp_v)) / 12 / tp_v
+            if alpha0 >= 20:
+                alpha = 20
+            else:
+                alpha = root(lambda x: np.log(x) - digamma(x) - tp_v, 0.9*alpha0).x[0]
+        beta = tp_s / tp_t * alpha
+        return alpha, beta
+        
+    def dmix(x, pars):
+        inp = x
+        g_out = np.zeros(len(inp))
+        n_out = np.zeros(len(inp))
+        ext.dgamma(np.array(inp), len(inp), pars[1], 1/pars[2], g_out)
+        #dg = dgamma(a=pars[1], scale=1/pars[2], loc=0)
+        #dg.pdf(x)
+        #dn = norm(pars[3], pars[4])
+        # dn.pdf(x)
+        ext.dnorm(np.array(inp), len(inp), pars[3], pars[4], n_out)
+        return pars[0]*g_out*2+(1-pars[0])*n_out
+
+    def para_est(x):
+        params = [0, 0.5, 1, 0, 0]
+        params[0] = np.sum(x==np.log10(1.01))/len(x)
+        if params[0] == 0:
+            params[0] = 0.01
+        x_rm = x[x>np.log10(1.01)]
+        params[3] = np.mean(x_rm)
+        params[4] = np.std(x_rm)
+        eps, iter_, loglik_old = 10, 0, 0
+        while eps > 0.5:
+            wt = weight(x, params)
+            params[0] = np.sum(wt[0])/len(wt[0])
+            params[3] = np.sum(wt[1]*x)/np.sum(wt[1])
+            params[4] = np.sqrt(np.sum(wt[1]*(x-params[3])**2)/np.sum(wt[1]))
+            params[1:3] = update_gmm_pars(x, wt[0])
+            loglik = np.sum(np.log10(dmix(x, params)))
+            eps = (loglik - loglik_old)**2
+            loglik_old = loglik
+            iter_ = iter_ + 1
+            if iter_ > 100:
+                break
+        return params
+
+    def get_par(mat, verbose):
+        null_genes = np.abs(mat.sum(axis=1)-np.log10(1.01)*mat.shape[1])<1e-10
+        null_genes = null_genes[null_genes].index
+        paramlist = []
+        i = 0
+        for g, k in mat.iterrows():
+            if verbose:
+                if (i%100) == 0:
+                    v = ('{:,}'.format(i), '{:,}'.format(mat.shape[0]))
+                    print('estimating parameters. finished with %s/%s genes' % v, end='\r')
+            if g in null_genes:
+                paramlist.append([np.nan]*5)
+            else:
+                paramlist.append(para_est(k.values))
+            i += 1
+        if verbose:
+            print('\nparameter estimation has finished')
+        return np.array(paramlist)
+    
+    def find_va_genes(mat, parlist):
+        point = np.log10(1.01)
+        is_na = [not np.any(i) for i in np.isnan(np.array(parlist))]
+        valid_genes = np.logical_and(mat.sum(axis=1) > point*mat.shape[1], is_na)
+        return valid_genes
+        #mu = parlist[:, 3]
+        #sgene1 = valid_genes.index[mu<=np.log10(1+1.01)]
+        #dcheck1 = dgamma.pdf(mu+1, a=parlist[:,1], scale=1/parlist[:,2], loc=0)
+        #dcheck2 = norm.pdf(mu+1, parlist[:, 3], parlist[:, 4])
+        #sgene3 = valid_genes.index[np.logical_and(dcheck1 >= dcheck2, mu <= 1)]
+        #return valid_genes[np.logical_not(np.logical_or(sgene1,sgene3))].index
+
+    for cc in np.arange(0,nclust):
+        if verbose:
+            print('estimating dropout probability for cluster %s' % cc)
+        lnorm_cc = lnorm.iloc[:, cl == cc]
+        parlist = get_par(lnorm_cc, verbose)
+        if verbose:
+            print('searching for valid genes for cluster %s' % cc)
+        valid_genes = find_va_genes(lnorm_cc, parlist)
+        if verbose:
+            print('%s genes are valid' % '{:,}'.format(len(valid_genes)))
+        subcount = lnorm_cc.loc[valid_genes, :]
+        Ic = subcount.shape[0]
+        Jc = subcount.shape[1]
+        parlist = parlist[valid_genes]
+        idx = 0
+        droprate = []
+        for g, k in subcount.iterrows():
+            wt = weight(k, parlist[idx])[0]
+            idx += 1
+            droprate.append(wt)
+        droprate = np.array(droprate)
+        mu = parlist[:, 3]
+        mucheck = subcount.apply(lambda x: x>mu, axis=0)
+        droprate[np.logical_and(mucheck, droprate > drop_thre)] = 0
+        # dropouts
+        if verbose:
+            print('running imputation for cluster %s' % cc)
+        imputed = []
+        for cellid in range(0,subcount.shape[1]):
+            if verbose:
+                v = (cellid+1, subcount.shape[1], cc)
+                print('imputing cell %s/%s in cluster %s' % v, end='\r')
+            yobs = subcount.iloc[:, cellid]
+            yimpute = [0]*Ic
+            nbs = set(np.arange(0, Jc))-set([cellid])
+            # dropouts
+            geneid_drop = droprate[:, cellid] > drop_thre
+            # non-dropouts
+            geneid_obs = droprate[:, cellid] <= drop_thre
+            xx = subcount.iloc[geneid_obs, list(nbs)]
+            yy = subcount.iloc[geneid_obs, cellid]
+            ximpute = subcount.iloc[geneid_drop, list(nbs)]
+            num_thre = 500
+            if xx.shape[1] >= min(num_thre, xx.shape[0]):
+                if num_thre >= xx.shape[0]:
+                    new_thre = round((2*xx.shape[0]/3))
+                else:
+                    new_thre = num_thre
+            regr = ElasticNet(random_state=0, max_iter=3000, positive=True, l1_ratio=0,
+                              fit_intercept=False)
+            ret = regr.fit(X=xx, y=yy.values)
+            ynew = regr.predict(ximpute)
+            yimpute = np.array(yimpute).astype(float)
+            yimpute[geneid_drop] = ynew
+            yimpute[geneid_obs] = yobs[geneid_obs]
+            maxobs = [max(k) for g, k in subcount.iterrows()]
+            maxobs = np.array(maxobs)
+            yimpute[yimpute > maxobs] = maxobs[yimpute > maxobs]
+            imputed.append(list(yimpute))
+        if verbose:
+            print('\n')
+        imputed = np.array(imputed)
+        imputed = imputed.transpose()
+        lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed
