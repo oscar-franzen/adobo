@@ -9,6 +9,7 @@ Summary
 Functions for pre-processing scRNA-seq data.
 """
 import sys
+import glob
 import ctypes
 import numpy.ctypeslib as npct
 import numpy as np
@@ -287,7 +288,11 @@ def impute(obj, drop_thre = 0.5, verbose=True):
     -------
         Modifies the passed object.
     """
-    ext = ctypes.cdll.LoadLibrary('/home/rand/Temp/pdf.so')
+    # load lib
+    for p in sys.path:
+        pp = glob.glob('%s/pdf.*.so' % p)
+        if len(pp) == 1:
+            ext = ctypes.cdll.LoadLibrary(pp[0])
     ext.dgamma.argtypes = [npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS'),
                            ctypes.c_int,
                            ctypes.c_double,
