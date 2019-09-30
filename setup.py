@@ -3,9 +3,12 @@
 
 from setuptools import setup, find_packages, Extension
 
+import versioneer
+
 setup(
     name='adobo',
-    version='0.2.0',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     description='An analysis framework for single cell gene expression data.',
     author='Oscar Franzén',
     author_email='p.oscar.franzen@gmail.com',

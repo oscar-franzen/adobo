@@ -1,3 +1,5 @@
 recursive-include adobo/data *
 include README.md
 include LICENSE
+include versioneer.py
+include adobo/_version.py

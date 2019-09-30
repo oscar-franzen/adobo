@@ -42,3 +42,7 @@ def excepthook(type, value, tb):
 sys.excepthook = excepthook
 
 print('adobo version %s. Documentation: %s' % (__version__, __url__))
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
