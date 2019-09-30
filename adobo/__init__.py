@@ -21,7 +21,6 @@ debug = 0
 # package metadata
 __author__ = 'Oscar Franzén'
 __email__ = 'p.oscar.franzen@gmail.com'
-__version__ = '0.1'
 __url__ = 'https://oscar-franzen.github.io/adobo/'
 
 # color exceptions in the terminal
