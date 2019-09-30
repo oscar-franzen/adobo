@@ -5,7 +5,7 @@ from setuptools import setup, find_packages, Extension
 
 setup(
     name='adobo',
-    version='0.2',
+    version=open('adobo/VERSION').read().replace('\n',''),
     description='An analysis framework for single cell gene expression data.',
     author='Oscar Franzén',
     author_email='p.oscar.franzen@gmail.com',

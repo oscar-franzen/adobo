@@ -5,6 +5,7 @@
 #     Contact: Oscar Franzen <p.oscar.franzen@gmail.com>
 import sys
 import re
+import os
 
 from .data import dataset
 from . import IO
@@ -22,7 +23,9 @@ debug = 0
 __author__ = 'Oscar Franzén'
 __email__ = 'p.oscar.franzen@gmail.com'
 __url__ = 'https://oscar-franzen.github.io/adobo/'
-__version__ = '0.2'
+
+path = os.path.abspath(os.path.dirname(__file__)) + '/VERSION'
+__version__ = open(path).read().replace('\n', '')
 
 # color exceptions in the terminal
 def excepthook(type, value, tb):
