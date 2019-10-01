@@ -9,8 +9,8 @@ import os
 
 # prevent unexpected multithreading in numpy
 # don't move this. Environmental variables must be set _before_ loading numpy.
-os.system('export OPENBLAS_NUM_THREADS=1')
-os.system('export MKL_NUM_THREADS=1')
+os.system('export OPENBLAS_NUM_THREADS=4')
+os.system('export MKL_NUM_THREADS=4')
 
 from .data import dataset
 from . import IO

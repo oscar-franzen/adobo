@@ -12,7 +12,9 @@ import sys
 import glob
 import ctypes
 import time
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
+
+import psutil
 import numpy.ctypeslib as npct
 import numpy as np
 import pandas as pd
@@ -27,6 +29,7 @@ from sklearn.linear_model import ElasticNet
 from .clustering import knn, snn, leiden
 from .hvg import seurat
 from .dr import irlb
+from ._log import warning
 
 # Suppress warnings from sklearn
 def _warn(*args, **kwargs):
@@ -319,8 +322,8 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
         Drop threshold. Default: 0.5
     nworkers : `int` or `str`
         If a string, then the only accepted value is 'auto', and the number of worker
-        threads will be set to the total number of detected cores minus 1. If an integer
-        then it specifies the number of worker threads. Default: 'auto'
+        processes will be the total number of detected physical cores. If an integer
+        then it specifies the number of worker processes. Default: 'auto'
     verbose : `bool`
         Be verbose or not. Default: True
     
@@ -334,13 +337,18 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
     -------
         Modifies the passed object.
     """
+    ncores = psutil.cpu_count(logical = False)
     if type(nworkers) == str:
         if nworkers == 'auto':
-            nworkers = cpu_count()-1
+            nworkers = ncores
         else:
             raise Exception('Invalid value for parameter "nworkers".')
+    elif type(nworkers) == int:
+        if nworkers > ncores:
+            warning('"nworkers" is set to a number higher than the available number of \
+physical cores on this machine (n=%s).' % ncores)
     if verbose:
-        print('%s worker threads will be used' % nworkers)
+        print('%s worker processes will be used' % nworkers)
     # contains normal and gamma probability density functions implemented in C (a bit
     # faster than using scipy.stats)
     time_start = time.time()

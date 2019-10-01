@@ -24,7 +24,8 @@ setup(
         'umap-learn >= 0.3.9',
         'statsmodels >= 0.10.1',
         'matplotlib >= 3.1.1',
-        'seaborn >= 0.9.0'
+        'seaborn >= 0.9.0',
+        'psutil >= 5.4.2'
     ],
     ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
                            extra_compile_args=['-fPIC','-lm'])]
