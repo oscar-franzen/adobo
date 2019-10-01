@@ -493,6 +493,8 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
         subcount = lnorm_cc.loc[valid_genes, :]
         Ic = subcount.shape[0]
         Jc = subcount.shape[1]
+        if Jc == 1:
+            continue
         parlist = parlist[valid_genes]
         idx = 0
         droprate = []
@@ -525,8 +527,6 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
         if verbose:
             v = (cc, (time_e - time_s)/60)
             print('imputation for cluster %s finished in %.2f minutes' % v)
-        if verbose:
-            print('\n')
         imputed = np.array(imputed)
         imputed = imputed.transpose()
         lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed
