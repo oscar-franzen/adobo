@@ -326,7 +326,6 @@ def impute(obj, drop_thre = 0.5, verbose=True):
     nn_idx = knn(comp)
     snn_graph = snn(nn_idx)
     cl = np.array(leiden(snn_graph))
-    # estimate model parameters
     nclust = len(np.unique(cl))
     
     if verbose:
@@ -433,6 +432,7 @@ def impute(obj, drop_thre = 0.5, verbose=True):
         if verbose:
             print('estimating dropout probability for cluster %s' % cc)
         lnorm_cc = lnorm.iloc[:, cl == cc]
+        # estimate model parameters
         parlist = get_par(lnorm_cc, verbose)
         if verbose:
             print('searching for valid genes for cluster %s' % cc)
