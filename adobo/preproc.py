@@ -263,24 +263,27 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     return low_quality_cells
 
 def impute(obj, drop_thre = 0.5, verbose=True):
-    """Impute dropouts using Li (2018) Nature Communications
+    """Impute dropouts using the method described in Li (2018) Nature Communications
     
     Notes
     -----
-    Not parallelized yet. The slowest part is fitting the ElasticNet model for every cell.
+    Dropouts are artifacts in scRNA-seq data. One method to alleviate the problem with
+    dropouts is to perform imputation (i.e. replacing missing data points with predicted
+    values). adobo's impute(...) is currently _not_ parallelized, it is therefore slow on
+    large datasets (the slowest part is fitting the ElasticNet model for every cell).
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
     drop_thre : `float`
-        Drop threshold.
+        Drop threshold. Default: 0.5
     verbose : `bool`
         Be verbose or not. Default: True
     
     References
     ----------
-    LI & Li (2018) An accurate and robust imputation method scImpute for single-cell
+    Li & Li (2018) An accurate and robust imputation method scImpute for single-cell
         RNA-seq data https://www.nature.com/articles/s41467-018-03405-7
         https://github.com/Vivianstats/scImpute
 
@@ -288,7 +291,8 @@ def impute(obj, drop_thre = 0.5, verbose=True):
     -------
         Modifies the passed object.
     """
-    # load lib
+    # contains normal and gamma probability density functions implemented in C (a bit
+    # faster than using scipy.stats)
     for p in sys.path:
         pp = glob.glob('%s/pdf.*.so' % p)
         if len(pp) == 1:
@@ -324,6 +328,9 @@ def impute(obj, drop_thre = 0.5, verbose=True):
     cl = np.array(leiden(snn_graph))
     # estimate model parameters
     nclust = len(np.unique(cl))
+    
+    if verbose:
+        print('going to work on %s clusters' % nclust)
     
     def weight(x, params):
         inp = x
