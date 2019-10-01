@@ -11,6 +11,8 @@ Functions for pre-processing scRNA-seq data.
 import sys
 import glob
 import ctypes
+import time
+from multiprocessing import Pool, cpu_count
 import numpy.ctypeslib as npct
 import numpy as np
 import pandas as pd
@@ -262,22 +264,63 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         print('%s low quality cell(s) identified' % len(low_quality_cells))
     return low_quality_cells
 
-def impute(obj, drop_thre = 0.5, verbose=True):
+def _imputation_worker(cellid, subcount, droprate, cc, Ic, Jc, drop_thre, verbose):
+    """A helper function for impute(...)'s multithreading. Don't use this function
+    directly. Don't move this function below because it must be Picklable for async'ed
+    usage."""
+    if verbose:
+        v = (cellid+1, subcount.shape[1], cc)
+        print('imputing cell %s/%s in cluster %s' % v)
+    yobs = subcount.iloc[:, cellid]
+    yimpute = [0]*Ic
+    nbs = set(np.arange(0, Jc))-set([cellid])
+    # dropouts
+    geneid_drop = droprate[:, cellid] > drop_thre
+    # non-dropouts
+    geneid_obs = droprate[:, cellid] <= drop_thre
+    xx = subcount.iloc[geneid_obs, list(nbs)]
+    yy = subcount.iloc[geneid_obs, cellid]
+    ximpute = subcount.iloc[geneid_drop, list(nbs)]
+    num_thre = 500
+    if xx.shape[1] >= min(num_thre, xx.shape[0]):
+        if num_thre >= xx.shape[0]:
+            new_thre = round((2*xx.shape[0]/3))
+        else:
+            new_thre = num_thre
+    regr = ElasticNet(random_state=0, max_iter=3000, positive=True, l1_ratio=0,
+                      fit_intercept=False)
+    ret = regr.fit(X=xx, y=yy.values)
+    ynew = regr.predict(ximpute)
+    yimpute = np.array(yimpute).astype(float)
+    yimpute[geneid_drop] = ynew
+    yimpute[geneid_obs] = yobs[geneid_obs]
+    maxobs = [max(k) for g, k in subcount.iterrows()]
+    maxobs = np.array(maxobs)
+    yimpute[yimpute > maxobs] = maxobs[yimpute > maxobs]
+    return list(yimpute)
+
+def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
     """Impute dropouts using the method described in Li (2018) Nature Communications
     
     Notes
     -----
     Dropouts are artifacts in scRNA-seq data. One method to alleviate the problem with
     dropouts is to perform imputation (i.e. replacing missing data points with predicted
-    values). adobo's impute(...) is currently _not_ parallelized, it is therefore slow on
-    large datasets (the slowest part is fitting the ElasticNet model for every cell).
+    values).
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
+    res : `float`
+        Resolution parameter for the Leiden clustering, change to modify cluster
+        resolution. Default: 0.8
     drop_thre : `float`
         Drop threshold. Default: 0.5
+    nworkers : `int` or `str`
+        If a string, then the only accepted value is 'auto', and the number of worker
+        threads will be set to the total number of detected cores minus 1. If an integer
+        then it specifies the number of worker threads. Default: 'auto'
     verbose : `bool`
         Be verbose or not. Default: True
     
@@ -291,6 +334,13 @@ def impute(obj, drop_thre = 0.5, verbose=True):
     -------
         Modifies the passed object.
     """
+    if type(nworkers) == str:
+        if nworkers == 'auto':
+            nworkers = cpu_count()-1
+        else:
+            raise Exception('Invalid value for parameter "nworkers".')
+    if verbose:
+        print('%s worker threads will be used' % nworkers)
     # contains normal and gamma probability density functions implemented in C (a bit
     # faster than using scipy.stats)
     for p in sys.path:
@@ -325,7 +375,7 @@ def impute(obj, drop_thre = 0.5, verbose=True):
     # estimating subpopulations
     nn_idx = knn(comp)
     snn_graph = snn(nn_idx)
-    cl = np.array(leiden(snn_graph))
+    cl = np.array(leiden(snn_graph, res))
     nclust = len(np.unique(cl))
     
     if verbose:
@@ -406,14 +456,15 @@ def impute(obj, drop_thre = 0.5, verbose=True):
             if verbose:
                 if (i%100) == 0:
                     v = ('{:,}'.format(i), '{:,}'.format(mat.shape[0]))
-                    print('estimating parameters. finished with %s/%s genes' % v, end='\r')
+                    s = 'estimating model parameters. finished with %s/%s genes' % v
+                    print(s, end='\r')
             if g in null_genes:
                 paramlist.append([np.nan]*5)
             else:
                 paramlist.append(para_est(k.values))
             i += 1
         if verbose:
-            print('\nparameter estimation has finished')
+            print('\nmodel parameter estimation has finished')
         return np.array(paramlist)
     
     def find_va_genes(mat, parlist):
@@ -457,37 +508,23 @@ def impute(obj, drop_thre = 0.5, verbose=True):
         if verbose:
             print('running imputation for cluster %s' % cc)
         imputed = []
-        for cellid in range(0,subcount.shape[1]):
-            if verbose:
-                v = (cellid+1, subcount.shape[1], cc)
-                print('imputing cell %s/%s in cluster %s' % v, end='\r')
-            yobs = subcount.iloc[:, cellid]
-            yimpute = [0]*Ic
-            nbs = set(np.arange(0, Jc))-set([cellid])
-            # dropouts
-            geneid_drop = droprate[:, cellid] > drop_thre
-            # non-dropouts
-            geneid_obs = droprate[:, cellid] <= drop_thre
-            xx = subcount.iloc[geneid_obs, list(nbs)]
-            yy = subcount.iloc[geneid_obs, cellid]
-            ximpute = subcount.iloc[geneid_drop, list(nbs)]
-            num_thre = 500
-            if xx.shape[1] >= min(num_thre, xx.shape[0]):
-                if num_thre >= xx.shape[0]:
-                    new_thre = round((2*xx.shape[0]/3))
-                else:
-                    new_thre = num_thre
-            regr = ElasticNet(random_state=0, max_iter=3000, positive=True, l1_ratio=0,
-                              fit_intercept=False)
-            ret = regr.fit(X=xx, y=yy.values)
-            ynew = regr.predict(ximpute)
-            yimpute = np.array(yimpute).astype(float)
-            yimpute[geneid_drop] = ynew
-            yimpute[geneid_obs] = yobs[geneid_obs]
-            maxobs = [max(k) for g, k in subcount.iterrows()]
-            maxobs = np.array(maxobs)
-            yimpute[yimpute > maxobs] = maxobs[yimpute > maxobs]
-            imputed.append(list(yimpute))
+        pool = Pool(nworkers)
+        
+        def update_result(yimpute):
+            imputed.append(yimpute)
+        
+        time_s = time.time()
+        for cellid in range(0, subcount.shape[1]):
+            args=(cellid, subcount, droprate, cc, Ic, Jc, drop_thre, verbose)
+            r = pool.apply_async(_imputation_worker,
+                                 args=args,
+                                 callback=update_result)
+        pool.close()
+        pool.join()
+        time_e = time.time()
+        if verbose:
+            v = (cc, (time_e - time_s)/60)
+            print('imputation for cluster %s finished in %.2f minutes' % v)
         if verbose:
             print('\n')
         imputed = np.array(imputed)
