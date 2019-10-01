@@ -343,6 +343,7 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
         print('%s worker threads will be used' % nworkers)
     # contains normal and gamma probability density functions implemented in C (a bit
     # faster than using scipy.stats)
+    time_start = time.time()
     for p in sys.path:
         pp = glob.glob('%s/pdf.*.so' % p)
         if len(pp) == 1:
@@ -530,3 +531,7 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
         imputed = np.array(imputed)
         imputed = imputed.transpose()
         lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed
+    time_end = time.time()
+    if verbose:
+        t = (time_end - time_start)/60
+        print('imputation finished in %.2f minutes' % t)
