@@ -273,9 +273,10 @@ def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbo
     directly. Don't move this function below because it must be Picklable for async'ed
     usage."""
     res = []
+    idx = 1
     for cellid in cellids:
         if verbose:
-            v = (cellid+1, len(cellids), batch, cc)
+            v = (idx, len(cellids), batch, cc)
             print('imputing cell %s/%s (batch %s) in cluster %s' % v)
         yobs = subcount.iloc[:, cellid]
         yimpute = [0]*Ic
@@ -304,6 +305,7 @@ def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbo
         maxobs = np.array(maxobs)
         yimpute[yimpute > maxobs] = maxobs[yimpute > maxobs]
         res.append(list(yimpute))
+        idx += 1
     return res
 
 def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
