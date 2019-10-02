@@ -531,7 +531,10 @@ physical cores on this machine (n=%s).' % ncores)
         
         time_s = time.time()
         ids = np.arange(0, subcount.shape[1])
-        batch_size = round(len(ids)/nworkers)
+        if len(ids) < nworkers:
+            batch_size = len(ids)
+        else:
+            batch_size = round(len(ids)/nworkers)
         batch = 1
         while len(ids)>0:
             ids_b = ids[0:batch_size]
