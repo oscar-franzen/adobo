@@ -267,15 +267,16 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         print('%s low quality cell(s) identified' % len(low_quality_cells))
     return low_quality_cells
 
-def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbose):
+def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbose,
+                       batch):
     """A helper function for impute(...)'s multithreading. Don't use this function
     directly. Don't move this function below because it must be Picklable for async'ed
     usage."""
     res = []
     for cellid in cellids:
         if verbose:
-            v = (cellid+1, subcount.shape[1], cc)
-            print('imputing cell %s/%s in cluster %s' % v)
+            v = (cellid+1, len(cellids), batch, cc)
+            print('imputing cell %s/%s (batch %s) in cluster %s' % v)
         yobs = subcount.iloc[:, cellid]
         yimpute = [0]*Ic
         nbs = set(np.arange(0, Jc))-set([cellid])
@@ -529,14 +530,15 @@ physical cores on this machine (n=%s).' % ncores)
         time_s = time.time()
         ids = np.arange(0, subcount.shape[1])
         batch_size = round(len(ids)/nworkers)
-
+        batch = 1
         while len(ids)>0:
             ids_b = ids[0:batch_size]
-            args=(ids_b, subcount, droprate, cc, Ic, Jc, drop_thre, verbose)
+            args=(ids_b, subcount, droprate, cc, Ic, Jc, drop_thre, verbose, batch)
             r = pool.apply_async(_imputation_worker,
                                  args=args,
                                  callback=update_result)
             ids = ids[batch_size:]
+            batch += 1
         pool.close()
         pool.join()
         imputed = np.concatenate(imputed)
