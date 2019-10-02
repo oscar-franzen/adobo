@@ -368,8 +368,8 @@ physical cores on this machine (n=%s).' % ncores)
                           npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')]
     # normalize
     raw = obj.count_data
-    col_sums = 10**6/np.array([np.sum(i[1]) for i in raw.transpose().iterrows()])
-    raw = raw*col_sums
+    col_sums = np.array([np.sum(i[1]) for i in raw.transpose().iterrows()])
+    raw = raw*(10**6/col_sums)
     lnorm = np.log10(raw+1.01)
     lnorm_imp = lnorm.copy()
     # estimate subpopulations
@@ -386,7 +386,6 @@ physical cores on this machine (n=%s).' % ncores)
     snn_graph = snn(nn_idx)
     cl = np.array(leiden(snn_graph, res))
     nclust = len(np.unique(cl))
-    
     if verbose:
         print('going to work on %s clusters' % nclust)
     
@@ -539,9 +538,12 @@ physical cores on this machine (n=%s).' % ncores)
         imputed = np.array(imputed)
         imputed = imputed.transpose()
         lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed
+    # reverse normalisation
     lnorm_imp = 10**lnorm_imp - 1.01
+    lnorm_imp = lnorm_imp*(col_sums/10**6)
     obj.imp_count_data = lnorm_imp
     time_end = time.time()
     if verbose:
         t = (time_end - time_start)/60
-        print('imputation finished in %.2f minutes' % t)
+        print('imputation finished in %.2f minutes. imputed data are aailable in the \
+"imp_count_data" attribute.' % t)
