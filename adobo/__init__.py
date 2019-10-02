@@ -11,6 +11,7 @@ import os
 # don't move this. Environmental variables must be set _before_ loading numpy.
 os.system('export OPENBLAS_NUM_THREADS=1')
 os.system('export MKL_NUM_THREADS=1')
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 from .data import dataset
 from . import IO
