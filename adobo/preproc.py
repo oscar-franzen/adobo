@@ -560,5 +560,6 @@ physical cores on this machine (n=%s).' % ncores)
     time_end = time.time()
     if verbose:
         t = (time_end - time_start)/60
-        print('imputation finished in %.2f minutes. imputed data are aailable in the \
+        print('imputation finished in %.2f minutes. imputed data are present in the \
 "imp_count_data" attribute.' % t)
+    obj.set_assay(sys._getframe().f_code.co_name)
