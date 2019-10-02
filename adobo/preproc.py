@@ -267,40 +267,43 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         print('%s low quality cell(s) identified' % len(low_quality_cells))
     return low_quality_cells
 
-def _imputation_worker(cellid, subcount, droprate, cc, Ic, Jc, drop_thre, verbose):
+def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbose):
     """A helper function for impute(...)'s multithreading. Don't use this function
     directly. Don't move this function below because it must be Picklable for async'ed
     usage."""
-    if verbose:
-        v = (cellid+1, subcount.shape[1], cc)
-        print('imputing cell %s/%s in cluster %s' % v)
-    yobs = subcount.iloc[:, cellid]
-    yimpute = [0]*Ic
-    nbs = set(np.arange(0, Jc))-set([cellid])
-    # dropouts
-    geneid_drop = droprate[:, cellid] > drop_thre
-    # non-dropouts
-    geneid_obs = droprate[:, cellid] <= drop_thre
-    xx = subcount.iloc[geneid_obs, list(nbs)]
-    yy = subcount.iloc[geneid_obs, cellid]
-    ximpute = subcount.iloc[geneid_drop, list(nbs)]
-    num_thre = 500
-    if xx.shape[1] >= min(num_thre, xx.shape[0]):
-        if num_thre >= xx.shape[0]:
-            new_thre = round((2*xx.shape[0]/3))
-        else:
-            new_thre = num_thre
-    regr = ElasticNet(random_state=0, max_iter=3000, positive=True, l1_ratio=0,
-                      fit_intercept=False)
-    ret = regr.fit(X=xx, y=yy.values)
-    ynew = regr.predict(ximpute)
-    yimpute = np.array(yimpute).astype(float)
-    yimpute[geneid_drop] = ynew
-    yimpute[geneid_obs] = yobs[geneid_obs]
-    maxobs = [max(k) for g, k in subcount.iterrows()]
-    maxobs = np.array(maxobs)
-    yimpute[yimpute > maxobs] = maxobs[yimpute > maxobs]
-    return list(yimpute)
+    res = []
+    for cellid in cellids:
+        if verbose:
+            v = (cellid+1, subcount.shape[1], cc)
+            print('imputing cell %s/%s in cluster %s' % v)
+        yobs = subcount.iloc[:, cellid]
+        yimpute = [0]*Ic
+        nbs = set(np.arange(0, Jc))-set([cellid])
+        # dropouts
+        geneid_drop = droprate[:, cellid] > drop_thre
+        # non-dropouts
+        geneid_obs = droprate[:, cellid] <= drop_thre
+        xx = subcount.iloc[geneid_obs, list(nbs)]
+        yy = subcount.iloc[geneid_obs, cellid]
+        ximpute = subcount.iloc[geneid_drop, list(nbs)]
+        num_thre = 500
+        if xx.shape[1] >= min(num_thre, xx.shape[0]):
+            if num_thre >= xx.shape[0]:
+                new_thre = round((2*xx.shape[0]/3))
+            else:
+                new_thre = num_thre
+        regr = ElasticNet(random_state=0, max_iter=3000, positive=True, l1_ratio=0,
+                          fit_intercept=False)
+        ret = regr.fit(X=xx, y=yy.values)
+        ynew = regr.predict(ximpute)
+        yimpute = np.array(yimpute).astype(float)
+        yimpute[geneid_drop] = ynew
+        yimpute[geneid_obs] = yobs[geneid_obs]
+        maxobs = [max(k) for g, k in subcount.iterrows()]
+        maxobs = np.array(maxobs)
+        yimpute[yimpute > maxobs] = maxobs[yimpute > maxobs]
+        res.append(list(yimpute))
+    return res
 
 def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
     """Impute dropouts using the method described in Li (2018) Nature Communications
@@ -419,7 +422,7 @@ physical cores on this machine (n=%s).' % ncores)
                 alpha = root(lambda x: np.log(x) - digamma(x) - tp_v, 0.9*alpha0).x[0]
         beta = tp_s / tp_t * alpha
         return alpha, beta
-        
+    
     def dmix(x, pars):
         inp = x
         g_out = np.zeros(len(inp))
@@ -524,18 +527,23 @@ physical cores on this machine (n=%s).' % ncores)
             imputed.append(yimpute)
         
         time_s = time.time()
-        for cellid in range(0, subcount.shape[1]):
-            args=(cellid, subcount, droprate, cc, Ic, Jc, drop_thre, verbose)
+        ids = np.arange(0, subcount.shape[1])
+        batch_size = round(len(ids)/nworkers)
+
+        while len(ids)>0:
+            ids_b = ids[0:batch_size]
+            args=(ids_b, subcount, droprate, cc, Ic, Jc, drop_thre, verbose)
             r = pool.apply_async(_imputation_worker,
                                  args=args,
                                  callback=update_result)
+            ids = ids[batch_size:]
         pool.close()
         pool.join()
+        imputed = np.concatenate(imputed)
         time_e = time.time()
         if verbose:
             v = (cc, (time_e - time_s)/60)
             print('imputation for cluster %s finished in %.2f minutes' % v)
-        imputed = np.array(imputed)
         imputed = imputed.transpose()
         lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed
     # reverse normalisation
