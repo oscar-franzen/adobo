@@ -539,6 +539,7 @@ physical cores on this machine (n=%s).' % ncores)
         imputed = np.array(imputed)
         imputed = imputed.transpose()
         lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed
+    obj.imp_count_data = lnorm_imp
     time_end = time.time()
     if verbose:
         t = (time_end - time_start)/60

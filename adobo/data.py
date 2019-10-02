@@ -20,7 +20,7 @@ from ._constants import ASSAY_NOT_DONE
 
 class dataset:
     """
-    Storage container for raw data and analysis results.
+    Storage container for raw, imputed and normalized data as well as analysis results.
     
     Attributes
     ----------
@@ -28,6 +28,8 @@ class dataset:
         Holding information about what functions have been applied.
     count_data : :class:`pandas.DataFrame`
         Raw read count matrix.
+    imp_count_data : :class:`pandas.DataFrame`
+        Raw data after imputing dropouts.
     _low_quality_cells : `list`
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
     norm_data : `dict`
@@ -53,6 +55,7 @@ class dataset:
         self._assays = {}
         self.count_data = raw_mat.astype(pd.SparseDtype("int", 0))
         self._low_quality_cells = ASSAY_NOT_DONE
+        self.imp_count_data = pd.DataFrame()
         
         # the nested dictionary containing results and analyses
         self.norm_data = {}
