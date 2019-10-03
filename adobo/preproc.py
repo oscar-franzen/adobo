@@ -316,6 +316,9 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
     Dropouts are artifacts in scRNA-seq data. One method to alleviate the problem with
     dropouts is to perform imputation (i.e. replacing missing data points with predicted
     values).
+    
+    The present method uses a different procedure for subpopulation identification
+    as compared with the original paper.
 
     Parameters
     ----------
