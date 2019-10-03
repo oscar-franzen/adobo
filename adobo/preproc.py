@@ -269,7 +269,7 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
 
 def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbose,
                        batch):
-    """A helper function for impute(...)'s multithreading. Don't use this function
+    """A helper function for impute(...)'s multiprocessing. Don't use this function
     directly. Don't move this function below because it must be Picklable for async'ed
     usage."""
     res = []
