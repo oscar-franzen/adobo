@@ -306,7 +306,7 @@ def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbo
         yimpute[yimpute > maxobs] = maxobs[yimpute > maxobs]
         res.append(list(yimpute))
         idx += 1
-    return res
+    return [cellids, res]
 
 def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
     """Impute dropouts using the method described in Li (2018) Nature Communications
@@ -493,7 +493,7 @@ physical cores on this machine (n=%s).' % ncores)
         #sgene3 = valid_genes.index[np.logical_and(dcheck1 >= dcheck2, mu <= 1)]
         #return valid_genes[np.logical_not(np.logical_or(sgene1,sgene3))].index
 
-    for cc in np.arange(0,nclust):
+    for cc in np.arange(0, nclust):
         if verbose:
             print('estimating dropout probability for cluster %s' % cc)
         lnorm_cc = lnorm.iloc[:, cl == cc]
@@ -547,16 +547,24 @@ physical cores on this machine (n=%s).' % ncores)
             batch += 1
         pool.close()
         pool.join()
-        imputed = np.concatenate(imputed)
+        
+        cellids = []
+        d = []
+        for item in imputed:
+            cellids.append(item[0])
+            d.append(item[1])
+        cellids = np.concatenate(cellids)
+        imputed = np.concatenate(d)
         time_e = time.time()
         if verbose:
             v = (cc, (time_e - time_s)/60)
             print('imputation for cluster %s finished in %.2f minutes' % v)
         imputed = imputed.transpose()
-        #imputed = pd.DataFrame(imputed)
-        #imputed.columns = lnorm_cc.columns
-        #imputed.index = valid_genes
-        lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed
+        imputed = pd.DataFrame(imputed)
+        imputed.columns = cellids
+        imputed.index = valid_genes[valid_genes].index
+        imputed = imputed.sort_index(axis=1)
+        lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed.to_numpy()
     # reverse normalisation
     lnorm_imp = 10**lnorm_imp - 1.01
     lnorm_imp = lnorm_imp*(col_sums/10**6)
