@@ -547,7 +547,7 @@ physical cores on this machine (n=%s).' % ncores)
             batch += 1
         pool.close()
         pool.join()
-        
+        # sorting b/c cells are not returned from subprocesses in the original order
         cellids = []
         d = []
         for item in imputed:
