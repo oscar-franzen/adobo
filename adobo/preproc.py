@@ -505,6 +505,7 @@ physical cores on this machine (n=%s).' % ncores)
         if verbose:
             print('%s genes are valid' % '{:,}'.format(len(valid_genes)))
         subcount = lnorm_cc.loc[valid_genes, :]
+        subcount = subcount.reindex(valid_genes[valid_genes].index)
         Ic = subcount.shape[0]
         Jc = subcount.shape[1]
         if Jc == 1:
@@ -531,7 +532,7 @@ physical cores on this machine (n=%s).' % ncores)
         
         time_s = time.time()
         ids = np.arange(0, subcount.shape[1])
-        if len(ids) < nworkers:
+        if len(ids) < nworkers or len(ids) < 50:
             batch_size = len(ids)
         else:
             batch_size = round(len(ids)/nworkers)
@@ -552,10 +553,14 @@ physical cores on this machine (n=%s).' % ncores)
             v = (cc, (time_e - time_s)/60)
             print('imputation for cluster %s finished in %.2f minutes' % v)
         imputed = imputed.transpose()
+        #imputed = pd.DataFrame(imputed)
+        #imputed.columns = lnorm_cc.columns
+        #imputed.index = valid_genes
         lnorm_imp.loc[valid_genes, lnorm_cc.columns] = imputed
     # reverse normalisation
     lnorm_imp = 10**lnorm_imp - 1.01
     lnorm_imp = lnorm_imp*(col_sums/10**6)
+    lnorm_imp = round(lnorm_imp, 2)
     obj.imp_count_data = lnorm_imp
     time_end = time.time()
     if verbose:
