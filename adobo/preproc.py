@@ -49,8 +49,8 @@ def reset_filters(obj):
     -------
     Nothing. Modifies the passed object.
     """
-    obj.meta_cells.status[obj.meta_cells.status!='OK'] = 'OK'
-    obj.meta_genes.status[obj.meta_genes.status!='OK'] = 'OK'
+    obj.meta_cells.status[obj.meta_cells.status != 'OK'] = 'OK'
+    obj.meta_genes.status[obj.meta_genes.status != 'OK'] = 'OK'
 
 def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=False):
     """Removes cells with too few reads and genes with very low expression
@@ -88,14 +88,14 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
     if minexpgenes > 0:
         if type(minexpgenes) == int:
             genes_exp = obj.meta_genes.expressed
-            genes_remove = genes_exp<minexpgenes
+            genes_remove = genes_exp < minexpgenes
             obj.meta_genes.status[genes_remove] = 'EXCLUDE'
         else:
             genes_exp = obj.meta_genes.expressed_perc
-            genes_remove = genes_exp<minexpgenes
+            genes_remove = genes_exp < minexpgenes
             obj.meta_genes.status[genes_remove] = 'EXCLUDE'
     obj.set_assay(sys._getframe().f_code.co_name)
-    r = np.sum(obj.meta_cells.status=='EXCLUDE')
+    r = np.sum(obj.meta_cells.status == 'EXCLUDE')
     if verbose:
         s = '%s cells and %s genes were removed'
         print(s % (r, np.sum(genes_remove)))
@@ -139,7 +139,7 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False
         print('%s mitochondrial genes detected' % no_found)
     obj.set_assay(sys._getframe().f_code.co_name)
     return no_found
-        
+
 def find_ercc(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     """Flag ERCC spikes
 
@@ -163,7 +163,7 @@ def find_ercc(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     obj.meta_genes['status'][ercc] = 'EXCLUDE'
     no_found = np.sum(ercc)
     obj.ercc_pattern = ercc_pattern
-    if no_found>0:
+    if no_found > 0:
         ercc = obj.meta_genes[obj.meta_genes.ERCC].index
         ercc_counts = obj.count_data.loc[ercc, :]
         ercc_counts = ercc_counts.sum(axis=0)
@@ -176,7 +176,7 @@ def find_ercc(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
 
 def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     """Statistical detection of low quality cells using Mahalanobis distances
-    
+
     Notes
     ----------------
     Mahalanobis distances are computed from five quality metrics. A robust estimate of
@@ -211,7 +211,7 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         A list of low quality cells that were identified, and also modifies the passed
         object.
     """
-    
+
     if np.sum(obj.meta_genes.mitochondrial) == 0:
         raise Exception('No mitochondrial genes found. Run detect_mito() first.')
     if np.sum(obj.meta_genes.ERCC) == 0:
@@ -219,7 +219,7 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     if type(rRNA_genes) == str:
         rRNA_genes = pd.read_csv(rRNA_genes, header=None)
         obj.meta_genes['rRNA'] = obj.meta_genes.index.isin(rRNA_genes.iloc[:, 0])
-    
+
     if not 'mito' in obj.meta_cells.columns:
         mt_genes = obj.meta_genes.mitochondrial[obj.meta_genes.mitochondrial]
         mito_mat = obj.count_data[obj.count_data.index.isin(mt_genes.index)]
@@ -235,7 +235,7 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         rrna_mat = obj.count_data[obj.count_data.index.isin(rrna_genes.index)]
         rrna_sum = rrna_mat.sum(axis=0)
         obj.meta_cells['rRNA'] = rrna_sum
-    
+
     #data = obj.count_data
     inp_total_reads = obj.meta_cells.total_reads
     inp_detected_genes = obj.meta_cells.detected_genes/inp_total_reads
@@ -262,7 +262,7 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     obj.low_quality_cells = low_quality_cells
     obj.set_assay(sys._getframe().f_code.co_name)
     r = obj.meta_cells.index.isin(low_quality_cells)
-    obj.meta_cells.status[r]='EXCLUDE'
+    obj.meta_cells.status[r] = 'EXCLUDE'
     if verbose:
         print('%s low quality cell(s) identified' % len(low_quality_cells))
     return low_quality_cells
@@ -308,15 +308,15 @@ def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbo
         idx += 1
     return [cellids, res]
 
-def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
+def impute(obj, res=0.8, drop_thre=0.5, nworkers='auto', verbose=True):
     """Impute dropouts using the method described in Li (2018) Nature Communications
-    
+
     Notes
     -----
     Dropouts are artifacts in scRNA-seq data. One method to alleviate the problem with
     dropouts is to perform imputation (i.e. replacing missing data points with predicted
     values).
-    
+
     The present method uses a different procedure for subpopulation identification
     as compared with the original paper.
 
@@ -335,7 +335,7 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
         then it specifies the number of worker processes. Default: 'auto'
     verbose : `bool`
         Be verbose or not. Default: True
-    
+
     References
     ----------
     Li & Li (2018) An accurate and robust imputation method scImpute for single-cell
@@ -346,7 +346,7 @@ def impute(obj, res=0.8, drop_thre = 0.5, nworkers='auto', verbose=True):
     -------
         Modifies the passed object.
     """
-    ncores = psutil.cpu_count(logical = False)
+    ncores = psutil.cpu_count(logical=False)
     if type(nworkers) == str:
         if nworkers == 'auto':
             nworkers = ncores
@@ -397,7 +397,7 @@ physical cores on this machine (n=%s).' % ncores)
     nclust = len(np.unique(cl))
     if verbose:
         print('going to work on %s clusters' % nclust)
-    
+
     def weight(x, params):
         inp = x
         g_out = np.zeros(len(inp))
@@ -412,7 +412,7 @@ physical cores on this machine (n=%s).' % ncores)
         pz = pz1/(pz1+pz2)
         pz[pz1 == 0] = 0
         return np.array([pz, 1-pz])
-    
+
     def update_gmm_pars(x, wt):
         tp_s = np.sum(wt)
         tp_t = np.sum(wt * x)
@@ -428,7 +428,7 @@ physical cores on this machine (n=%s).' % ncores)
                 alpha = root(lambda x: np.log(x) - digamma(x) - tp_v, 0.9*alpha0).x[0]
         beta = tp_s / tp_t * alpha
         return alpha, beta
-    
+
     def dmix(x, pars):
         inp = x
         g_out = np.zeros(len(inp))
@@ -443,10 +443,10 @@ physical cores on this machine (n=%s).' % ncores)
 
     def para_est(x):
         params = [0, 0.5, 1, 0, 0]
-        params[0] = np.sum(x==np.log10(1.01))/len(x)
+        params[0] = np.sum(x == np.log10(1.01))/len(x)
         if params[0] == 0:
             params[0] = 0.01
-        x_rm = x[x>np.log10(1.01)]
+        x_rm = x[x > np.log10(1.01)]
         params[3] = np.mean(x_rm)
         params[4] = np.std(x_rm)
         eps, iter_, loglik_old = 10, 0, 0
@@ -465,7 +465,7 @@ physical cores on this machine (n=%s).' % ncores)
         return params
 
     def get_par(mat, verbose):
-        null_genes = np.abs(mat.sum(axis=1)-np.log10(1.01)*mat.shape[1])<1e-10
+        null_genes = np.abs(mat.sum(axis=1)-np.log10(1.01)*mat.shape[1]) < 1e-10
         null_genes = null_genes[null_genes].index
         paramlist = []
         i = 0
@@ -483,7 +483,7 @@ physical cores on this machine (n=%s).' % ncores)
         if verbose:
             print('\nmodel parameter estimation has finished')
         return np.array(paramlist)
-    
+
     def find_va_genes(mat, parlist):
         point = np.log10(1.01)
         is_na = [not np.any(i) for i in np.isnan(np.array(parlist))]
@@ -522,17 +522,17 @@ physical cores on this machine (n=%s).' % ncores)
             droprate.append(wt)
         droprate = np.array(droprate)
         mu = parlist[:, 3]
-        mucheck = subcount.apply(lambda x: x>mu, axis=0)
+        mucheck = subcount.apply(lambda x: x > mu, axis=0)
         droprate[np.logical_and(mucheck, droprate > drop_thre)] = 0
         # dropouts
         if verbose:
             print('running imputation for cluster %s' % cc)
         imputed = []
         pool = Pool(nworkers)
-        
+
         def update_result(yimpute):
             imputed.append(yimpute)
-        
+
         time_s = time.time()
         ids = np.arange(0, subcount.shape[1])
         if len(ids) < nworkers or len(ids) < 50:
@@ -540,9 +540,9 @@ physical cores on this machine (n=%s).' % ncores)
         else:
             batch_size = round(len(ids)/nworkers)
         batch = 1
-        while len(ids)>0:
+        while len(ids) > 0:
             ids_b = ids[0:batch_size]
-            args=(ids_b, subcount, droprate, cc, Ic, Jc, drop_thre, verbose, batch)
+            args = (ids_b, subcount, droprate, cc, Ic, Jc, drop_thre, verbose, batch)
             r = pool.apply_async(_imputation_worker,
                                  args=args,
                                  callback=update_result)
