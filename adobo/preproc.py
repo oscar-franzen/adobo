@@ -308,7 +308,7 @@ def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbo
         idx += 1
     return [cellids, res]
 
-def impute(obj, res=0.8, drop_thre=0.5, nworkers='auto', verbose=True):
+def impute(obj, filtered=True, res=0.8, drop_thre=0.5, nworkers='auto', verbose=True):
     """Impute dropouts using the method described in Li (2018) Nature Communications
 
     Notes
@@ -324,6 +324,10 @@ def impute(obj, res=0.8, drop_thre=0.5, nworkers='auto', verbose=True):
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
+    filtered : `bool`
+        If data have been filtered using :func:`adobo.preproc.simple_filter`, run
+        imputation on filtered data; otherwise runs on the entire raw read count matrix.
+        Default: True
     res : `float`
         Resolution parameter for the Leiden clustering, change to modify cluster
         resolution. Default: 0.8
@@ -376,11 +380,20 @@ physical cores on this machine (n=%s).' % ncores)
                           ctypes.c_double,
                           npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')]
     # normalize
-    raw = obj.count_data
+    raw = obj.count_data.copy()
+    if filtered:
+        # Remove low quality cells
+        remove = obj.meta_cells.status[obj.meta_cells.status!='OK']
+        raw = raw.drop(remove.index, axis=1)
+        # Remove uninformative genes (e.g. lowly expressed and ERCC)
+        remove = obj.meta_genes.status[obj.meta_genes.status!='OK']
+        raw = raw.drop(remove.index, axis=0)
+        if verbose:
+            print('Running on the quality filtered data (dimensions %sx%s)' % raw.shape)
     col_sums = np.array([np.sum(i[1]) for i in raw.transpose().iterrows()])
     raw = raw*(10**6/col_sums)
     lnorm = np.log10(raw+1.01)
-    lnorm_imp = lnorm.copy()
+    lnorm_imp = lnorm
     # estimate subpopulations
     hvg = seurat(lnorm, ngenes=1000) # get hvg
     lnorm_hvg = lnorm[lnorm.index.isin(hvg)]
