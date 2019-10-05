@@ -330,7 +330,7 @@ def fqn(data):
     df = df.transpose()
     return df
 
-def norm(obj, method='standard', name=None, log2=True, small_const=1,
+def norm(obj, method='standard', name=None, use_imputed=False, log2=True, small_const=1,
          remove_low_qual=True, gene_lengths=None, scaling_factor=10000, axis='genes'):
     r"""Normalizes gene expression data
     
@@ -354,6 +354,9 @@ def norm(obj, method='standard', name=None, log2=True, small_const=1,
         A choosen name for the normalization. It is used for storing and retrieving this
         normalization for plotting later. If `None` or an empty string, then it is set to
         the value of `method`.
+    use_imputed : `bool`
+        Use imputed data. If set to True, then :func:`adobo.preproc.impute` must have been
+        run previously. Default: False
     log2 : `bool`
         Perform log2 transformation. Default: True
     small_const : `float`
@@ -398,14 +401,20 @@ def norm(obj, method='standard', name=None, log2=True, small_const=1,
         name = method
     if method == 'rpkm' and gene_lengths == None:
         raise Exception('The `gene_lengths` parameter needs to be set when method is RPKM.')
-    data = obj.count_data
+    if use_imputed:
+        if obj.imp_count_data.shape[0] == 0:
+            raise Exception('No imputed data found. Run adobo.preproc.impute() first.')
+        else:
+            data = obj.imp_count_data
+    else:
+        data = obj.count_data
     if remove_low_qual:
         # Remove low quality cells
         remove = obj.meta_cells.status[obj.meta_cells.status!='OK']
-        data = data.drop(remove.index, axis=1)
+        data = data.drop(remove.index, axis=1, errors='ignore')
         # Remove uninformative genes (e.g. lowly expressed and ERCC)
         remove = obj.meta_genes.status[obj.meta_genes.status!='OK']
-        data = data.drop(remove.index, axis=0)
+        data = data.drop(remove.index, axis=0, errors='ignore')
     if method == 'standard':
         norm = standard(data, scaling_factor)
         norm_method='standard'
