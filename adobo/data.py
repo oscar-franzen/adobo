@@ -32,7 +32,7 @@ class dataset:
         Raw data after imputing dropouts.
     _low_quality_cells : `list`
         Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
-    norm_data : `dict`
+    _norm_data : `dict`
         Stores all analysis results. A nested dictionary.
     meta_cells : `pandas.DataFrame`
         A data frame containing meta data for cells.
@@ -58,7 +58,7 @@ class dataset:
         self.imp_count_data = pd.DataFrame()
         
         # the nested dictionary containing results and analyses
-        self.norm_data = {}
+        self._norm_data = {}
         
         # meta data for cells
         self.meta_cells = pd.DataFrame(index=raw_mat.columns)
@@ -131,6 +131,14 @@ class dataset:
     def set_assay(self, name, key=1):
         """ Set the assay that was applied. """
         self._assays[name] = key
+    
+    @property
+    def norm_data(self):
+        return self._norm_data
+    
+    @norm_data.setter
+    def norm_data(self, val):
+        self._norm_data = val
     
     @property
     def low_quality_cells(self):
