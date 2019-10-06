@@ -308,7 +308,7 @@ def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbo
         idx += 1
     return [cellids, res]
 
-def impute(obj, filtered=True, res=0.8, drop_thre=0.5, nworkers='auto', verbose=True):
+def impute(obj, filtered=True, res=0.5, drop_thre=0.5, nworkers='auto', verbose=True):
     """Impute dropouts using the method described in Li (2018) Nature Communications
 
     Notes
@@ -563,6 +563,8 @@ physical cores on this machine (n=%s).' % ncores)
             batch += 1
         pool.close()
         pool.join()
+        if len(imputed) == 0:
+            continue
         # sorting b/c cells are not returned from subprocesses in the original order
         cellids = []
         d = []
