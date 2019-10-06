@@ -330,7 +330,7 @@ def impute(obj, filtered=True, res=0.5, drop_thre=0.5, nworkers='auto', verbose=
         Default: True
     res : `float`
         Resolution parameter for the Leiden clustering, change to modify cluster
-        resolution. Default: 0.8
+        resolution. Default: 0.5
     drop_thre : `float`
         Drop threshold. Default: 0.5
     nworkers : `int` or `{'auto'}`
