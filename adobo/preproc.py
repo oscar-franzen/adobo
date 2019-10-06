@@ -333,7 +333,7 @@ def impute(obj, filtered=True, res=0.8, drop_thre=0.5, nworkers='auto', verbose=
         resolution. Default: 0.8
     drop_thre : `float`
         Drop threshold. Default: 0.5
-    nworkers : `int` or `str`
+    nworkers : `int` or `{'auto'}`
         If a string, then the only accepted value is 'auto', and the number of worker
         processes will be the total number of detected physical cores. If an integer
         then it specifies the number of worker processes. Default: 'auto'
