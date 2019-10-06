@@ -155,16 +155,18 @@ class dataset:
         s = """Filename (input): %s
 Description: %s
 Raw read counts matrix contains: %s genes and %s cells
+
+Commands executed:
 """ % (self.input_file, self.desc, genes, cells)
 
         for key in self._assays:
-            s += 'Done: %s (%s)\n' % (key, self._assays[key])
-        
-        #if self.norm.shape[0] > 0:
-        #    genes = '{:,}'.format(self.norm.shape[0])
-        #    cells = '{:,}'.format(self.norm.shape[1])
-        #    q = (genes, cells)
-        #    s += "Normalized gene expression matrix contains: %s genes and %s cells" % q
+            if self._assays[key] != 1:
+                s += '%s (%s)\n' % (key, self._assays[key])
+            else:
+                s += '%s\n' % key
+        s += '\nNormalizations available:\n'
+        for item in self.norm_data:
+            s += '%s\n' % item
         return s
     
     def assays(self):
