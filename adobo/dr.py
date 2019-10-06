@@ -161,10 +161,9 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         data = item['data']
         if not allgenes:
             if not 'hvg' in item:
-                raise Exception('Run find_hvg first.')
-            else:
-                hvg = item['hvg']['genes']
-                data = data[data.index.isin(hvg)]
+                raise Exception('Run adobo.dr.find_hvg() first.')
+            hvg = item['hvg']['genes']
+            data = data[data.index.isin(hvg)]
         elif verbose:
             print('Using all genes')
         if scale:
@@ -175,8 +174,9 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
                             with_std=True)     # scale the data to unit variance
             d_scaled = pd.DataFrame(d_scaled.transpose(), index=data.index)
         if verbose:
-            v = (method, k, data.shape)
-            print('Running PCA (method=%s) on the %s normalization (dimensions %s)' % v)
+            v = (method, k, data.shape[0], data.shape[1])
+            print('Running PCA (method=%s) on the %s normalization (dimensions \
+%sx%s)' % v)
         if method == 'irlb':
             comp, contr = irlb(data, ncomp, seed)
         elif method == 'svd':
@@ -245,6 +245,9 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         if not run_on_PCA:
             X = item['data']
         else:
+            if len(item['dr']) == 0:
+                raise Exception('Run dimensionality reduction first, for exampe \
+adobo.dr.pca()')
             X = item['dr']['pca']['comp']
         if verbose:
             print('Running tSNE (perplexity %s) on the %s normalization' % (perplexity, k))
