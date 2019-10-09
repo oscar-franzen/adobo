@@ -251,6 +251,7 @@ def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=
                 cl_remove = q[q < min_cluster_size].index
                 ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
                 median_expr = ret
+                median_expr.index = median_expr.index.str.upper()
                 if np.any(median_expr.index.str.match('^(.+)_.+')):
                     input_symbols = median_expr.index.str.extract('^(.+)_.+')[0]
                     input_symbols = input_symbols.str.upper()
