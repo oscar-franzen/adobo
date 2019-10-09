@@ -175,6 +175,15 @@ def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=
         targets = obj.norm_data
     else:
         targets[name] = obj.norm_data[name]
+    ma = pd.read_csv('%s/data/markers.tsv' % os.path.dirname(IO.__file__), sep='\t')
+    # restrict to mouse
+    ma = ma[ma.species.str.match('Mm')]
+    markers = ma
+    ui = ma.iloc[:, ma.columns == 'ubiquitousness index']
+    ma = ma[np.array(ui).flatten() < 0.05]
+    ma_ss = ma.iloc[:, ma.columns.isin(['official gene symbol', 'cell type'])]
+    marker_freq = ma_ss[ma_ss.columns[0]].value_counts()
+    markers = ma_ss
     for i, k in enumerate(targets):
         if verbose:
             print('Running cell type prediction on %s' % k)
@@ -185,8 +194,18 @@ def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=
             if len(clustering) == 0 or algo in clustering:
                 cl = clusters[algo]['membership']
                 ret = X.groupby(cl, axis=1).aggregate(np.median)
-                
                 q = pd.Series(cl).value_counts()
                 cl_remove = q[q < min_cluster_size].index
                 ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
                 median_expr = ret
+                if np.any(median_expr.index.str.match('^(.+)_.+')):
+                    input_symbols = median_expr.index.str.extract('^(.+)_.+')[0]
+                    input_symbols = input_symbols.str.upper()
+                    median_expr.index = input_symbols
+                # (1) centering is done by subtracting the column means
+                # (2) scaling is done by dividing the (centered) by their standard
+                # deviations
+                scaled = sklearn_scale(median_expr, with_mean=True, axis=0)
+                median_expr_Z = pd.DataFrame(scaled)
+                median_expr_Z.index = median_expr.index
+                median_expr_Z.columns = median_expr.columns
