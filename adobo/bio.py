@@ -11,16 +11,20 @@ Functions related to biology.
 
 import os
 import re
+from collections import defaultdict
+
 import joblib
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import scale as sklearn_scale
+from scipy.stats import fisher_exact
 
-import adobo._log
-import adobo.IO
-import adobo.preproc
-import adobo.dr
+import ._log
+import .IO
+import .preproc
+import .dr
+from ._stats import p_adjust_bh
 
 def cell_cycle_train(verbose=False):
     """Trains a cell cycle classifier using Stochastic Gradient Descent with data from
@@ -184,6 +188,55 @@ def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=
     ma_ss = ma.iloc[:, ma.columns.isin(['official gene symbol', 'cell type'])]
     marker_freq = ma_ss[ma_ss.columns[0]].value_counts()
     markers = ma_ss
+    # reference symbols
+    fn = '%s/data/mouse_gene_symbols.txt' % os.path.dirname(IO.__file__)
+    mgs = pd.read_csv(fn, header=None)
+    mgs = mgs[0].str.upper()
+    markers = markers[markers[markers.columns[0]].isin(mgs)]
+    dd = defaultdict(list)
+    for item in markers.groupby('cell type'):
+        dd[item[0]] = set(item[1][item[1].columns[0]])
+    # down-weighting overlapping genes improves gene set analysis
+    # Tarca AL, Draghici S, Bhatti G, Romero R; BMC Bioinformatics 2012 13:136
+    s = mgs.unique()
+    s_freqs = marker_freq[marker_freq.index.isin(s)]
+    weights = 1+np.sqrt(((max(marker_freq)-s_freqs)/(max(marker_freq)-min(marker_freq))))
+
+    def _guess_cell_type(x):
+        rr = median_expr.loc[:, median_expr.columns == x.name].values.flatten()
+        # genes expressed in this cell cluster
+        genes_exp = set(x.index[rr > 0])
+        # genes _not_ expressed in this cell cluster
+        genes_not_exp = set(x.index[rr == 0])
+        res = list()
+        for ct in dd:
+            s = dd[ct]
+            x_ss = x[x.index.isin(s)]
+            if len(x_ss) == 0: continue
+            gene_weights = weights[weights.index.isin(x_ss.index)]
+            gene_weights = pd.Series(gene_weights, x_ss.index)
+            activity_score = sum(x_ss * gene_weights)/len(x_ss)**0.3
+            # how many expressed genesets are found in the geneset?
+            ct_exp = len(genes_exp&s)
+            # how many _non_ expressed genes are found in the geneset?
+            ct_non_exp = len(genes_not_exp&s)
+            # how many expressed genes are NOT found in the geneset?
+            ct_exp_not_found = len(genes_exp-s)
+            # how many _non_ expressed genes are NOT found in the geneset?
+            not_exp_not_found_in_geneset = len(genes_not_exp-s)
+            # one sided fisher
+            contigency_tbl = [[ct_exp, ct_non_exp],
+                              [ct_exp_not_found, not_exp_not_found_in_geneset]]
+            odds_ratio, pval = fisher_exact(contigency_tbl, alternative='greater')
+            markers_found = ','.join(list(genes_exp&s))
+            if markers_found == '': markers_found = 'NA'
+            res.append({'activity_score' : activity_score,
+                        'ct' : ct,
+                        'pvalue' : pval,
+                        'markers' : markers_found})
+        res = sorted(res, key=lambda k: k['activity_score'], reverse=True)
+        return res
+    
     for i, k in enumerate(targets):
         if verbose:
             print('Running cell type prediction on %s' % k)
@@ -209,3 +262,26 @@ def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=
                 median_expr_Z = pd.DataFrame(scaled)
                 median_expr_Z.index = median_expr.index
                 median_expr_Z.columns = median_expr.columns
+                ret = median_expr_Z.apply(func=_guess_cell_type, axis=0)
+                # restructure
+                bucket = []
+                for i, kk in enumerate(ret):
+                    _df = pd.DataFrame(kk)
+                    _df['cluster'] = [i]*len(kk)
+                    cols = _df.columns.tolist()
+                    _df = _df[cols[-1:]+cols[:-1]]
+                    bucket.append(_df)
+                final_tbl = pd.concat(bucket)
+                padj = p_adjust_bh(final_tbl['pvalue'])
+                final_tbl['padj_BH'] = padj
+                final_tbl.columns = ['cluster',
+                                     'activity score',
+                                     'cell type',
+                                     'p-value',
+                                     'markers',
+                                     'adjusted p-value BH']
+                # save the best scoring for each cluster
+                res_pred = final_tbl.groupby('cluster').nth(0)
+                _a = res_pred['adjusted p-value BH'] > 0.10
+                res_pred.loc[_a, 'cell type'] = 'Unknown'
+                obj.norm_data[k]['clusters'][algo]['cell_type_prediction'] = res_pred
