@@ -86,7 +86,7 @@ def cell_cycle_predict(obj, clf, tr_features, retx=False):
     """Predicts cell cycle phase
     
     Notes
-    ---------
+    -----
     The classifier is trained on mouse data, so it should _only_ be used on mouse data
     unless it is trained on something else. Gene identifiers must use ensembl identifiers
     (prefixed with 'ENSMUSG'); pure gene symbols are not enough. Results are returned as
@@ -147,3 +147,46 @@ first')
     obj.add_meta_data(axis='cells', key='cell_cycle', data=srs, type_='cat')
     if retx:
         return pred
+
+def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=False):
+    """Predicts cell types
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    name : `tuple`
+        A tuple of normalization to use. If it has the length zero, then all available
+        normalizations will be used.
+    clustering : `tuple`, optional
+        Specifies the clustering outcomes to work on.
+    min_cluster_size : `int`
+        Minimum number of cells per cluster; clusters smaller than this are ignored.
+        Default: 10
+    verbose : `bool`
+        Be verbose or not. Default: False
+    
+    Returns
+    -------
+    Modifies the passed object.
+    """
+    targets = {}
+    if len(name) == 0 or name == '':
+        targets = obj.norm_data
+    else:
+        targets[name] = obj.norm_data[name]
+    for i, k in enumerate(targets):
+        if verbose:
+            print('Running cell type prediction on %s' % k)
+        item = targets[k]
+        X = item['data']
+        clusters = item['clusters']
+        for algo in clusters:
+            if len(clustering) == 0 or algo in clustering:
+                cl = clusters[algo]['membership']
+                ret = X.groupby(cl, axis=1).aggregate(np.median)
+                
+                q = pd.Series(cl).value_counts()
+                cl_remove = q[q < min_cluster_size].index
+                ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
+                median_expr = ret
