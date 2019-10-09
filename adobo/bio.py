@@ -179,7 +179,7 @@ def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=
         targets = obj.norm_data
     else:
         targets[name] = obj.norm_data[name]
-    ma = pd.read_csv('%s/data/markers.tsv' % os.path.dirname(IO.__file__), sep='\t')
+    ma = pd.read_csv('%s/data/markers.tsv' % os.path.dirname(adobo.IO.__file__), sep='\t')
     # restrict to mouse
     ma = ma[ma.species.str.match('Mm')]
     markers = ma
@@ -189,7 +189,7 @@ def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=
     marker_freq = ma_ss[ma_ss.columns[0]].value_counts()
     markers = ma_ss
     # reference symbols
-    fn = '%s/data/mouse_gene_symbols.txt' % os.path.dirname(IO.__file__)
+    fn = '%s/data/mouse_gene_symbols.txt' % os.path.dirname(adobo.IO.__file__)
     mgs = pd.read_csv(fn, header=None)
     mgs = mgs[0].str.upper()
     markers = markers[markers[markers.columns[0]].isin(mgs)]
