@@ -258,6 +258,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     fig, aa = plt.subplots(nrows=len(targets),
                            ncols=n_plots,
                            figsize=fig_size)
+    fig.suptitle(reduction)
     if aa.ndim == 1:
         aa = [aa]
     for row, l in enumerate(targets):
