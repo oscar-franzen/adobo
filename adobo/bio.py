@@ -20,10 +20,10 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import scale as sklearn_scale
 from scipy.stats import fisher_exact
 
-import ._log
-import .IO
-import .preproc
-import .dr
+import adobo._log
+import adobo.IO
+import adobo.preproc
+import adobo.dr
 from ._stats import p_adjust_bh
 
 def cell_cycle_train(verbose=False):
