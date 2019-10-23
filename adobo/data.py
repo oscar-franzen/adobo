@@ -9,10 +9,7 @@ Summary
 This module contains a data storage class.
 """
 
-import sys
-import os
 import joblib
-
 import pandas as pd
 import numpy as np
 
@@ -21,7 +18,7 @@ from ._constants import ASSAY_NOT_DONE
 class dataset:
     """
     Storage container for raw, imputed and normalized data as well as analysis results.
-    
+
     Attributes
     ----------
     _assays : `dict`
@@ -40,32 +37,36 @@ class dataset:
         A data frame containing meta data for genes.
     desc : `str`
         A string describing the dataset.
+    sparse : `bool`
+        Represent the data in a sparse data structure. Will save memory at the expense
+        of time. Default: True
     output_file : `str`, optional
         A filename that will be used when calling save().
     """
     def __init__(self, raw_mat, desc='no desc set', output_file=None, input_file=None,
-                 verbose=False):
+                 sparse=True, verbose=False):
         # holding info about which assays have been done
         self.hvg = []
         self.hvg_method = ASSAY_NOT_DONE
         self.desc = desc
-        self.output_file=output_file
-        self.input_file=input_file
-        
+        self.output_file = output_file
+        self.input_file = input_file
         self._assays = {}
-        self.count_data = raw_mat.astype(pd.SparseDtype("int", 0))
+        if sparse:
+            if verbose:
+                print('Using a sparse matrix structure, please wait')
+            self.count_data = raw_mat.astype(pd.SparseDtype("int", 0))
+        else:
+            self.count_data = raw_mat
         self._low_quality_cells = ASSAY_NOT_DONE
         self.imp_count_data = pd.DataFrame()
-        
         # the nested dictionary containing results and analyses
         self._norm_data = {}
-        
         # meta data for cells
         self.meta_cells = pd.DataFrame(index=raw_mat.columns)
-        self.meta_cells['total_reads'] = raw_mat.sum(axis=0)        
+        self.meta_cells['total_reads'] = raw_mat.sum(axis=0)
         self.meta_cells['status'] = ['OK']*raw_mat.shape[1]
         self.meta_cells['detected_genes'] = np.sum(raw_mat > 0, axis=0)
-        
         # meta data for genes
         self.meta_genes = pd.DataFrame(index=raw_mat.index)
         self.meta_genes['expressed'] = raw_mat.apply(lambda x: sum(x > 0), axis=1)
@@ -73,10 +74,9 @@ class dataset:
         self.meta_genes['status'] = ['OK']*raw_mat.shape[0]
         self.meta_genes['mitochondrial'] = [None]*raw_mat.shape[0]
         self.meta_genes['ERCC'] = [None]*raw_mat.shape[0]
-        
         if verbose:
             print('Memory usage of loaded data: %s MB' % self.df_mem_usage('count_data'))
-    
+
     def df_mem_usage(self, var):
         """Memory usage for a data frame in mega bytes
 
@@ -92,12 +92,12 @@ class dataset:
         """
         df = getattr(self, var)
         return '%.2f' % (df.memory_usage().sum()/1024/1024)
-    
+
     def _print_raw_dimensions(self):
         genes = '{:,}'.format(self.count_data.shape[0])
         cells = '{:,}'.format(self.count_data.shape[1])
         return '%s genes and %s cells' % (genes, cells)
-    
+
     def save(self, compress=True):
         """Serializes the object
 
@@ -124,30 +124,29 @@ class dataset:
     def get_assay(self, name, lang=False):
         """ Get info if a function has been applied. """
         if lang:
-            return ('No','Yes')[name in self._assays]
-        else:
-            return name in self._assays
-    
+            return ('No', 'Yes')[name in self._assays]
+        return name in self._assays
+
     def set_assay(self, name, key=1):
         """ Set the assay that was applied. """
         self._assays[name] = key
-    
+
     @property
     def norm_data(self):
         return self._norm_data
-    
+
     @norm_data.setter
     def norm_data(self, val):
         self._norm_data = val
-    
+
     @property
     def low_quality_cells(self):
         return self._low_quality_cells
-    
+
     @low_quality_cells.setter
     def low_quality_cells(self, val):
         self._low_quality_cells = val
-    
+
     def _describe(self):
         """ Helper function for __repr__. """
         genes = '{:,}'.format(self.count_data.shape[0])
@@ -168,7 +167,7 @@ Commands executed:
         for item in self.norm_data:
             s += '%s\n' % item
         return s
-    
+
     def assays(self):
         """
         Displays a basic summary of the dataset and what analyses have been performed on
@@ -193,7 +192,7 @@ Commands executed:
 
     def __repr__(self):
         return self._describe()
-    
+
     def is_normalized(self):
         """Checks if normalized data can be found
 
@@ -203,14 +202,14 @@ Commands executed:
             True if it is normalized otherwise False.
         """
         return True if len(self.norm_data) > 0 else False
-    
+
     def add_meta_data(self, axis, key, data, type_='cat'):
         """Add meta data to the adobo object
 
         Notes
         -----
         Meta data can be added to cells or genes.
-        
+
         The parameter name 'type_' has an underscore to avoid conflict with Python's
         internal type keyword.
 
