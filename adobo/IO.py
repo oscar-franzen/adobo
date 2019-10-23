@@ -11,13 +11,14 @@ Functions for reading and writing scRNA-seq data.
 import os
 import time
 
+import datatable as dt
 import pandas as pd
 import numpy as np
 
 from adobo import dataset
 
-def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False,
-                   desc='no desc set', output_file=None, sparse=True, **args):
+def load_from_file(filename, sep='\s', header=0, desc='no desc set', output_file=None,
+                   sparse=True, verbose=False, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
     Parameters
@@ -30,9 +31,6 @@ def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False
         (i.e. any white space character)
     header : `str`
         If the data file has a header. 0 means yes otherwise None. Default: 0
-    column_id : {'auto', 'yes', 'no'}
-        Whether the header (first line) of the file contains a column ID for the genes. If
-        this is the case, set this to auto or yes, otherwise no. Default: 'auto'
     desc : `str`
         A description of the data
     output_file : `str`
@@ -46,8 +44,8 @@ def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False
     Notes
     -----
     The loaded gene expression matrix should not have been normalized. This function calls
-    :func:`~pandas.io.parsers.read_csv` to read the data matrix file. Any additional
-    arguments are passed into :func:`~pandas.io.parsers.read_csv`.
+    :func:`~datatable.fread` to read the data matrix file. Any additional arguments are
+    passed into it.
 
     Returns
     -------
@@ -56,26 +54,19 @@ def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False
     """
     if not os.path.exists(filename):
         raise Exception('%s not found' % filename)
-    if not column_id in ('auto', 'yes', 'no'):
-        raise Exception('"column_id" can only be set to "auto", "yes" or "no"')
     stime = time.time()
-    count_data = pd.read_csv(filename, delimiter=sep, header=header, **args)
-    def move_col(x):
-        x.index = x[x.columns[0]]
-        x = x.drop(x.columns[0], axis=1)
-        return x
-    if column_id == 'auto':
-        if count_data[count_data.columns[0]].dtype != int:
-            count_data = move_col(count_data)
-    elif column_id == 'yes':
-        count_data = move_col(count_data)
+    #count_data = pd.read_csv(filename, delimiter=sep, header=header, **args)
+    count_data = dt.fread(filename, **args).to_pandas()
+    count_data.index = count_data.iloc[:, 0]
+    count_data = count_data.drop(count_data.columns[0], axis=1)
     # remove duplicate genes
     dups = count_data.index.duplicated(False)
     if np.any(dups):
         count_data = count_data.iloc[np.logical_not(dups)]
         if verbose:
             print('%s duplicated genes detected and removed.' % np.sum(dups))
-    if np.any(count_data.dtypes != 'int64'):
+    t = count_data.dtypes.unique()[0]
+    if t != np.int32 and t != np.int64:
         raise Exception('Non-count values detected in data matrix.')
     rem = count_data.index.str.contains('^ArrayControl-[0-9]+', regex=True, case=False)
     count_data = count_data[np.logical_not(rem)]
