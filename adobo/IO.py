@@ -9,14 +9,15 @@ Summary
 Functions for reading and writing scRNA-seq data.
 """
 import os
+import time
+
 import pandas as pd
 import numpy as np
 
 from adobo import dataset
 
 def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False,
-                   desc='no desc set', output_file=None, input_file=None, sparse=True,
-                   **args):
+                   desc='no desc set', output_file=None, sparse=True, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
     Parameters
@@ -57,21 +58,17 @@ def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False
         raise Exception('%s not found' % filename)
     if not column_id in ('auto', 'yes', 'no'):
         raise Exception('"column_id" can only be set to "auto", "yes" or "no"')
-    count_data = pd.read_csv(filename,
-                          delimiter=sep,
-                          header=header,
-                          **args)
+    stime = time.time()
+    count_data = pd.read_csv(filename, delimiter=sep, header=header, **args)
     def move_col(x):
         x.index = x[x.columns[0]]
         x = x.drop(x.columns[0], axis=1)
         return x
-
     if column_id == 'auto':
         if count_data[count_data.columns[0]].dtype != int:
             count_data = move_col(count_data)
     elif column_id == 'yes':
         count_data = move_col(count_data)
-            
     # remove duplicate genes
     dups = count_data.index.duplicated(False)
     if np.any(dups):
@@ -90,4 +87,6 @@ def load_from_file(filename, sep='\s', header=0, column_id='auto', verbose=False
         genes = '{:,}'.format(count_data.shape[0])
         cells = '{:,}'.format(count_data.shape[1])
         print('%s genes and %s cells were loaded' % (genes, cells))
+        etime = time.time()
+        print('loading took %.1f minutes' % (etime-stime)/60)
     return obj
