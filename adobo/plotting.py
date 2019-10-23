@@ -37,7 +37,7 @@ def reads_per_cell(obj, color='#E69F00', title='sequencing reads', filename=None
     how : `{'histogram', 'boxplot', 'barplot'}`
         Type of plot to generate.
     bin_size : `int`
-        If how is a histogram, then this is the bin size. Default: 100
+        If `how` is a histogram, then this is the bin size. Default: 100
 
     Returns
     -------
