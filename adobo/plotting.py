@@ -55,7 +55,7 @@ def reads_per_cell(obj, barcolor='#E69F00', title='sequencing reads', filename=N
     else:
         plt.show()
     plt.close()
-    
+
 def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=None):
     """Generates a bar plot of number of expressed genes per cell
 
@@ -75,7 +75,7 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
     None
     """
     count_data = obj.count_data
-    genes_expressed = [ np.sum(r[1]>0) for r in count_data.transpose().iterrows() ]
+    genes_expressed = [np.sum(r[1] > 0) for r in count_data.transpose().iterrows()]
     plt.clf()
     plt.gca().get_yaxis().set_major_formatter(
         matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
@@ -94,12 +94,12 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
                      fontsize=6, fig_size=(10, 5), filename=None, verbose=False,
                      **args):
     """Examine the top contributing genes to each PCA component
-    
+
     Note
     ----
     Genes are ranked by their absolute value. Additional parameters are passed into
     :py:func:`matplotlib.pyplot.savefig`.
-    
+
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
@@ -121,7 +121,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         Write to a file instead of showing the plot on screen.
     verbose : `bool`
         Be verbose or not. Default: False
-        
+
     Returns
     -------
     Nothing
@@ -132,7 +132,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     else:
         targets[name] = obj.norm_data[name]
     f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=fig_size)
-    if ax.ndim==1:
+    if ax.ndim == 1:
         ax = [ax]
     f.subplots_adjust(wspace=1)
     for row, k in enumerate(targets):
@@ -145,7 +145,6 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
             for d in dim:
                 ax[row][d].axis('off')
             continue
-        
         contr = item['dr']['pca']['contr'][dim]
         idx = 0
         for i, d in contr.iteritems():
@@ -158,7 +157,6 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
             ax[row][idx].set_xlabel('abs(PCA score)', fontsize=fontsize)
             ax[row][idx].set_title('comp. %s' % (i+1), fontsize=fontsize)
             ax[row][idx].invert_yaxis() # labels read top-to-bottom
-            
             if idx == 0:
                 ax[row][idx].set_ylabel(k)
             idx += 1
@@ -220,7 +218,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     D = obj.norm_data
     if not reduction in avail_reductions:
         raise Exception('`reduction` must be one of %s.' % ', '.join(avail_reductions))
-    if marker_size<0:
+    if marker_size < 0:
         raise Exception('`marker_size` cannot be negative.')
     # cast to tuple if necessary
     if type(clustering) == str:
@@ -278,7 +276,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             groups = np.unique(cl)
             if min_cluster_size > 0:
                 z = pd.Series(dict(Counter(cl)))
-                remove = z[z<min_cluster_size].index.values
+                remove = z[z < min_cluster_size].index.values
                 groups = groups[np.logical_not(pd.Series(groups).isin(remove))]
             for i, k in enumerate(groups):
                 idx = np.array(cl) == k
@@ -297,7 +295,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         for meta_var in metadata:
             if not meta_var in obj.meta_cells.columns:
                 raise Exception('Meta data variable "%s" not found.' % k)
-            m_d = obj.meta_cells.loc[obj.meta_cells.status=='OK', meta_var]
+            m_d = obj.meta_cells.loc[obj.meta_cells.status == 'OK', meta_var]
             if m_d.dtype.name == 'category':
                 groups = np.unique(m_d)
                 for i, k in enumerate(groups):
@@ -313,7 +311,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                 # If data are continuous
                 cmap = sns.cubehelix_palette(as_cmap=True)
                 po = aa[row][pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
-                                        c=m_d.values, cmap=cmap)
+                                             c=m_d.values, cmap=cmap)
                 cbar = fig.colorbar(po, ax=aa[row][pl_idx])
                 #cbar.set_label('foobar')
             aa[row][pl_idx].set_title(meta_var, size=font_size)
@@ -341,7 +339,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
 def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(10, 10),
               verbose=True):
     """Generates a PCA elbow plot
-    
+
     Notes
     -----
     Can be used for determining the number of principal components to include.
@@ -386,11 +384,10 @@ def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(
             print('Running %s' % k)
         item = targets[k]
         X = item['data']
-        d_scaled = sklearn_scale(
-                        X.transpose(),  # cells as rows and genes as columns
-                        axis=0,            # over genes, i.e. features (columns)
-                        with_mean=True,    # subtracting the column means
-                        with_std=True)     # scale the data to unit variance
+        d_scaled = sklearn_scale(X.transpose(),     # cells as rows and genes as columns
+                                 axis=0,            # over genes, i.e. features (columns)
+                                 with_mean=True,    # subtracting the column means
+                                 with_std=True)     # scale the data to unit variance
         d_scaled = pd.DataFrame(d_scaled.transpose(), index=X.index)
         sdev = svd(d_scaled, ncomp=None, only_sdev=True)
         var = sdev**2
