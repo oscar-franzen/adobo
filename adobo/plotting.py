@@ -20,19 +20,24 @@ from .dr import svd
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
-def reads_per_cell(obj, barcolor='#E69F00', title='sequencing reads', filename=None):
+def reads_per_cell(obj, color='#E69F00', title='sequencing reads', filename=None,
+                   how='histogram', bin_size=100):
     """Generates a bar plot of read counts per cell
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
-    barcolor : `str`
-        Color of the bars. Default: "#E69F00"
+    color : `str`
+        Color of the plot. Default: "#E69F00"
     title : `str`
         Title of the plot. Default: "sequencing reads"
     filename : `str`, optional
         Write plot to file instead of showing it on the screen.
+    how : `{'histogram', 'boxplot', 'barplot'}`
+        Type of plot to generate.
+    bin_size : `int`
+        If how is a histogram, then this is the bin size. Default: 100
 
     Returns
     -------
@@ -41,14 +46,22 @@ def reads_per_cell(obj, barcolor='#E69F00', title='sequencing reads', filename=N
     count_data = obj.count_data
     cell_counts = count_data.sum(axis=0)
     plt.clf()
-    colors = [barcolor]*(len(cell_counts))
-    plt.gca().get_yaxis().set_major_formatter(
-        matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
-    plt.bar(np.arange(len(cell_counts)), sorted(cell_counts, reverse=True),
-            color=colors)
-    plt.ylabel('raw read counts')
-    plt.xlabel('cells (sorted on highest to lowest)')
-    plt.title(title)
+    colors = [color]*(len(cell_counts))
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    ff = matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
+    ax.get_yaxis().set_major_formatter(ff)
+    if how == 'barplot':
+        ax.bar(np.arange(len(cell_counts)), sorted(cell_counts, reverse=True),
+               color=colors)
+        ax.set_xlabel('cells (sorted on highest to lowest)')
+    elif how == 'boxplot':
+        ax.boxplot(cell_counts)
+        ax.set_xlabel('cells')
+    elif how == 'histogram':
+        ax.hist(cell_counts, bins=bin_size, color=color)
+        ax.set_xlabel('cells')
+    ax.set_ylabel('raw read counts')
+    ax.set_title(title)
     plt.tight_layout()
     if filename:
         plt.savefig(filename, bbox_inches='tight')
