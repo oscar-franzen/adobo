@@ -79,5 +79,5 @@ def load_from_file(filename, sep='\s', header=0, desc='no desc set', output_file
         cells = '{:,}'.format(count_data.shape[1])
         print('%s genes and %s cells were loaded' % (genes, cells))
         etime = time.time()
-        print('loading took %.1f minutes' % (etime-stime)/60)
+        print('loading took %.1f minutes' % ((etime-stime)/60))
     return obj
