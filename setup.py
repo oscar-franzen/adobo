@@ -25,7 +25,7 @@ setup(
         'statsmodels >= 0.10.1',
         'matplotlib >= 3.1.1',
         'seaborn >= 0.9.0',
-        'psutil >= 5.4.2'
+        'psutil >= 5.4.2',
         'datatable >= 0.9.0'
     ],
     ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
