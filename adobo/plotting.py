@@ -20,6 +20,46 @@ from .dr import svd
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
+def overall_scatter(obj, color='#E69F00', title=None, filename=None):
+    """Generates a scatter plot showing the total number of reads on one axis and the
+    number of detected genes on the other axis
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    color : `str`
+        Color of the plot. Default: '#E69F00'
+    title : `str`
+        Title of the plot. Default: None
+    filename : `str`, optional
+        Write plot to file instead of showing it on the screen. Default: None
+
+    Returns
+    -------
+    None
+    """
+    plt.clf()
+    count_data = obj.count_data
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    ff = matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
+    ax.get_yaxis().set_major_formatter(ff)
+    ax.get_xaxis().set_major_formatter(ff)
+    # summary statistics per cell
+    reads = count_data.sum(axis=0)
+    genes = [np.sum(r[1] > 0) for r in count_data.transpose().iterrows()]
+    ax.scatter(x=reads, y=genes, color=color, s=2)
+    ax.set_ylabel('detected genes')
+    ax.set_xlabel('total reads')
+    if title:
+        ax.set_title(title)
+    plt.tight_layout()
+    if filename:
+        plt.savefig(filename, bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
+
 def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00', title=None,
             filename=None):
     """Generates a plot of read counts per cell or expressed genes per cell
@@ -62,6 +102,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00', t
     f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     ff = matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
     ax.get_yaxis().set_major_formatter(ff)
+    ax.get_xaxis().set_major_formatter(ff)
     if how == 'barplot':
         ax.bar(np.arange(len(summary)), sorted(summary, reverse=True), color=colors)
         ax.set_xlabel('cells (sorted on highest to lowest)')
