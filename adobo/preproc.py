@@ -52,6 +52,10 @@ def reset_filters(obj):
 
 def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=False):
     """Removes cells with too few reads and genes with very low expression
+    
+    Notes
+    -----
+    The cells are filtered first and then genes.
 
     Parameters
     ----------
