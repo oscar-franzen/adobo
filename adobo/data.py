@@ -98,7 +98,7 @@ class dataset:
         cells = '{:,}'.format(self.count_data.shape[1])
         return '%s genes and %s cells' % (genes, cells)
 
-    def save(self, compress=True):
+    def save(self, compress=True, verbose=False):
         """Serializes the object
 
         Notes
@@ -111,6 +111,8 @@ class dataset:
         ----------
         compress : `bool`
             Save with data compression or not. Default: True
+        verbose : `bool`
+            Be verbose or not. Default: False
 
         Returns
         -------
@@ -120,6 +122,8 @@ class dataset:
             raise Exception('No output filename set.')
         else:
             joblib.dump(self, filename=self.output_file, compress=compress)
+            if verbose:
+                print('Wrote to %s' % self.output_file)
 
     def get_assay(self, name, lang=False):
         """ Get info if a function has been applied. """

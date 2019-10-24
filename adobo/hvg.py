@@ -30,7 +30,7 @@ warnings.filterwarnings("ignore")
 
 def seurat(data, ngenes=1000, num_bins=20):
     """Retrieves a list of highly variable genes using Seurat's strategy
-    
+
     Notes
     -----
     The function bins the genes according to average expression, then calculates
@@ -65,7 +65,6 @@ def seurat(data, ngenes=1000, num_bins=20):
         dispersion = sliced.var(axis=1)/sliced.mean(axis=1)
         zscores = (dispersion-dispersion.mean())/dispersion.std()
         ret.append(zscores)
-
     ret = pd.concat(ret)
     ret = ret.sort_values(ascending=False)
     top_hvg = ret.head(ngenes)
@@ -75,7 +74,7 @@ def seurat(data, ngenes=1000, num_bins=20):
 def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
               minBiolDisp=0.5, verbose=False):
     """Implements the method of Brennecke et al. (2013) to identify highly variable genes
-    
+
     Notes
     -----
     Fits data using GLM with Fisher Scoring. GLM code copied from (credits to @madrury
@@ -121,10 +120,8 @@ def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
     meansGenes = data_norm.mean(axis=1)
     varsGenes = data_norm.var(axis=1)
     cv2Genes = varsGenes/meansGenes**2
-
     minMeanForFit = np.quantile(meansSp[cv2Sp > 0.3], 0.8)
     useForFit = meansSp >= minMeanForFit
-    
     if np.sum(useForFit) < 20:
         meansAll = data_norm.mean(axis=1).append(meansSp)
         cv2All = cv2Genes.append(cv2Sp)
@@ -135,19 +132,17 @@ def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
     n = np.sum(useForFit)
     if n < 30:
         warning('Only %s spike-ins to be used in fitting, may result in poor fit.' % n)
-
     gamma_model = GLM(family=Gamma())
-    x = pd.DataFrame({'a0' : [1]*len(meansSp[useForFit]), 'a1tilde' : 1/meansSp[useForFit]}) 
+    d = {'a0' : [1]*len(meansSp[useForFit]), 'a1tilde' : 1/meansSp[useForFit]}
+    x = pd.DataFrame(d)
     # modified to use the identity link function
     gamma_model.fit(np.array(x), y=np.array(cv2Sp[useForFit]))
     a0 = gamma_model.coef_[0]
     a1 = gamma_model.coef_[1]
-
     psia1theta = a1
     minBiolDisp = minBiolDisp**2
     m = ercc.shape[1]
     cv2th = a0+minBiolDisp+a0*minBiolDisp
-
     testDenom = (meansGenes*psia1theta+(meansGenes**2)*cv2th)/(1+cv2th/m)
     p = 1-scipy.stats.chi2.cdf(varsGenes*(m-1)/testDenom, m-1)
     res = pd.DataFrame({'gene' : meansGenes.index, 'pvalue' : p})
@@ -159,7 +154,7 @@ def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
 
 def scran(data_norm, ercc, log2, ngenes=1000):
     """This function implements the approach from the scran R package
-    
+
     Notes
     -----
     Expression counts should be normalized and on a log scale.
@@ -201,29 +196,23 @@ def scran(data_norm, ercc, log2, ngenes=1000):
     ercc = ercc.dropna(axis=1, how='all')
     means_tech = ercc.mean(axis=1)
     vars_tech = ercc.var(axis=1)
-
     to_fit = np.log(vars_tech)
     arr = [list(item) for item in zip(*sorted(zip(means_tech, to_fit)))]
-
     x = arr[0]
     y = arr[1]
-
     poly_reg = PolynomialFeatures(degree=4)
     x_poly = poly_reg.fit_transform(np.array(x).reshape(-1, 1))
     pol_reg = LinearRegression()
     pol_reg.fit(x_poly, y)
-
     #plt.scatter(x, y, color='red')
     #plt.plot(x, pol_reg.predict(poly_reg.fit_transform(np.array(x).reshape(-1,1))), color='blue')
     #plt.xlabel('mean')
     #plt.ylabel('var')
     #plt.show()
-
     # predict and remove technical variance
     bio_means = data_norm.mean(axis=1)
     vars_pred = pol_reg.predict(poly_reg.fit_transform(np.array(bio_means).reshape(-1, 1)))
     vars_bio_total = data_norm.var(axis=1)
-
     # biological variance component
     vars_bio_bio = vars_bio_total - vars_pred
     vars_bio_bio = vars_bio_bio.sort_values(ascending=False)
@@ -233,7 +222,7 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
     """
     This function implements the approach from Chen (2016) to identify highly variable
     genes.
-    
+
     Notes
     -----
     Expression counts should be normalized and on a log scale.
@@ -269,11 +258,9 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
     cv = std / avg
     xdata = avg
     ydata = np.log10(cv)
-    
     r = np.logical_not(ydata.isna())
     ydata = ydata[r]
     xdata = xdata[r]
-
     A = np.vstack([np.log10(xdata), np.ones(len(xdata))]).T
     res = np.linalg.lstsq(A, ydata, rcond=None)[0]
 
@@ -288,11 +275,9 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
     gapNum = [h(i) for i in range(0, len(xSeq))]
     cdx = np.nonzero(np.array(gapNum) > rows*0.005)[0]
     xSeq = 10 ** xSeq
-
     ySeq = predict(*res, np.log10(xSeq))
     yDiff = np.diff(ySeq, 1)
     ix = np.nonzero((yDiff > 0) & (np.log10(xSeq[0:-1]) > 0))[0]
-
     if len(ix) == 0:
         ix = len(ySeq) - 1
     else:
@@ -301,7 +286,6 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
     xSeq = xSeq[cdx[0]:ix]
     ySeq = ySeq[cdx[0]:ix]
     reg = LinearRegression().fit(np.log10(xSeq).reshape(-1, 1), ySeq)
-
     ydataFit = reg.predict(np.log10(xSeq_all).reshape(-1, 1))
     logX = np.log10(xdata)
     logXseq = np.log10(xSeq_all)
@@ -310,7 +294,6 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
         cx = np.nonzero((logXseq >= (logX[i] - 0.2)) & (logXseq < (logX[i] + 0.2)))[0]
         tmp = np.sqrt((logXseq[cx] - logX[i])**2 + (ydataFit[cx] - ydata[i])**2)
         tx = np.argmin(tmp)
-
         if logXseq[cx[tx]] > logX[i]:
             if ydataFit[cx[tx]] > ydata[i]:
                 cvDist.append(-1*tmp[tx])
@@ -321,19 +304,16 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
                 cvDist.append(tmp[tx])
             else:
                 cvDist.append(-1*tmp[tx])
-
     cvDist = np.log2(10**np.array(cvDist))
     dor = gaussian_kde(cvDist)
     dor_y = dor(cvDist)
     distMid = cvDist[np.argmax(dor_y)]
     dist2 = cvDist - distMid
-
     a = dist2[dist2 <= 0]
     b = abs(dist2[dist2 < 0])
     c = distMid
     tmpDist = np.concatenate((a, b))
     tmpDist = np.append(tmpDist, c)
-
     # estimate mean and sd using maximum likelihood
     distFit = norm.fit(tmpDist)
     pRaw = 1-norm.cdf(cvDist, loc=distFit[0], scale=distFit[1])
@@ -346,7 +326,7 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
 def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     """
     This function implements the approach from Andrews (2018).
-    
+
     Notes
     -----
     Input should be normalized but nog log'ed.
@@ -373,14 +353,11 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     if log2:
         data_norm = 2**data_norm-1
     ncells = data_norm.shape[1]
-
     gene_info_p = 1-np.sum(data_norm > 0, axis=1)/ncells
     gene_info_p_stderr = np.sqrt(gene_info_p*(1-gene_info_p)/ncells)
-
     gene_info_s = data_norm.mean(axis=1)
     gene_info_s_stderr = np.sqrt((np.mean(data_norm**2, axis=1)-gene_info_s**2)/ncells)
     xes = np.log(gene_info_s)/np.log(10)
-
     # maximum likelihood estimate of model parameters
     s = gene_info_s
     p = gene_info_p
@@ -395,10 +372,8 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     theta_start = np.array([3, 0.25])
     res = minimize(neg_loglike, theta_start, method='Nelder-Mead', options={'disp': True})
     est = res.x
-
     krt = est[0]
     res_err = est[1]
-
     # testing step
     p_obs = gene_info_p
     always_detected = p_obs == 0
@@ -419,7 +394,6 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     Z = (K_equiv_log - K_obs_log)/np.sqrt(K_equiv_err_log**2+K_err_log**2)
     pval = 1 - norm.cdf(Z)
     pval[always_detected] = 1
-    
     res = pd.DataFrame({'gene': data_norm.index, 'pvalue' : pval})
     res = res[np.logical_not(res.pvalue.isna())]
     res['padj'] = p_adjust_bh(res.pvalue)
@@ -429,7 +403,7 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
 
 def find_hvg(obj, method='seurat', name=None, ngenes=1000, fdr=0.1, verbose=False):
     """Finding highly variable genes
-    
+
     Notes
     -----
     A wrapper function around the individual HVG functions, which can also be called
