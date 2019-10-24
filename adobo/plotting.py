@@ -20,74 +20,25 @@ from .dr import svd
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
-def reads_per_cell(obj, color='#E69F00', title='sequencing reads', filename=None,
-                   how='histogram', bin_size=100):
-    """Generates a bar plot of read counts per cell
+def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00', title=None,
+            filename=None):
+    """Generates a plot of read counts per cell or expressed genes per cell
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
-    color : `str`
-        Color of the plot. Default: "#E69F00"
-    title : `str`
-        Title of the plot. Default: "sequencing reads"
-    filename : `str`, optional
-        Write plot to file instead of showing it on the screen.
+    what : `{'reads', 'genes'}`
+        If 'reads' then plots the number of reads per cell. If 'genes', then plots the
+        number of expressed genes per cell.
     how : `{'histogram', 'boxplot', 'barplot', 'violin'}`
         Type of plot to generate.
     bin_size : `int`
         If `how` is a histogram, then this is the bin size. Default: 100
-
-    Returns
-    -------
-    None
-    """
-    count_data = obj.count_data
-    cell_counts = count_data.sum(axis=0)
-    plt.clf()
-    colors = [color]*(len(cell_counts))
-    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-    ff = matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
-    ax.get_yaxis().set_major_formatter(ff)
-    if how == 'barplot':
-        ax.bar(np.arange(len(cell_counts)), sorted(cell_counts, reverse=True),
-               color=colors)
-        ax.set_xlabel('cells (sorted on highest to lowest)')
-    elif how == 'boxplot':
-        ax.boxplot(cell_counts)
-        ax.set_xlabel('cells')
-    elif how == 'histogram':
-        ax.hist(cell_counts, bins=bin_size, color=color)
-        ax.set_xlabel('cells')
-    elif how == 'violin':
-        ax.set_xlabel('cells')
-        parts = ax.violinplot(cell_counts, showmedians=False)
-        for pc in parts['bodies']:
-            pc.set_facecolor(color)
-            pc.set_edgecolor('black')
-    else:
-        raise Exception('The `how` parameter has an invalid value.')
-    ax.set_ylabel('raw read counts')
-    ax.set_title(title)
-    plt.tight_layout()
-    if filename:
-        plt.savefig(filename, bbox_inches='tight')
-    else:
-        plt.show()
-    plt.close()
-
-def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=None):
-    """Generates a bar plot of number of expressed genes per cell
-
-    Parameters
-    ----------
-    obj : :class:`adobo.data.dataset`
-          A data class object
-    barcolor : `str`
-        Color of the bars. Default: "#E69F00"
+    color : `str`
+        Color of the plot. Default: "#E69F00"
     title : `str`
-        Title of the plot. Default: "sequencing reads"
+        Title of the plot. Default: None
     filename : `str`, optional
         Write plot to file instead of showing it on the screen.
 
@@ -95,16 +46,51 @@ def genes_per_cell(obj, barcolor='#E69F00', title='expressed genes', filename=No
     -------
     None
     """
-    count_data = obj.count_data
-    genes_expressed = [np.sum(r[1] > 0) for r in count_data.transpose().iterrows()]
+    if not what in ('reads', 'genes'):
+        raise Exception('"what" can only be "reads" or "genes".')
     plt.clf()
-    plt.gca().get_yaxis().set_major_formatter(
-        matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
-    plt.bar(np.arange(len(genes_expressed)), sorted(genes_expressed, reverse=True),
-            color=[barcolor]*len(genes_expressed))
-    plt.ylabel('number of genes')
-    plt.xlabel('cells (sorted on highest to lowest)')
-    plt.title(title)
+    count_data = obj.count_data
+    if what == 'reads':
+        summary = count_data.sum(axis=0)
+        ylab = 'raw read counts'
+        xlab = 'cells'
+    elif what == 'genes':
+        summary = [np.sum(r[1] > 0) for r in count_data.transpose().iterrows()]
+        ylab = 'detected genes'
+        xlab = 'cells'
+    colors = [color]*(len(summary))
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    ff = matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
+    ax.get_yaxis().set_major_formatter(ff)
+    if how == 'barplot':
+        ax.bar(np.arange(len(summary)), sorted(summary, reverse=True), color=colors)
+        ax.set_xlabel('cells (sorted on highest to lowest)')
+    elif how == 'boxplot':
+        ax.boxplot(summary)
+        ax.set_xlabel('cells')
+        ax.set_xticklabels([])
+        ax.set_xticks([])
+    elif how == 'histogram':
+        ax.hist(summary, bins=bin_size, color=color)
+        ax.set_xlabel('cells')
+        ylab = 'number of cells'
+        xlab = '%s bin' % what
+    elif how == 'violin':
+        parts = ax.violinplot(summary, showmedians=False)
+        for pc in parts['bodies']:
+            pc.set_facecolor(color)
+            pc.set_edgecolor('black')
+        xlab = ''
+        ax.set_xticklabels([])
+        ax.set_xticks([])
+    else:
+        raise Exception('The `how` parameter has an invalid value.')
+    ax.set_ylabel(ylab)
+    ax.set_xlabel(xlab)
+    if not title:
+        title = what
+    ax.set_title(title)
+    plt.tight_layout()
     if filename:
         plt.savefig(filename, bbox_inches='tight')
     else:
