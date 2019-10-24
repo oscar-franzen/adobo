@@ -86,7 +86,7 @@ def cell_cycle_train(verbose=False):
     # np.sum(clf.predict(X) != Y)
     return clf, features
     
-def cell_cycle_predict(obj, clf, tr_features, name=(), retx=False):
+def cell_cycle_predict(obj, clf, tr_features, name=()):
     """Predicts cell cycle phase
     
     Notes
@@ -108,12 +108,10 @@ def cell_cycle_predict(obj, clf, tr_features, name=(), retx=False):
     name : `tuple`
         A tuple of normalization to use. If it has the length zero, then all available
         normalizations will be used.
-    retx : `bool`
-        Returns list of results. Default: False
     
     Returns
     -------
-    Modifies the passed object. If `retx=True` a list is returned with predictions.
+    Modifies the passed object.
     """
     targets = {}
     if len(name) == 0 or name == '':
@@ -125,8 +123,40 @@ def cell_cycle_predict(obj, clf, tr_features, name=(), retx=False):
             print('Running cell type prediction on %s' % k)
         item = targets[k]
         X = item['data']
+        cols = X.columns
         if X.index[0].rfind('ENSMUSG') < 0:
             raise Exception('Gene identifiers must use ENSG format.')
+        X_g = X.index
+        if re.search('ENSMUSG\d+\.\d+', X_g[0]):
+            X_g = X_g.str.extract('^(.*)\.[0-9]+$', expand=False)
+        if re.search('_ENSMUSG', X_g[0]):
+            X_g = X_g.str.extract('^\S+?_(\S+)$', expand=False)
+        X_found = X[X_g.isin(symb)]
+        X_g = X_found.index
+        if re.search('ENSMUSG\d+\.\d+', X_g[0]):
+            X_g = X_g.str.extract('^(.*)\.[0-9]+$', expand=False)
+        if re.search('_ENSMUSG', X_g[0]):
+            X_g = X_g.str.extract('^\S+?_(\S+)$', expand=False)
+        if len(X_found) == 0:
+            raise Exception('No genes found.')
+        X_found.index = X_g
+        symb = [ i[1] for i in tr_features.str.split('_') ]
+        symb = pd.Series(symb)
+        missing = symb[np.logical_not(symb.isin(X_g))]
+        X_empty = pd.DataFrame(np.zeros((len(missing), X_found.shape[1])))
+        X_empty.index = missing
+        X_empty.columns = X_found.columns
+        X = pd.concat([X_found, X_empty])
+        X = X.reindex(symb)
+        # scale
+        X = X.transpose() # cells as rows and genes as columns
+        X = sklearn_scale(X,
+                          axis=0,            # over genes, i.e. features (columns)
+                          with_mean=True,    # subtracting the column means
+                          with_std=True)     # scale the data to unit variance
+        pred = clf.predict(X)
+        srs = pd.Series(pred, dtype='category', index=cols)
+        obj.add_meta_data(axis='cells', key='cell_cycle', data=srs, type_='cat')
 
 def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=False):
     """Predicts cell types
