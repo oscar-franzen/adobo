@@ -162,7 +162,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     color : `str`
         Color of the bars. As a string or hex code. Default: "#fcc603"
     fontsize : `int`
-        Specifies font size. Default: 8
+        Specifies font size. Default: 6
     fig_size : `tuple`
         Figure size in inches. Default: (10, 10)
     filename : `str`, optional
