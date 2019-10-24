@@ -30,17 +30,17 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00', t
         A data class object.
     what : `{'reads', 'genes'}`
         If 'reads' then plots the number of reads per cell. If 'genes', then plots the
-        number of expressed genes per cell.
+        number of expressed genes per cell. Default: 'reads'
     how : `{'histogram', 'boxplot', 'barplot', 'violin'}`
-        Type of plot to generate.
+        Type of plot to generate. Default: 'histogram'
     bin_size : `int`
         If `how` is a histogram, then this is the bin size. Default: 100
     color : `str`
-        Color of the plot. Default: "#E69F00"
+        Color of the plot. Default: '#E69F00'
     title : `str`
         Title of the plot. Default: None
     filename : `str`, optional
-        Write plot to file instead of showing it on the screen.
+        Write plot to file instead of showing it on the screen. Default: None
 
     Returns
     -------
