@@ -12,6 +12,7 @@ import sys
 import glob
 import ctypes
 import time
+import warnings
 from multiprocessing import Pool
 
 import psutil
@@ -20,11 +21,9 @@ import numpy as np
 import pandas as pd
 from sklearn.covariance import MinCovDet
 from sklearn.preprocessing import scale as sklearn_scale
-from scipy.stats import dgamma
-from scipy.stats import norm
+from sklearn.linear_model import ElasticNet
 from scipy.optimize import root
 from scipy.special import digamma
-from sklearn.linear_model import ElasticNet
 
 from .clustering import knn, snn, leiden
 from .hvg import seurat
@@ -34,7 +33,6 @@ from ._log import warning
 # Suppress warnings from sklearn
 def _warn(*args, **kwargs):
     pass
-import warnings
 warnings.warn = _warn
 
 def reset_filters(obj):
@@ -221,7 +219,6 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     if type(rRNA_genes) == str:
         rRNA_genes = pd.read_csv(rRNA_genes, header=None)
         obj.meta_genes['rRNA'] = obj.meta_genes.index.isin(rRNA_genes.iloc[:, 0])
-
     if not 'mito' in obj.meta_cells.columns:
         mt_genes = obj.meta_genes.mitochondrial[obj.meta_genes.mitochondrial]
         mito_mat = obj.count_data[obj.count_data.index.isin(mt_genes.index)]
@@ -237,7 +234,6 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         rrna_mat = obj.count_data[obj.count_data.index.isin(rrna_genes.index)]
         rrna_sum = rrna_mat.sum(axis=0)
         obj.meta_cells['rRNA'] = rrna_sum
-
     #data = obj.count_data
     inp_total_reads = obj.meta_cells.total_reads
     inp_detected_genes = obj.meta_cells.detected_genes/inp_total_reads
@@ -252,13 +248,10 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
                            'perc_ercc' : inp_ercc})
     robust_cov = MinCovDet(random_state=seed).fit(qc_mat)
     mahal_dists = robust_cov.mahalanobis(qc_mat)
-
     MD_mean = np.mean(mahal_dists)
     MD_sd = np.std(mahal_dists)
-
     thres_lower = MD_mean - MD_sd * sd_thres
     thres_upper = MD_mean + MD_sd * sd_thres
-
     res = (mahal_dists < thres_lower) | (mahal_dists > thres_upper)
     low_quality_cells = obj.count_data.columns[res].values
     obj.low_quality_cells = low_quality_cells
@@ -385,10 +378,10 @@ physical cores on this machine (n=%s).' % ncores)
     raw = obj.count_data.copy()
     if filtered:
         # Remove low quality cells
-        remove = obj.meta_cells.status[obj.meta_cells.status!='OK']
+        remove = obj.meta_cells.status[obj.meta_cells.status != 'OK']
         raw = raw.drop(remove.index, axis=1)
         # Remove uninformative genes (e.g. lowly expressed and ERCC)
-        remove = obj.meta_genes.status[obj.meta_genes.status!='OK']
+        remove = obj.meta_genes.status[obj.meta_genes.status != 'OK']
         raw = raw.drop(remove.index, axis=0)
         if verbose:
             print('Running on the quality filtered data (dimensions %sx%s)' % raw.shape)
