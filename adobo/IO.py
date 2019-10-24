@@ -8,8 +8,10 @@ Summary
 -------
 Functions for reading and writing scRNA-seq data.
 """
+import re
 import os
 import time
+import subprocess
 
 import datatable as dt
 import pandas as pd
@@ -17,7 +19,7 @@ import numpy as np
 
 from adobo import dataset
 
-def load_from_file(filename, sep='\s', header=0, desc='no desc set', output_file=None,
+def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
                    sparse=True, verbose=False, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
@@ -29,8 +31,8 @@ def load_from_file(filename, sep='\s', header=0, desc='no desc set', output_file
     sep : `str`
         A character or regular expression used to separate fields. Default: "\\s"
         (i.e. any white space character)
-    header : `str`
-        If the data file has a header. 0 means yes otherwise None. Default: 0
+    header : `bool`
+        If the data file has a header or not. Default: True
     desc : `str`
         A description of the data
     output_file : `str`
@@ -56,9 +58,34 @@ def load_from_file(filename, sep='\s', header=0, desc='no desc set', output_file
         raise Exception('%s not found' % filename)
     stime = time.time()
     #count_data = pd.read_csv(filename, delimiter=sep, header=header, **args)
-    count_data = dt.fread(filename, **args).to_pandas()
+    skip_to_line = 1
+    if header:
+        skip_to_line = 2
+    count_data = dt.fread(filename, skip_to_line=skip_to_line, **args).to_pandas()
     count_data.index = count_data.iloc[:, 0]
     count_data = count_data.drop(count_data.columns[0], axis=1)
+    if header:
+        tool = 'cat'
+        if re.search('.gz$', filename):
+            tool = 'zcat'
+        elif re.search('.zip$', filename):
+            tool = 'unzip -c'
+        elif re.search('.bz2$', filename):
+            tool = 'bzcat'
+        cmd = '%s %s | head -n1' % (tool, filename)
+        h = subprocess.check_output(cmd, shell=True).decode('ascii').replace('\n','')
+        if sep == '\s':
+            hs = h.split('\t')
+            if len(hs) == 1:
+                hs = h.split(' ')
+            if len(hs) > 1:
+                if len(hs) == count_data.shape[1]:
+                    count_data.columns = hs
+                else:
+                    count_data.columns = hs[1:len(hs)]
+            else:
+                if verbose:
+                    print('Skipping to set columns (mismatch in length for header).')
     # remove duplicate genes
     dups = count_data.index.duplicated(False)
     if np.any(dups):
