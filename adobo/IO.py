@@ -17,10 +17,11 @@ import datatable as dt
 import pandas as pd
 import numpy as np
 
-from adobo import dataset
+import adobo._log
+from .data import dataset
 
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
-                   sparse=True, verbose=False, **args):
+                   sparse=True, bundled=False, verbose=False, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
     Parameters
@@ -40,6 +41,8 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_f
     sparse : `bool`
         Represent the data in a sparse data structure. Will save memory at the expense
         of time. Default: True
+    bundled : `bool`
+        Use data installed by adobo. Default: False
     verbose : `bool`
         To be verbose or not. Default: False
 
@@ -54,6 +57,10 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_f
     :class:`adobo.data.dataset`
         A dataset class object.
     """
+    if bundled:
+        if re.search('/', filename):
+            raise Exception('If bundled=True, just specify a file name, not a path.')
+        filename = '/'.join(adobo._log.__file__.split('/')[0:-1]) + '/data/' + filename
     if not os.path.exists(filename):
         raise Exception('%s not found' % filename)
     stime = time.time()
