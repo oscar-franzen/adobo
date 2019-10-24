@@ -153,14 +153,19 @@ class dataset:
 
     def _describe(self):
         """ Helper function for __repr__. """
-        genes = '{:,}'.format(self.count_data.shape[0])
-        cells = '{:,}'.format(self.count_data.shape[1])
+        genes_pre_filter = '{:,}'.format(self.count_data.shape[0])
+        cells_pre_filter = '{:,}'.format(self.count_data.shape[1])
+        genes_post_filter = (self.meta_genes.status=='OK').sum()
+        cells_post_filter = (self.meta_cells.status=='OK').sum()
+        genes_post_filter = '{:,}'.format(genes_post_filter)
+        cells_post_filter = '{:,}'.format(cells_post_filter)
         s = """Filename (input): %s
 Description: %s
-Raw read counts matrix contains: %s genes and %s cells
+Raw count matrix: %s genes and %s cells (filtered: %sx%s)
 
 Commands executed:
-""" % (self.input_file, self.desc, genes, cells)
+""" % (self.input_file, self.desc, genes_pre_filter, cells_pre_filter, genes_post_filter,
+       cells_post_filter)
 
         for key in self._assays:
             if self._assays[key] != 1:
