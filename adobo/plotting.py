@@ -384,13 +384,14 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     else:
         plt.show()
 
-def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(10, 10),
-              verbose=True):
+def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_size=8,
+              fig_size=(10, 10), verbose=True):
     """Generates a PCA elbow plot
 
     Notes
     -----
-    Can be used for determining the number of principal components to include.
+    Can be used for determining the number of principal components to include. PCA is
+    based on singular value decomposition.
 
     Parameters
     ----------
@@ -401,6 +402,8 @@ def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(
         normalizations will be used.
     comp_max : `int`
         Maximum number of components to include.
+    all_genes : `bool`
+        Run on all genes, i.e. not only highly variable genes. Default: False
     filename : `str`, optional
         Name of an output file instead of showing on screen.
     font_size : `float`
@@ -431,7 +434,15 @@ def pca_elbow(obj, name=(), comp_max=100, filename=None, font_size=8, fig_size=(
         if verbose:
             print('Running %s' % k)
         item = targets[k]
+        if not 'hvg' in item and not all_genes:
+            raise Exception('Run adobo.dr.find_hvg() first.')
         X = item['data']
+        if not all_genes:
+            hvg = item['hvg']['genes']
+            X = X[X.index.isin(hvg)]
+        else:
+            if verbose:
+                print('Using all genes')
         d_scaled = sklearn_scale(X.transpose(),     # cells as rows and genes as columns
                                  axis=0,            # over genes, i.e. features (columns)
                                  with_mean=True,    # subtracting the column means
