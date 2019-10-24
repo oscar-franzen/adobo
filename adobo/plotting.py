@@ -179,20 +179,23 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         targets = obj.norm_data
     else:
         targets[name] = obj.norm_data[name]
+    if len(targets) == 0:
+        raise Exception('Nothing found to work on.')
     f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=fig_size)
     if ax.ndim == 1:
         ax = [ax]
     f.subplots_adjust(wspace=1)
+    count = 0
     for row, k in enumerate(targets):
         item = targets[k]
         if verbose:
             print('Plotting the %s normalization' % k)
         if not 'pca' in item['dr']:
-            if verbose:
-                print('pca deocmposition not found for the %s normalization' % k)
+            print('pca decomposition not found for the %s normalization' % k)
             for d in dim:
                 ax[row][d].axis('off')
             continue
+        count += 1
         contr = item['dr']['pca']['contr'][dim]
         idx = 0
         for i, d in contr.iteritems():
@@ -211,7 +214,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
-    else:
+    elif count:
         plt.show()
 
 def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
