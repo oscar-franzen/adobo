@@ -34,7 +34,7 @@ def reads_per_cell(obj, color='#E69F00', title='sequencing reads', filename=None
         Title of the plot. Default: "sequencing reads"
     filename : `str`, optional
         Write plot to file instead of showing it on the screen.
-    how : `{'histogram', 'boxplot', 'barplot'}`
+    how : `{'histogram', 'boxplot', 'barplot', 'violin'}`
         Type of plot to generate.
     bin_size : `int`
         If `how` is a histogram, then this is the bin size. Default: 100
@@ -60,6 +60,14 @@ def reads_per_cell(obj, color='#E69F00', title='sequencing reads', filename=None
     elif how == 'histogram':
         ax.hist(cell_counts, bins=bin_size, color=color)
         ax.set_xlabel('cells')
+    elif how == 'violin':
+        ax.set_xlabel('cells')
+        parts = ax.violinplot(cell_counts, showmedians=False)
+        for pc in parts['bodies']:
+            pc.set_facecolor(color)
+            pc.set_edgecolor('black')
+    else:
+        raise Exception('The `how` parameter has an invalid value.')
     ax.set_ylabel('raw read counts')
     ax.set_title(title)
     plt.tight_layout()
