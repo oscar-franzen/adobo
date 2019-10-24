@@ -66,7 +66,7 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
     minexpgenes : `str`, optional
         If this value is a float, then at least that fraction of cells must express the
         gene. If integer, then it denotes the minimum that number of cells must express
-        the gene. Default: 0.001
+        the gene. Set to None to ignore this option. Default: 0.001
     verbose : `bool`, optional
         Be verbose or not. Default: False
 
@@ -84,7 +84,9 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
     if maxreads:
         cells_remove = cell_counts > maxreads
         obj.meta_cells.status[cells_remove] = 'EXCLUDE'
-    genes_removed = 0
+    genes_remove = 0
+    if not minexpgenes:
+        minexpgenes = 0
     if minexpgenes > 0:
         if type(minexpgenes) == int:
             genes_exp = obj.meta_genes.expressed
@@ -94,11 +96,11 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
             genes_exp = obj.meta_genes.expressed_perc
             genes_remove = genes_exp < minexpgenes
             obj.meta_genes.status[genes_remove] = 'EXCLUDE'
-    obj.set_assay(sys._getframe().f_code.co_name)
     r = np.sum(obj.meta_cells.status == 'EXCLUDE')
     if verbose:
         s = '%s cells and %s genes were removed'
         print(s % (r, np.sum(genes_remove)))
+    obj.set_assay(sys._getframe().f_code.co_name)
     return r, np.sum(genes_remove)
 
 def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False):
