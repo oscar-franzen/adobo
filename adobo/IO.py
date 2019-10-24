@@ -72,6 +72,8 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_f
             tool = 'unzip -c'
         elif re.search('.bz2$', filename):
             tool = 'bzcat'
+        elif re.search('.xz$', filename):
+            tool = 'xzcat'
         cmd = '%s %s | head -n1' % (tool, filename)
         h = subprocess.check_output(cmd, shell=True).decode('ascii').replace('\n','')
         if sep == '\s':
