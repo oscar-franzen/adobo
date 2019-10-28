@@ -45,12 +45,15 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
         raise Exception('"what" can be "normalized", "pca" or "clusters".')
     if what == 'normalized':
         D = obj.norm_data[norm]['data']
+        index=True
     elif what == 'pca':
         D = obj.norm_data[norm]['dr']['pca']['comp']
+        index=True
     elif what == 'clusters':    
         D = pd.DataFrame(obj.norm_data[norm]['clusters'][clust]['membership'])
         D.columns = [clust]
-    D.to_csv(filename, sep=sep)
+        index=False
+    D.to_csv(filename, sep=sep, index=index)
 
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
                    sparse=True, bundled=False, verbose=False, **args):
