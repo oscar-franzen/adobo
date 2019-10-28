@@ -41,8 +41,8 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
     -------
     Nothing.
     """
-    if not what in ('normalized', 'pca'):
-        raise Exception('"what" can be "normalized" or "pca".')
+    if not what in ('normalized', 'pca', 'clusters'):
+        raise Exception('"what" can be "normalized", "pca" or "clusters".')
     if what == 'normalized':
         D = obj.norm_data[norm]['data']
     elif what == 'pca':
