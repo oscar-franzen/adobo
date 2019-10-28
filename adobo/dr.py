@@ -183,6 +183,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             comp, contr = svd(data, ncomp)
         else:
             raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
+        obj.index = data.columns
         obj.norm_data[k]['dr']['pca'] = {'comp' : comp,
                                          'contr' : contr,
                                          'method' : method}
