@@ -45,9 +45,9 @@ def export_data(obj, filename, name, what='normalized', sep='\t'):
     if not what in ('normalized', 'pca'):
         raise Exception('"what" can be "normalized" or "pca".')
     if what == 'normalized':
-        D = exp.norm_data[name]['data']
+        D = obj.norm_data[name]['data']
     elif what == 'pca':
-        D = exp.norm_data[name]['dr']['pca']['comp']
+        D = obj.norm_data[name]['dr']['pca']['comp']
     D.to_csv(filename, sep=sep)
 
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
