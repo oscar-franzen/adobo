@@ -32,7 +32,7 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
         Output filename or path.
     name : `str`
         Name of the normalisation. For example 'standard'.
-    what : `{'normalized', 'pca', 'clusters'}`
+    what : `{'normalized', 'clusters', 'pca', 'tsne', 'umap'}`
         What to export. Normalized data or PCA components.
     sep : `str`
         A character or regular expression used to separate fields. Default: "\t"
@@ -41,7 +41,7 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
     -------
     Nothing.
     """
-    if not what in ('normalized', 'pca', 'clusters'):
+    if not what in ('normalized', 'clusters', 'pca', 'tsne', 'umap'):
         raise Exception('"what" can be "normalized", "pca" or "clusters".')
     if what == 'normalized':
         D = obj.norm_data[norm]['data']
@@ -49,10 +49,14 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
     elif what == 'pca':
         D = obj.norm_data[norm]['dr']['pca']['comp']
         index=True
-    elif what == 'clusters':    
+    elif what == 'clusters':
         D = pd.DataFrame(obj.norm_data[norm]['clusters'][clust]['membership'])
         D.columns = [clust]
         index=False
+    elif what == 'tsne':
+        exp.norm_data[norm]['dr']['tsne']['embedding']
+    elif what == 'umap':
+        exp.norm_data[norm]['dr']['umap']['embedding']
     D.to_csv(filename, sep=sep, index=index)
 
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
