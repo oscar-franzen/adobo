@@ -80,6 +80,10 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
         Number of genes removed.
     """
     count_data = obj.count_data
+    # reset
+    obj.meta_cells.status[obj.meta_cells.status != 'OK'] = 'OK'
+    obj.meta_genes.status[obj.meta_genes.status != 'OK'] = 'OK'
+    # filter cells
     cell_counts = obj.meta_cells.total_reads
     cells_remove = cell_counts < minreads
     obj.meta_cells.status[cells_remove] = 'EXCLUDE'
