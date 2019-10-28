@@ -220,7 +220,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
 def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
              genes=(), filename=None, marker_size=0.8, font_size=8, colors='adobo',
              title=None, legend=True, min_cluster_size=10,
-             fig_size=(10, 10), verbose=False):
+             fig_size=(10, 10), verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -388,7 +388,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         plt.show()
 
 def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_size=8,
-              fig_size=(10, 10), verbose=True):
+              fig_size=(10, 10), verbose=True, **args):
     """Generates a PCA elbow plot
 
     Notes
@@ -459,4 +459,7 @@ def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_s
         aa[i].set_ylabel('cumulative variance (percent of total)')
         aa[i].set_xlabel('components')
         aa[i].set_title(k)
-    plt.show()
+    if filename != None:
+        plt.savefig(filename, **args)
+    else:
+        plt.show()
