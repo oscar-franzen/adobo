@@ -20,7 +20,8 @@ import numpy as np
 import adobo._log
 from .data import dataset
 
-def export_data(obj, filename, name, what='normalized', sep='\t'):
+def export_data(obj, filename, norm='standard', clust='leiden', what='normalized',
+                sep='\t'):
     """Exports data to a text file, convenient for loading into other programs
 
     Parameters
@@ -31,7 +32,7 @@ def export_data(obj, filename, name, what='normalized', sep='\t'):
         Output filename or path.
     name : `str`
         Name of the normalisation. For example 'standard'.
-    what : `{'normalized', 'pca'}`
+    what : `{'normalized', 'pca', 'clusters'}`
         What to export. Normalized data or PCA components.
     sep : `str`
         A character or regular expression used to separate fields. Default: "\t"
@@ -43,9 +44,12 @@ def export_data(obj, filename, name, what='normalized', sep='\t'):
     if not what in ('normalized', 'pca'):
         raise Exception('"what" can be "normalized" or "pca".')
     if what == 'normalized':
-        D = obj.norm_data[name]['data']
+        D = obj.norm_data[norm]['data']
     elif what == 'pca':
-        D = obj.norm_data[name]['dr']['pca']['comp']
+        D = obj.norm_data[norm]['dr']['pca']['comp']
+    elif what == 'clusters':    
+        D = pd.DataFrame(exp.norm_data[norm]['clusters'][clust]['membership'])
+        D.columns = clust
     D.to_csv(filename, sep=sep)
 
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
