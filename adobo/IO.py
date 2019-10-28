@@ -20,9 +20,45 @@ import numpy as np
 import adobo._log
 from .data import dataset
 
+def export_data(obj, filename, name, what='normalized', sep='\t'):
+    """Exports data to a text file, convenient for loading into other programs
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    filename : `str`
+        Output filename or path.
+    name : `str`
+        Name of the normalisation. For example 'standard'.
+    what : `{'normalized', 'pca'}`
+        What to export. Normalized data or PCA components.
+    sep : `str`
+        A character or regular expression used to separate fields. Default: "\t"
+
+    Returns
+    -------
+    Nothing.
+    """
+    if not filename:
+        raise Exception('Specify a filename.')
+    if not what in ('normalized', 'pca'):
+        raise Exception('"what" can be "normalized" or "pca".')
+    if what == 'normalized':
+        D = exp.norm_data[name]['data']
+    elif what == 'pca':
+        D = exp.norm_data[name]['dr']['pca']['comp']
+    D.to_csv(filename, sep=sep)
+
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
                    sparse=True, bundled=False, verbose=False, **args):
     r"""Load a gene expression matrix consisting of raw read counts
+    
+    Notes
+    -----
+    The loaded gene expression matrix should not have been normalized. This function calls
+    :func:`~datatable.fread` to read the data matrix file. Any additional arguments are
+    passed into it.
 
     Parameters
     ----------
@@ -45,12 +81,6 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_f
         Use data installed by adobo. Default: False
     verbose : `bool`
         To be verbose or not. Default: False
-
-    Notes
-    -----
-    The loaded gene expression matrix should not have been normalized. This function calls
-    :func:`~datatable.fread` to read the data matrix file. Any additional arguments are
-    passed into it.
 
     Returns
     -------
