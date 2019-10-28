@@ -48,7 +48,7 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
     elif what == 'pca':
         D = obj.norm_data[norm]['dr']['pca']['comp']
     elif what == 'clusters':    
-        D = pd.DataFrame(exp.norm_data[norm]['clusters'][clust]['membership'])
+        D = pd.DataFrame(obj.norm_data[norm]['clusters'][clust]['membership'])
         D.columns = clust
     D.to_csv(filename, sep=sep)
 
