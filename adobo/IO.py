@@ -40,8 +40,6 @@ def export_data(obj, filename, name, what='normalized', sep='\t'):
     -------
     Nothing.
     """
-    if not filename:
-        raise Exception('Specify a filename.')
     if not what in ('normalized', 'pca'):
         raise Exception('"what" can be "normalized" or "pca".')
     if what == 'normalized':
