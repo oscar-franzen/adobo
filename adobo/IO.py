@@ -55,8 +55,10 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
         index=False
     elif what == 'tsne':
         D = obj.norm_data[norm]['dr']['tsne']['embedding']
+        index=False
     elif what == 'umap':
         D = obj.norm_data[norm]['dr']['umap']['embedding']
+        index=False
     D.to_csv(filename, sep=sep, index=index)
 
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
