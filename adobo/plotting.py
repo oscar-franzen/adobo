@@ -350,7 +350,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             if legend:
                 aa[row][pl_idx].legend(list(groups), loc='upper left',
                                        markerscale=markerscale, bbox_to_anchor=(1, 1),
-                                       prop={'size': 7})
+                                       prop={'size': font_size})
             pl_idx += 1
         # plot meta data variables
         for meta_var in metadata:
@@ -368,7 +368,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                 if legend:
                     aa[row][pl_idx].legend(list(groups), loc='upper left',
                                            markerscale=markerscale, bbox_to_anchor=(1, 1),
-                                           prop={'size': 7})
+                                           prop={'size': font_size})
             else:
                 # If data are continuous
                 cmap = sns.cubehelix_palette(as_cmap=True)
