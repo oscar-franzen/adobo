@@ -30,8 +30,10 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
         A data class object.
     filename : `str`
         Output filename or path.
-    name : `str`
+    norm : `str`
         Name of the normalisation. For example 'standard'.
+    clust : `str`
+        Name of the clustering. For example: 'leiden̈́'.
     what : `{'normalized', 'clusters', 'pca', 'tsne', 'umap'}`
         What to export. Normalized data or PCA components.
     sep : `str`

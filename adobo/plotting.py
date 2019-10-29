@@ -326,6 +326,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             raise Exception(q)
         E = item['dr'][reduction]['embedding']
         pl_idx = 0 # plot index
+        markerscale = 5
+        if marker_size > 5: markerscale = 5/2
         # plot clusterings
         for cl_algo in clustering:
             if not cl_algo in item['clusters']:
@@ -346,11 +348,9 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             if pl_idx == 0:
                 aa[row][pl_idx].set_ylabel(l)
             if legend:
-                markerscale = 5
-                if marker_size > 5: markerscale = 5/2
-                print(markerscale)
-                aa[row][pl_idx].legend(list(groups), loc='upper left', markerscale=markerscale,
-                                       bbox_to_anchor=(1, 1), prop={'size': 15})
+                aa[row][pl_idx].legend(list(groups), loc='upper left',
+                                       markerscale=markerscale, bbox_to_anchor=(1, 1),
+                                       prop={'size': 7})
             pl_idx += 1
         # plot meta data variables
         for meta_var in metadata:
@@ -366,8 +366,9 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                     aa[row][pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
                                             color=col)
                 if legend:
-                    aa[row][pl_idx].legend(list(groups), loc='upper left', markerscale=5,
-                                           bbox_to_anchor=(1, 1), prop={'size': 7})
+                    aa[row][pl_idx].legend(list(groups), loc='upper left',
+                                           markerscale=markerscale, bbox_to_anchor=(1, 1),
+                                           prop={'size': 7})
             else:
                 # If data are continuous
                 cmap = sns.cubehelix_palette(as_cmap=True)
