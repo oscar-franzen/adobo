@@ -344,6 +344,6 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
                           learning_rate=learning_rate, min_dist=min_dist, spread=spread,
                           **args)
         emb = reducer.fit_transform(X)
-        emb = pd.DataFrame(emb)
+        emb = pd.DataFrame(emb, index=X.index)
         obj.norm_data[k]['dr']['umap'] = {'embedding' : emb }
     obj.set_assay(sys._getframe().f_code.co_name)

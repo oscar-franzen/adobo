@@ -41,6 +41,7 @@ def overall_scatter(obj, color='#E69F00', title=None, filename=None):
     """
     plt.clf()
     count_data = obj.count_data
+    plt.close(fig='all')
     f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     ff = matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
     ax.get_yaxis().set_major_formatter(ff)
@@ -99,6 +100,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00', t
         ylab = 'detected genes'
         xlab = 'cells'
     colors = [color]*(len(summary))
+    plt.close(fig='all')
     f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     ff = matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
     ax.get_yaxis().set_major_formatter(ff)
@@ -181,6 +183,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         targets[name] = obj.norm_data[name]
     if len(targets) == 0:
         raise Exception('Nothing found to work on.')
+    plt.close(fig='all')
     f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=fig_size)
     if ax.ndim == 1:
         ax = [ax]
@@ -294,8 +297,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     else:
         colors = colors
     n_plots = len(clustering) + len(metadata) + len(genes) # per row
-    if n_plots == 1:
-        n_plots = 2
+    #if n_plots == 1:
+    #    n_plots = 2
     plt.rc('xtick', labelsize=font_size)
     plt.rc('ytick', labelsize=font_size)
     targets = {}
@@ -304,9 +307,13 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     else:
         targets[name] = D[name]
     # setup plotting grid
+    plt.clf()
+    plt.close(fig='all')
     fig, aa = plt.subplots(nrows=len(targets),
                            ncols=n_plots,
                            figsize=fig_size)
+    if n_plots == 1:
+        aa = np.array([aa])
     fig.suptitle(reduction)
     if aa.ndim == 1:
         aa = [aa]
@@ -339,8 +346,11 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             if pl_idx == 0:
                 aa[row][pl_idx].set_ylabel(l)
             if legend:
-                aa[row][pl_idx].legend(list(groups), loc='upper left', markerscale=5,
-                                       bbox_to_anchor=(1, 1), prop={'size': 5})
+                markerscale = 5
+                if marker_size > 5: markerscale = 5/2
+                print(markerscale)
+                aa[row][pl_idx].legend(list(groups), loc='upper left', markerscale=markerscale,
+                                       bbox_to_anchor=(1, 1), prop={'size': 15})
             pl_idx += 1
         # plot meta data variables
         for meta_var in metadata:
@@ -379,9 +389,10 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             aa[row][pl_idx].set_title(gene, size=font_size)
             pl_idx += 1
         # turn off unused axes
-        if (len(clustering) + len(metadata) + len(genes)) == 1:
-            aa[row][1].axis('off')
-    plt.subplots_adjust(wspace=0.4, hspace=0.3)
+        #if (len(clustering) + len(metadata) + len(genes)) == 1:
+        #    aa[row][1].axis('off')
+    fig.subplots_adjust(wspace=0.4, hspace=0.3)
+    plt.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
     else:
@@ -426,6 +437,7 @@ def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_s
     else:
         targets[name] = obj.norm_data[name]
     # setup plotting grid
+    plt.close(fig='all')
     fig, aa = plt.subplots(nrows=1,
                            ncols=len(targets),
                            figsize=fig_size)
