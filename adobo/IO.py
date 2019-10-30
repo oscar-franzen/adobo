@@ -54,7 +54,7 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
     elif what == 'clusters':
         D = pd.DataFrame(obj.norm_data[norm]['clusters'][clust]['membership'])
         D.columns = [clust]
-        index=False
+        index=True
     elif what == 'tsne':
         D = obj.norm_data[norm]['dr']['tsne']['embedding']
         index=False
