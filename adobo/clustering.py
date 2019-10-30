@@ -275,7 +275,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             cl = leiden(snn_graph, res, seed)
         else:
             cl = igraph(snn_graph, clust_alg)
-        obj.norm_data[l]['clusters'][clust_alg] = {'membership' : cl}
+        mem = pd.Series(cl, index=comp.index)
+        obj.norm_data[l]['clusters'][clust_alg] = {'membership' : mem}
         obj.set_assay('clustering')
         if verbose:
             print(dict(Counter(cl)))
