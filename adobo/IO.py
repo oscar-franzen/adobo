@@ -21,7 +21,7 @@ import adobo._log
 from .data import dataset
 
 def export_data(obj, filename, norm='standard', clust='leiden', what='normalized',
-                sep='\t'):
+                transpose=False, sep='\t'):
     """Exports data to a text file, convenient for loading into other programs
 
     Parameters
@@ -36,6 +36,8 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
         Name of the clustering. For example: 'leiden̈́'.
     what : `{'normalized', 'clusters', 'pca', 'tsne', 'umap'}`
         What to export. Normalized data or PCA components.
+    transpose : `bool`
+        Transpose the data before writing it. Default: False
     sep : `str`
         A character or regular expression used to separate fields. Default: "\t"
 
@@ -61,6 +63,8 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
     elif what == 'umap':
         D = obj.norm_data[norm]['dr']['umap']['embedding']
         index=True
+    if transpose:
+        D = D.transpose()
     D.to_csv(filename, sep=sep, index=index)
 
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
