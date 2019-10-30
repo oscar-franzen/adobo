@@ -230,7 +230,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
     ----------
     obj : :class:`adobo.data.dataset`
           A data class object
-    reduction : `{'tsne', 'umap', 'irlb', 'svd'}`
+    reduction : `{'tsne', 'umap', 'pca'}`
         The dimensional reduction to use. Default: tsne
     name : `tuple`
         A tuple of normalization to use. If it has the length zero, then all available
@@ -319,6 +319,10 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
                            constrained_layout=True)
     if n_plots == 1:
         aa = np.array([aa])
+    if reduction == 'pca':
+        red_key = 'comp'
+    else:
+        red_key = 'embedding'
     fig.suptitle(reduction)
     if aa.ndim == 1:
         aa = [aa]
@@ -329,7 +333,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
             q = 'Reduction "%s" was not found. Run `ad.dr.tsne(...)` or \
 `ad.dr.umap(...)` first.' % reduction
             raise Exception(q)
-        E = item['dr'][reduction]['embedding']
+        E = item['dr'][reduction][red_key]
         pl_idx = 0 # plot index
         markerscale = 5
         if marker_size > 5: markerscale = 5/2
