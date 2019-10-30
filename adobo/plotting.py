@@ -220,10 +220,10 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     elif count:
         plt.show()
 
-def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
-             genes=(), filename=None, marker_size=0.8, font_size=8, colors='adobo',
-             title=None, legend=True, min_cluster_size=10,
-             fig_size=(10, 10), verbose=False, **args):
+def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(),
+             filename=None, marker_size=0.8, font_size=8, colors='adobo', title=None,
+             legend=True, min_cluster_size=10, fig_size=(10, 10), margins = None,
+             verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -261,6 +261,10 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         Default: 10
     fig_size : `tuple`
         Figure size in inches. Default: (10, 10)
+    margins : `dict`
+        Can be used to adjust margins. Should be a dict with one or more of the keys:
+        'left', 'bottom', 'right', 'top', 'wspace', 'hspace'. Set verbose=True to figure
+        out the present values. Default: None
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -311,7 +315,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     plt.close(fig='all')
     fig, aa = plt.subplots(nrows=len(targets),
                            ncols=n_plots,
-                           figsize=fig_size)
+                           figsize=fig_size,
+                           constrained_layout=True)
     if n_plots == 1:
         aa = np.array([aa])
     fig.suptitle(reduction)
@@ -348,6 +353,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             if pl_idx == 0:
                 aa[row][pl_idx].set_ylabel(l)
             if legend:
+                plt.tight_layout()
                 aa[row][pl_idx].legend(list(groups), loc='upper left',
                                        markerscale=markerscale, bbox_to_anchor=(1, 1),
                                        prop={'size': font_size})
@@ -366,6 +372,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                     aa[row][pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
                                             color=col)
                 if legend:
+                    plt.tight_layout()
                     aa[row][pl_idx].legend(list(groups), loc='upper left',
                                            markerscale=markerscale, bbox_to_anchor=(1, 1),
                                            prop={'size': font_size})
@@ -392,8 +399,16 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         # turn off unused axes
         #if (len(clustering) + len(metadata) + len(genes)) == 1:
         #    aa[row][1].axis('off')
-    fig.subplots_adjust(wspace=0.4, hspace=0.3)
     plt.tight_layout()
+    if verbose:
+        print('fig.subplotpars.top: %s' % fig.subplotpars.top)
+        print('fig.subplotpars.bottom: %s' % fig.subplotpars.bottom)
+        print('fig.subplotpars.left: %s' % fig.subplotpars.left)
+        print('fig.subplotpars.right: %s' % fig.subplotpars.right)
+        print('fig.subplotpars.hspace: %s' % fig.subplotpars.hspace)
+        print('fig.subplotpars.wspace: %s' % fig.subplotpars.wspace)
+    if margins:
+        fig.subplots_adjust(**margins)
     if filename != None:
         plt.savefig(filename, **args)
     else:
