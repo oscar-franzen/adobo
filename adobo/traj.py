@@ -125,8 +125,6 @@ def slingshot(obj, name=(), min_cluster_size=10, verbose=False):
         forest = pd.DataFrame(forest)
         lineages = []
         for r in np.arange(0, subtrees.shape[1]):
-            if verbose:
-                print(r)
             st = subtrees.iloc[r,]
             if st.sum() == 1:
                 continue
@@ -149,4 +147,6 @@ def slingshot(obj, name=(), min_cluster_size=10, verbose=False):
                 lineages.append(tree_graph.columns[p].values)
         # sort by number of clusters included
         lineages.sort(key=len, reverse=True)
+        if verbose:
+            print('found %s lineages' % len(lineages))
         obj.norm_data[k]['trajectory'] = {'lineages' : lineages, 'method' : 'slingshot' }

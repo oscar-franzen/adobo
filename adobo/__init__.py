@@ -22,6 +22,7 @@ from . import hvg
 from . import dr
 from . import bio
 from . import clustering
+from . import traj # ectory
 
 debug = 0
 
