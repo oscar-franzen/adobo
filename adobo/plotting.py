@@ -354,6 +354,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
                 aa[row][pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
                                         color=col)
             aa[row][pl_idx].set_title(cl_algo, size=font_size)
+            aa[row][pl_idx].set_aspect('equal')
             if pl_idx == 0:
                 aa[row][pl_idx].set_ylabel(l)
             if legend:
@@ -388,6 +389,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
                 cbar = fig.colorbar(po, ax=aa[row][pl_idx])
                 #cbar.set_label('foobar')
             aa[row][pl_idx].set_title(meta_var, size=font_size)
+            aa[row][pl_idx].set_aspect('equal')
             pl_idx += 1
         # plot genes
         for gene in genes:
@@ -399,6 +401,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
                                          c=ge.values, cmap=cmap)
             cbar = fig.colorbar(po, ax=aa[row][pl_idx])
             aa[row][pl_idx].set_title(gene, size=font_size)
+            aa[row][pl_idx].set_aspect('equal')
             pl_idx += 1
         # turn off unused axes
         #if (len(clustering) + len(metadata) + len(genes)) == 1:
