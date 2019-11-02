@@ -9,6 +9,7 @@ Summary
 This module contains a data storage class.
 """
 
+from collections import defaultdict
 import joblib
 import pandas as pd
 import numpy as np
@@ -61,7 +62,7 @@ class dataset:
         self._low_quality_cells = ASSAY_NOT_DONE
         self.imp_count_data = pd.DataFrame()
         # the nested dictionary containing results and analyses
-        self._norm_data = {}
+        self._norm_data = defaultdict(defaultdict)
         # meta data for cells
         self.meta_cells = pd.DataFrame(index=raw_mat.columns)
         self.meta_cells['total_reads'] = raw_mat.sum(axis=0)

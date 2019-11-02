@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 from sklearn.preprocessing import scale as sklearn_scale
 
@@ -21,8 +22,8 @@ from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
 def overall_scatter(obj, color='#E69F00', title=None, filename=None):
-    """Generates a scatter plot showing the total number of reads on one axis and the
-    number of detected genes on the other axis
+    """Generates a scatter plot showing the total number of reads on one axis
+       and the number of detected genes on the other axis
 
     Parameters
     ----------
@@ -61,8 +62,8 @@ def overall_scatter(obj, color='#E69F00', title=None, filename=None):
         plt.show()
     plt.close()
 
-def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00', title=None,
-            filename=None):
+def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
+            title=None, filename=None):
     """Generates a plot of read counts per cell or expressed genes per cell
 
     Parameters
@@ -70,8 +71,8 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00', t
     obj : :class:`adobo.data.dataset`
         A data class object.
     what : `{'reads', 'genes'}`
-        If 'reads' then plots the number of reads per cell. If 'genes', then plots the
-        number of expressed genes per cell. Default: 'reads'
+        If 'reads' then plots the number of reads per cell. If 'genes', then
+        plots the number of expressed genes per cell. Default: 'reads'
     how : `{'histogram', 'boxplot', 'barplot', 'violin'}`
         Type of plot to generate. Default: 'histogram'
     bin_size : `int`
@@ -106,7 +107,8 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00', t
     ax.get_yaxis().set_major_formatter(ff)
     ax.get_xaxis().set_major_formatter(ff)
     if how == 'barplot':
-        ax.bar(np.arange(len(summary)), sorted(summary, reverse=True), color=colors)
+        ax.bar(np.arange(len(summary)), sorted(summary, reverse=True),
+               color=colors)
         ax.set_xlabel('cells (sorted on highest to lowest)')
     elif how == 'boxplot':
         ax.boxplot(summary)
@@ -147,18 +149,19 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
 
     Note
     ----
-    Genes are ranked by their absolute value. Additional parameters are passed into
-    :py:func:`matplotlib.pyplot.savefig`.
+    Genes are ranked by their absolute value. Additional parameters are passed
+    into :py:func:`matplotlib.pyplot.savefig`.
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
           A data class object
     name : `str`
-        The name of the normalization to operate on. If this is empty or None then the
-        function will be applied on all normalizations available.
+        The name of the normalization to operate on. If this is empty or None
+        then the function will be applied on all normalizations available.
     dim : `list`
-        A list of indices specifying components to plot. First component has index zero.
+        A list of indices specifying components to plot. First component has
+        index zero.
     top : `int`
         Specifies the number of top scoring genes to include. Default: 10
     color : `str`
@@ -220,9 +223,10 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     elif count:
         plt.show()
 
-def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(),
-             filename=None, marker_size=0.8, font_size=8, colors='adobo', title=None,
-             legend=True, min_cluster_size=10, fig_size=(10, 10), margins = None,
+def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
+             genes=(), trajectory=None, filename=None, marker_size=0.8,
+             font_size=8, colors='adobo', title=None, legend=True,
+             min_cluster_size=10, fig_size=(10, 10), margins = None,
              verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
@@ -233,14 +237,16 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
     reduction : `{'tsne', 'umap', 'pca'}`
         The dimensional reduction to use. Default: tsne
     name : `tuple`
-        A tuple of normalization to use. If it has the length zero, then all available
-        normalizations will be used.
+        A tuple of normalization to use. If it has the length zero, then all
+        available normalizations will be used.
     clustering : `tuple`, optional
         Specifies the clustering outcomes to plot.
     metadata : `tuple`, optional
         Specifies the metadata variables to plot.
     genes : `tuple`, optional
         Specifies genes to plot.
+    trajectory : `str`, optional
+       The trajectory to plot. For example 'slingshot'. Default: None
     filename : `str`, optional
         Name of an output file instead of showing on screen.
     marker_size : `float`
@@ -248,23 +254,24 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
     font_size : `float`
         Font size. Default: 8
     colors : `{'default', 'random'}` or `list`
-        Can be: (i) "adobo" or "random"; or (ii) a `list` of colors with the same
-        length as the number of factors. If colors is set to "adobo", then colors are
-        retrieved from :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT` (but if the
-        number of clusters exceed 50, then random colors will be used). Default: adobo
+        Can be: (i) "adobo" or "random"; or (ii) a `list` of colors with the
+        same length as the number of factors. If colors is set to "adobo", then
+        colors are retrieved from :py:attr:`adobo._constants.CLUSTER_COLORS_DEFAULT`
+        (but if the number of clusters exceed 50, then random colors will be
+        used). Default: adobo
     title : `str`
         Title of the plot. By default the title is set to the reduction technique.
     legend : `bool`
         Add legend or not. Default: True
     min_cluster_size : `int`
-        Can be used to prevent clusters below a certain number of cells to be plotted.
-        Default: 10
+        Can be used to prevent clusters below a certain number of cells to be
+        plotted. Default: 10
     fig_size : `tuple`
         Figure size in inches. Default: (10, 10)
     margins : `dict`
-        Can be used to adjust margins. Should be a dict with one or more of the keys:
-        'left', 'bottom', 'right', 'top', 'wspace', 'hspace'. Set verbose=True to figure
-        out the present values. Default: None
+        Can be used to adjust margins. Should be a dict with one or more of the
+        keys: 'left', 'bottom', 'right', 'top', 'wspace', 'hspace'. Set
+        verbose=True to figure out the present values. Default: None
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -360,8 +367,26 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
             if legend:
                 plt.tight_layout()
                 aa[row][pl_idx].legend(list(groups), loc='upper left',
-                                       markerscale=markerscale, bbox_to_anchor=(1, 1),
+                                       markerscale=markerscale,
+                                       bbox_to_anchor=(1, 1),
                                        prop={'size': font_size})
+            if trajectory != None:
+                # cluster weights matrix
+                l = np.array([(cl == clID).astype(int) for clID in groups])
+                l = l.transpose()
+                centers = []
+                for clID in groups:
+                    w = l[:, clID]
+                    centers.append(np.average(E, axis=0, weights=w))
+                centers = np.array(centers)
+                adj = obj.norm_data['standard']['slingshot'][cl_algo]['adjacency']
+                for i in np.arange(0, max(groups)):
+                    for j in np.arange(i+1, max(groups)):
+                        if adj.iloc[i, j]:
+                            xy1 = centers[i, :]
+                            xy2 = centers[j, :]
+                            aa[row][pl_idx].plot(xy1, xy2)
+                print(centers)
             pl_idx += 1
         # plot meta data variables
         for meta_var in metadata:
@@ -374,18 +399,20 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
                     idx = np.array(m_d) == k
                     e = E[idx]
                     col = colors[i]
-                    aa[row][pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
-                                            color=col)
+                    aa[row][pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1],
+                                            s=marker_size, color=col)
                 if legend:
                     plt.tight_layout()
                     aa[row][pl_idx].legend(list(groups), loc='upper left',
-                                           markerscale=markerscale, bbox_to_anchor=(1, 1),
+                                           markerscale=markerscale,
+                                           bbox_to_anchor=(1, 1),
                                            prop={'size': font_size})
             else:
                 # If data are continuous
                 cmap = sns.cubehelix_palette(as_cmap=True)
-                po = aa[row][pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
-                                             c=m_d.values, cmap=cmap)
+                po = aa[row][pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1],
+                                             s=marker_size, c=m_d.values,
+                                             cmap=cmap)
                 cbar = fig.colorbar(po, ax=aa[row][pl_idx])
                 #cbar.set_label('foobar')
             aa[row][pl_idx].set_title(meta_var, size=font_size)
@@ -394,12 +421,15 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(), genes=(
         # plot genes
         for gene in genes:
             if not gene in item['data'].index:
-                raise Exception('"%s" was not found in the gene expression matrix' % gene)
+                m = '"%s" was not found in the gene expression matrix' % gene
+                raise Exception(m)
             ge = item['data'].loc[gene, :]
             cmap = sns.cubehelix_palette(as_cmap=True)
-            po = aa[row][pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
-                                         c=ge.values, cmap=cmap)
-            cbar = fig.colorbar(po, ax=aa[row][pl_idx])
+            po = aa[row][pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1],
+                                         s=marker_size, c=ge.values, cmap=cmap)
+            divider = make_axes_locatable(aa[row][pl_idx])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cbar = fig.colorbar(po, cax=cax)
             aa[row][pl_idx].set_title(gene, size=font_size)
             aa[row][pl_idx].set_aspect('equal')
             pl_idx += 1
