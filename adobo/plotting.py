@@ -384,7 +384,6 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                 for i in np.arange(0, max(groups)+1):
                     for j in np.arange(i, max(groups))+1:
                         if adj.iloc[i, j] or adj.iloc[j, i]:
-                            print(i, j)
                             xy = centers[(i,j),:]
                             aa[row][pl_idx].plot(xy[:, 0], xy[:, 1], color='black')
             pl_idx += 1
