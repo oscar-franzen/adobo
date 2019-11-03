@@ -370,7 +370,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                                        markerscale=markerscale,
                                        bbox_to_anchor=(1, 1),
                                        prop={'size': font_size})
-            if trajectory != None:
+            if trajectory == 'slingshot':
                 # cluster weights matrix
                 l = np.array([(cl == clID).astype(int) for clID in groups])
                 l = l.transpose()
@@ -379,14 +379,14 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                     w = l[:, clID]
                     centers.append(np.average(E, axis=0, weights=w))
                 centers = np.array(centers)
+                aa[row][pl_idx].plot(centers[:, 0], centers[:, 1], 'bo', color='blue')
                 adj = obj.norm_data['standard']['slingshot'][cl_algo]['adjacency']
-                for i in np.arange(0, max(groups)):
-                    for j in np.arange(i+1, max(groups)):
-                        if adj.iloc[i, j]:
-                            xy1 = centers[i, :]
-                            xy2 = centers[j, :]
-                            aa[row][pl_idx].plot(xy1, xy2)
-                print(centers)
+                for i in np.arange(0, max(groups)+1):
+                    for j in np.arange(i, max(groups))+1:
+                        if adj.iloc[i, j] or adj.iloc[j, i]:
+                            print(i, j)
+                            xy = centers[(i,j),:]
+                            aa[row][pl_idx].plot(xy[:, 0], xy[:, 1], color='black')
             pl_idx += 1
         # plot meta data variables
         for meta_var in metadata:
