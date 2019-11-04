@@ -19,6 +19,7 @@ from sklearn.preprocessing import scale as sklearn_scale
 import networkx as nx
 import igraph as ig
 
+import adobo
 from .dr import svd
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
@@ -336,7 +337,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         red_key = 'coords'
     else:
         red_key = 'embedding'
-    fig.suptitle(reduction)
+    ttl = fig.suptitle(reduction)
     if aa.ndim == 1:
         aa = [aa]
     for row, l in enumerate(targets):
@@ -374,7 +375,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             if pl_idx == 0:
                 aa[row][pl_idx].set_ylabel(l)
             if legend:
-                plt.tight_layout()
+                plt.tight_layout(rect=[0, 0.03, 1, 0.95])
                 aa[row][pl_idx].legend(list(groups), loc='upper left',
                                        markerscale=markerscale,
                                        bbox_to_anchor=(1, 1),
@@ -429,7 +430,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                     aa[row][pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1],
                                             s=marker_size, color=col)
                 if legend:
-                    plt.tight_layout()
+                    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
                     aa[row][pl_idx].legend(list(groups), loc='upper left',
                                            markerscale=markerscale,
                                            bbox_to_anchor=(1, 1),
@@ -463,7 +464,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         # turn off unused axes
         #if (len(clustering) + len(metadata) + len(genes)) == 1:
         #    aa[row][1].axis('off')
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     if verbose:
         print('fig.subplotpars.top: %s' % fig.subplotpars.top)
         print('fig.subplotpars.bottom: %s' % fig.subplotpars.bottom)

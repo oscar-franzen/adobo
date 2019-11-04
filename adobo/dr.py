@@ -248,7 +248,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         if verbose:
             v = (method, k, data.shape[0], data.shape[1])
             print('Running PCA (method=%s) on the %s normalization (dimensions \
-%sx%s)' % v)
+%s genes x%s cells)' % v)
         if method == 'irlb':
             comp, contr = irlb(data, ncomp, seed)
         elif method == 'svd':

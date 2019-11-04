@@ -139,6 +139,19 @@ class dataset:
     def set_assay(self, name, key=1):
         """ Set the assay that was applied. """
         self._assays[name] = key
+    
+    def print_dict(self):
+        q = []
+        self._print_dict(self.norm_data, q)
+        return '\n'.join(q)
+        
+    def _print_dict(self, d, q, indent=0):
+        """Recursive function for printing content of norm_data """
+        for key, value in d.items():
+            s = '\t' * indent + str(key)
+            q.append(s)
+            if isinstance(value, dict):
+                self._print_dict(value, q, indent+1)
 
     @property
     def norm_data(self):
@@ -180,6 +193,7 @@ Commands executed:
         s += '\nNormalizations available:\n'
         for item in self.norm_data:
             s += '%s\n' % item
+        s += '\nnorm_data structure:\n%s\n' % self.print_dict()
         return s
 
     def assays(self):

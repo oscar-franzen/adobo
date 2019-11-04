@@ -71,7 +71,7 @@ def seurat(data, ngenes=1000, num_bins=20):
     ret = np.array(top_hvg.index)
     return ret
 
-def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
+def brennecke(data_norm, log, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
               minBiolDisp=0.5, verbose=False):
     """Implements the method of Brennecke et al. (2013) to identify highly variable genes
 
@@ -84,8 +84,8 @@ def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
     ----------
     data_norm : :class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
-    log2 : `bool`
-        If normalized data were log2 transformed or not.
+    log : `bool`
+        If normalized data were log transformed or not.
     ercc : :class:`pandas.DataFrame`
         A pandas data frame containing normalized ercc spikes.
     fdr : `float`
@@ -108,7 +108,7 @@ def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
     """
     if ercc.shape[0] == 0:
         ercc = data_norm
-    if log2:
+    if log:
         data_norm = 2**data_norm-1
         ercc = 2**ercc-1
     ercc = ercc.dropna(axis=1, how='all')
@@ -152,7 +152,7 @@ def brennecke(data_norm, log2, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
     res = res.sort_values('pvalue')
     return np.array(res.head(ngenes)['gene'])
 
-def scran(data_norm, ercc, log2, ngenes=1000):
+def scran(data_norm, ercc, log, ngenes=1000):
     """This function implements the approach from the scran R package
 
     Notes
@@ -172,8 +172,8 @@ def scran(data_norm, ercc, log2, ngenes=1000):
         A pandas data frame containing normalized gene expression data.
     ercc : :class:`pandas.DataFrame`
         A pandas data frame containing normalized ercc spikes.
-    log2 : `bool`
-        If normalized data were log2 transformed or not.
+    log : `bool`
+        If normalized data were log transformed or not.
     ngenes : `int`
         Number of top highly variable genes to return.
 
@@ -190,7 +190,7 @@ def scran(data_norm, ercc, log2, ngenes=1000):
     """
     if ercc.shape[0] == 0:
         raise Exception('adobo.hvg.scran requires ercc spikes.')
-    if log2:
+    if log:
         data_norm = 2**data_norm-1
         ercc = 2**ercc-1
     ercc = ercc.dropna(axis=1, how='all')
@@ -218,7 +218,7 @@ def scran(data_norm, ercc, log2, ngenes=1000):
     vars_bio_bio = vars_bio_bio.sort_values(ascending=False)
     return vars_bio_bio.head(ngenes).index.values
 
-def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
+def chen2016(data_norm, log, fdr=0.1, ngenes=1000):
     """
     This function implements the approach from Chen (2016) to identify highly variable
     genes.
@@ -231,8 +231,8 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
     ----------
     data_norm : :class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
-    log2 : `bool`
-        If normalized data were log2 transformed or not.
+    log : `bool`
+        If normalized data were log transformed or not.
     fdr : `float`
         False Discovery Rate considered significant.
     ngenes : `int`
@@ -248,7 +248,7 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
     `list`
         A list containing highly variable genes.
     """
-    if log2:
+    if log:
         data_norm = 2**data_norm-1
     avg = data_norm.mean(axis=1)
     norm_data = data_norm[avg > 0]
@@ -304,7 +304,7 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
                 cvDist.append(tmp[tx])
             else:
                 cvDist.append(-1*tmp[tx])
-    cvDist = np.log2(10**np.array(cvDist))
+    cvDist = np.log(10**np.array(cvDist))
     dor = gaussian_kde(cvDist)
     dor_y = dor(cvDist)
     distMid = cvDist[np.argmax(dor_y)]
@@ -323,7 +323,7 @@ def chen2016(data_norm, log2, fdr=0.1, ngenes=1000):
     filt = res[res['padj'] < fdr]['gene']
     return np.array(filt.head(ngenes))
 
-def mm(data_norm, log2, fdr=0.1, ngenes=1000):
+def mm(data_norm, log, fdr=0.1, ngenes=1000):
     """
     This function implements the approach from Andrews (2018).
 
@@ -350,14 +350,13 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     `list`
         A list containing highly variable genes.
     """
-    if log2:
+    if log:
         data_norm = 2**data_norm-1
     ncells = data_norm.shape[1]
     gene_info_p = 1-np.sum(data_norm > 0, axis=1)/ncells
     gene_info_p_stderr = np.sqrt(gene_info_p*(1-gene_info_p)/ncells)
     gene_info_s = data_norm.mean(axis=1)
     gene_info_s_stderr = np.sqrt((np.mean(data_norm**2, axis=1)-gene_info_s**2)/ncells)
-    xes = np.log(gene_info_s)/np.log(10)
     # maximum likelihood estimate of model parameters
     s = gene_info_s
     p = gene_info_p
@@ -373,13 +372,11 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     res = minimize(neg_loglike, theta_start, method='Nelder-Mead', options={'disp': True})
     est = res.x
     krt = est[0]
-    res_err = est[1]
     # testing step
     p_obs = gene_info_p
     always_detected = p_obs == 0
     p_obs[p_obs == 0] = min(p_obs[p_obs > 0])/2
     p_err = gene_info_p_stderr
-    K_obs = krt
     S_mean = gene_info_s
     K_equiv = p_obs*S_mean/(1-p_obs)
     S_err = gene_info_s_stderr
@@ -398,7 +395,6 @@ def mm(data_norm, log2, fdr=0.1, ngenes=1000):
     res = res[np.logical_not(res.pvalue.isna())]
     res['padj'] = p_adjust_bh(res.pvalue)
     res = res.sort_values('pvalue')
-    filt = res[res['padj'] < fdr]['gene']
     return res.head(ngenes)['gene']
 
 def find_hvg(obj, method='seurat', name=None, ngenes=1000, fdr=0.1, verbose=False):
@@ -450,18 +446,18 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             print('Running on the %s normalization' % k)
         data = item['data']
         data_ercc = item.get('norm_ercc', None)
-        log2 = item['log2']
+        log = item['log']
         if method == 'seurat':
             hvg = seurat(data, ngenes)
         elif method == 'brennecke':
-            hvg = brennecke(data_norm=data, log2=log2, ercc=data_ercc, fdr=fdr,
+            hvg = brennecke(data_norm=data, log=log, ercc=data_ercc, fdr=fdr,
                             ngenes=ngenes, minBiolDisp=0.5, verbose=verbose)
         elif method == 'scran':
-            hvg = scran(data, data_ercc, log2, ngenes)
+            hvg = scran(data, data_ercc, log, ngenes)
         elif method == 'chen2016':
-            hvg = chen2016(data, log2, fdr, ngenes)
+            hvg = chen2016(data, log, fdr, ngenes)
         elif method == 'mm':
-            hvg = mm(data, log2, fdr, ngenes)
+            hvg = mm(data, log, fdr, ngenes)
         else:
             raise Exception('Unknown HVG method specified. Valid choices are: seurat, \
 brennecke, scran, chen2016 and mm')
