@@ -15,9 +15,81 @@ import scipy.linalg
 from sklearn.preprocessing import scale as sklearn_scale
 import sklearn.manifold
 import umap as um
+import igraph as ig
+from fa2 import ForceAtlas2
 
 from . import irlbpy
 from ._log import warning
+
+def force_graph(obj, name=(), iterations=1000, edgeWeightInfluence=1.0,
+                jitterTolerance=1.0, barnesHutOptimize=True, scalingRatio=2.0,
+                gravity=1.0, strongGravityMode=False, verbose=False):
+    """Generates a force-directed graph
+    
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Force-directed_graph_drawing
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    name : `str`
+        The name of the normalization to operate on. Default is to run on all.
+    iterations : `int`
+        Number of iterations. Default: 1000
+    edgeWeightInfluence : `float`
+        How much influence to edge weights. 0 is no influence and 1 is normal.
+        Default: 1.0
+    jitterTolerance : `float`
+        Amount swing. Lower gives less speed and more precision. Default: 1.0
+    barnesHutOptimize : `bool`
+        Run Barnes Hut optimization. Default: True
+    scalingRatio : `float`
+        Amount of repulsion, higher values make a more sparse graph. Default: 2.0
+    gravity : `float`
+        Attracts nodes to the center. Prevents islands from drifting away. Default: 1.0
+    strongGravityMode : `bool`
+        A stronger gravity view. Default: False
+    verbose : `bool`
+        Be verbose or not.
+
+    Returns
+    -------
+    None
+    """
+    targets = {}
+    if name is None or len(name) == 0:
+        targets = obj.norm_data
+    else:
+        targets[name] = obj.norm_data[name]
+    forceatlas2 = ForceAtlas2(outboundAttractionDistribution=True,
+                              edgeWeightInfluence=edgeWeightInfluence,
+                              jitterTolerance=jitterTolerance,
+                              barnesHutOptimize=barnesHutOptimize, barnesHutTheta=1.2,
+                              scalingRatio=scalingRatio,
+                              strongGravityMode=strongGravityMode, gravity=gravity,
+                              verbose=verbose)
+    for l in targets:
+        item = targets[l]
+        if verbose:
+            print('Generating force-directed graph for the %s normalization' % l)
+        if not 'graph' in item:
+            raise Exception('Graph has not been generated. Run \
+`adobo.clustering.generate(...)` first.')
+        snn_graph = item['graph']
+        nn = set(snn_graph[snn_graph.columns[0]])
+        g = ig.Graph()
+        g.add_vertices(len(nn))
+        g.vs['name'] = list(range(1, len(nn)+1))
+        ll = []
+        for i in snn_graph.itertuples(index=False):
+            ll.append(tuple(i))
+        g.add_edges(ll)
+        layout = forceatlas2.forceatlas2_igraph_layout(g, pos=None, iterations=iterations)
+        npa = np.array(layout)
+        obj.norm_data[l]['dr']['force_graph'] = {'coords' : pd.DataFrame(npa)}
+    obj.set_assay(sys._getframe().f_code.co_name)
 
 def irlb(data_norm, ncomp=75, seed=None):
     """Truncated SVD by implicitly restarted Lanczos bidiagonalization

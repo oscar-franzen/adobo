@@ -16,6 +16,8 @@ import matplotlib
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 from sklearn.preprocessing import scale as sklearn_scale
+import networkx as nx
+import igraph as ig
 
 from .dr import svd
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
@@ -224,7 +226,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         plt.show()
 
 def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
-             genes=(), trajectory=None, filename=None, marker_size=0.8,
+             genes=(), edges=False, trajectory=None, filename=None, marker_size=0.8,
              font_size=8, colors='adobo', title=None, legend=True,
              min_cluster_size=10, fig_size=(10, 10), margins = None,
              verbose=False, **args):
@@ -234,7 +236,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     ----------
     obj : :class:`adobo.data.dataset`
           A data class object
-    reduction : `{'tsne', 'umap', 'pca'}`
+    reduction : `{'tsne', 'umap', 'pca', 'force_graph'}`
         The dimensional reduction to use. Default: tsne
     name : `tuple`
         A tuple of normalization to use. If it has the length zero, then all
@@ -245,6 +247,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         Specifies the metadata variables to plot.
     genes : `tuple`, optional
         Specifies genes to plot.
+    edges : `bool`
+        Draw edges (only applicable if reduction='force_graph'). Default: False
     trajectory : `str`, optional
        The trajectory to plot. For example 'slingshot'. Default: None
     filename : `str`, optional
@@ -279,7 +283,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     -------
     None
     """
-    avail_reductions = ('tsne', 'umap', 'pca')
+    avail_reductions = ('tsne', 'umap', 'pca', 'force_graph')
     D = obj.norm_data
     if not reduction in avail_reductions:
         raise Exception('`reduction` must be one of %s.' % ', '.join(avail_reductions))
@@ -328,6 +332,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         aa = np.array([aa])
     if reduction == 'pca':
         red_key = 'comp'
+    elif reduction == 'force_graph':
+        red_key = 'coords'
     else:
         red_key = 'embedding'
     fig.suptitle(reduction)
@@ -340,6 +346,9 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             q = 'Reduction "%s" was not found. Run `ad.dr.tsne(...)` or \
 `ad.dr.umap(...)` first.' % reduction
             raise Exception(q)
+        if reduction == 'force_graph' and edges and not 'graph' in item:
+            raise Exception('Graph has not been generated. Run \
+`adobo.clustering.generate(...)` first.')
         E = item['dr'][reduction][red_key]
         pl_idx = 0 # plot index
         markerscale = 5
@@ -386,6 +395,25 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                         if adj.iloc[i, j] or adj.iloc[j, i]:
                             xy = centers[(i,j),:]
                             aa[row][pl_idx].plot(xy[:, 0], xy[:, 1], color='black')
+            if edges and reduction == 'force_graph':
+                d = {}
+                for k, i in E.iterrows():
+                    d[k] = i.values
+                snn_graph = item['graph']
+                nn = set(snn_graph[snn_graph.columns[0]])
+                g = ig.Graph()
+                g.add_vertices(len(nn))
+                g.vs['name'] = list(range(1, len(nn)+1))
+                ll = []
+                for i in snn_graph.itertuples(index=False):
+                    ll.append(tuple(i))
+                g.add_edges(ll)
+                A = g.get_edgelist()
+                GG = nx.Graph(A)
+                edge_collection = nx.draw_networkx_edges(GG, d, ax=aa[row][pl_idx],
+                                                         width=0.3, edge_color='grey',
+                                                         alpha=0.5)
+                edge_collection.set_zorder(-2)
             pl_idx += 1
         # plot meta data variables
         for meta_var in metadata:

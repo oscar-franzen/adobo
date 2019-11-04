@@ -26,7 +26,9 @@ setup(
         'matplotlib >= 3.1.1',
         'seaborn >= 0.9.0',
         'psutil >= 5.4.2',
-        'datatable >= 0.9.0'
+        'datatable >= 0.9.0',
+        'fa2', # https://github.com/bhargavchippada/forceatlas2
+        'networkx >= 2.3'
     ],
     ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
                            extra_compile_args=['-fPIC','-lm'])]

@@ -206,7 +206,7 @@ def igraph(snn_graph, clust_alg):
     return cl
 
 def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg='leiden',
-             prune_snn=0.067, res=0.8, seed=42, verbose=False):
+             prune_snn=0.067, res=0.8, save_graph=True, seed=42, verbose=False):
     """
     A wrapper function for generating single cell clusters from a shared nearest neighbor
     graph with the Leiden algorithm
@@ -222,6 +222,7 @@ def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg=
         function will be applied on all normalizations available.
     distance : `str`
         Distance metric to use. See here for valid choices: https://tinyurl.com/y4bckf7w
+        Default: 'euclidean'
     target : `{'irlb', 'svd'}`
         The dimensionality reduction result to run on. Default: irlb
     graph : `{'snn'}`
@@ -237,6 +238,8 @@ def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg=
     res : `float`
         Resolution parameter for the Leiden algorithm _only_; change to modify cluster
         resolution. Default: 0.8
+    save_graph : `bool`
+        To save the graph or not. Default: True
     seed : `int`
         For reproducibility.
     verbose : `bool`
@@ -276,6 +279,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         else:
             cl = igraph(snn_graph, clust_alg)
         mem = pd.Series(cl, index=comp.index)
+        if save_graph:
+            obj.norm_data[l]['graph'] = snn_graph
         obj.norm_data[l]['clusters'][clust_alg] = {'membership' : mem}
         obj.set_assay('clustering')
         if verbose:
