@@ -18,18 +18,17 @@ from sklearn.neighbors import KernelDensity
 import statsmodels.api as sm
 from statsmodels.nonparametric.kernel_regression import KernelReg
 
-from ._log import warning
 from ._stats import bw_nrd, row_geometric_mean, theta_ml, is_outlier
 
 def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     """Performs variance stabilizing normalization based on a negative binomial regression
     model with regularized parameters
-    
+
     Notes
     -----
     Use only with UMI counts. Adopts a subset of the functionality of `vst` in the R
     package `sctransform`.
-    
+
     Parameters
     ----------
     data : :class:`pandas.DataFrame`
@@ -40,18 +39,18 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
         A small constant to avoid log(0)=-Inf. Default: 1
     n_genes : `int`
         Number of genes to use when estimating parameters. Default: 2000
-    
+
     References
     ----------
     https://cran.r-project.org/web/packages/sctransform/index.html
     https://www.biorxiv.org/content/10.1101/576827v1
-    
+
     Returns
     -------
     :class:`pandas.DataFrame`
         A data matrix with adjusted counts.
     """
-    
+
     bw_adjust = 3 # Kernel bandwidth adjustment factor
 
     # numericals functions
@@ -63,14 +62,14 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
 
     # data summary
     cell_attr = pd.DataFrame({'counts' : data.sum(axis=0),
-                             'genes' : (data>0).sum(axis=0)})
+                              'genes' : (data > 0).sum(axis=0)})
     cell_attr['log_umi'] = log10(cell_attr.counts)
     cell_attr['log_gene'] = log10(cell_attr.genes)
     cell_attr['umi_per_gene'] = cell_attr.counts/cell_attr.genes
     cell_attr['log_umi_per_gene'] = log10(cell_attr.umi_per_gene)
 
-    genes_cell_count = (data>0).sum(axis=1)
-    genes = genes_cell_count[genes_cell_count>=min_cells].index
+    genes_cell_count = (data > 0).sum(axis=1)
+    genes = genes_cell_count[genes_cell_count >= min_cells].index
     X = data[data.index.isin(genes)]
     genes_log_gmean = log10(row_geometric_mean(X, gmean_eps))
 
@@ -84,7 +83,7 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
         kde = KernelDensity(bandwidth=bw, kernel='gaussian')
         ret = kde.fit(genes_log_gmean_step1[:, None])
         # TODO: score_samples is slower than density() in R
-        weights = 1/np.exp(kde.score_samples(genes_log_gmean_step1[:,None]))
+        weights = 1/np.exp(kde.score_samples(genes_log_gmean_step1[:, None]))
         genes_step1 = np.random.choice(X.index, n_genes, replace=False, p=weights/sum(weights))
         X = X.loc[X.index.isin(genes_step1), X.columns.isin(cells_step1)]
         X = X.reindex(genes_step1)
@@ -92,7 +91,7 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
 
     model_pars = []
     for g in genes_step1:
-        y = X.loc[g,:]
+        y = X.loc[g, :]
         mod = sm.GLM(y, sm.add_constant(data_step1['log_umi']), family=sm.families.Poisson())
         res = mod.fit()
         s = res.summary()
@@ -110,7 +109,7 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     model_pars.theta = log10(model_pars.theta)
 
     # remove outliers
-    outliers = model_pars.apply(lambda x : is_outlier(x, genes_log_gmean_step1), axis=0)
+    outliers = model_pars.apply(lambda x: is_outlier(x, genes_log_gmean_step1), axis=0)
     outliers = outliers.any(axis=1)
     model_pars = model_pars[np.logical_not(outliers.values)]
 
@@ -121,9 +120,8 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     x_points = np.minimum(x_points, max(genes_log_gmean_step1))
 
     model_pars_fit = model_pars.apply(
-        lambda x : KernelReg(x, genes_log_gmean_step1, bw='aic', var_type='c').fit(x_points)[0],
-        axis = 0
-    )
+        lambda x: KernelReg(x, genes_log_gmean_step1, bw='aic', var_type='c').fit(x_points)[0],
+        axis=0)
 
     model_pars_fit.index = x_points.index
     model_pars.theta = 10**model_pars.theta
@@ -133,9 +131,8 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     regressor_data_final = pd.DataFrame({'const' : [1]*len(cell_attr['log_umi']),
                                          'log_umi' : cell_attr['log_umi']})
 
-    coefs = model_pars_final.loc[:, ('const','log_umi')]
-    mu = exp(np.dot(coefs,
-             regressor_data_final.transpose()))
+    coefs = model_pars_final.loc[:, ('const', 'log_umi')]
+    mu = exp(np.dot(coefs, regressor_data_final.transpose()))
     y = data[data.index.isin(model_pars_final.index)]
 
     # pearson residuals
@@ -148,17 +145,17 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     n.columns = t.columns
     pr = t/n
 
-    coefs = model_pars_final.loc[:, ('const','log_umi')]
+    coefs = model_pars_final.loc[:, ('const', 'log_umi')]
     theta = model_pars_final.loc[:, ('theta')]
     med = np.median(cell_attr['log_umi'])
-    
+
     # correct counts
     regressor_data = pd.DataFrame({'const' : [1]*len(cell_attr['log_umi']),
-                                   'log_umi' : [med]*len(cell_attr['log_umi']) })
+                                   'log_umi' : [med]*len(cell_attr['log_umi'])})
     mu = exp(np.dot(coefs, regressor_data.transpose()))
     variance = mu+pd.DataFrame(mu**2).div(theta.values, axis=0)
-    variance.index=pr.index
-    variance.columns=pr.columns
+    variance.index = pr.index
+    variance.columns = pr.columns
     corrected_data = mu + pr * sqrt(variance)
     return abs(round(corrected_data))
 
@@ -171,7 +168,7 @@ def clr(data, axis='genes'):
         A pandas data frame object containing raw read counts (rows=genes, columns=cells).
     axis : {'genes', 'cells'}
         Normalize over genes or cells. Default: 'genes'
-        
+
     References
     ----------
     Hafemeister et al. (2019) https://www.biorxiv.org/content/10.1101/576827v1
@@ -181,15 +178,15 @@ def clr(data, axis='genes'):
     :class:`pandas.DataFrame`
         A normalized data matrix with same dimensions as before.
     """
-    
+
     if axis == 'genes':
         axis = 1
     elif axis == 'cells':
         axis = 0
     else:
         raise Exception('Unknown axis specified.')
-        
-    r = data.apply(lambda x : np.log1p(x/np.exp(sum(np.log1p(x[x>0]))/len(x))), axis=axis)
+
+    r = data.apply(lambda x: np.log1p(x/np.exp(sum(np.log1p(x[x > 0]))/len(x))), axis=axis)
     return r
 
 def standard(data, scaling_factor=10000):
@@ -213,13 +210,13 @@ def standard(data, scaling_factor=10000):
     :class:`pandas.DataFrame`
         A normalized data matrix with same dimensions as before.
     """
-    col_sums = [ np.sum(i[1]) for i in data.transpose().iterrows() ]
+    col_sums = [np.sum(i[1]) for i in data.transpose().iterrows()]
     data_norm = (data / col_sums) * scaling_factor
     return data_norm
 
 def rpkm(data, gene_lengths):
     """Normalize expression values as RPKM
-    
+
     Notes
     -----
     This method should be used if you need to adjust for gene length, such as in
@@ -248,7 +245,6 @@ def rpkm(data, gene_lengths):
     :class:`pandas.DataFrame`
         A normalized data matrix with same dimensions as before.
     """
-    
     mat = data
     if type(gene_lengths) == str:
         gene_lengths = pd.read_csv(gene_lengths, header=None, sep=' ', squeeze=True)
@@ -260,7 +256,7 @@ def rpkm(data, gene_lengths):
             keep = np.logical_not(gene_lengths.isna())
             gene_lengths = gene_lengths[keep]
             mat = mat[keep]
-    
+
     # take the intersection
     mat = mat[mat.index.isin(gene_lengths.index)]
     gene_lengths = gene_lengths[gene_lengths.index.isin(mat.index)]
@@ -280,7 +276,7 @@ def rpkm(data, gene_lengths):
 
 def fqn(data):
     """Performs full quantile normalization (FQN)
-    
+
     Notes
     -----
     FQN was shown to perform well on single cell data [1] and was a popular
@@ -305,24 +301,23 @@ def fqn(data):
         A normalized data matrix with same dimensions as before.
     """
     ncells = data.shape[1]
-    ngenes = data.shape[0]    
     # to hold the ordered indices for each cell
     O = []
     # to hold the sorted values for each cell
     S = []
 
-    for cc in np.arange(0,ncells):
-        values = data.iloc[:,cc]
+    for cc in np.arange(0, ncells):
+        values = data.iloc[:, cc]
         ix = values.argsort().values
         x = values[ix]
         O.append(ix)
         S.append(x.values)
     S = pd.DataFrame(S).transpose()
-    
+
     # calc average distribution per gene
     avg = S.mean(axis=1)
     L = []
-    for cc in np.arange(0,ncells):
+    for cc in np.arange(0, ncells):
         loc = O[cc]
         L.append(pd.Series(avg.values, index=loc).sort_index())
     df = pd.DataFrame(L, index=data.columns)
@@ -334,7 +329,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
          small_const=1, remove_low_qual=True, gene_lengths=None, scaling_factor=10000,
          axis='genes'):
     r"""Normalizes gene expression data
-    
+
     Notes
     -----
     A wrapper function around the individual normalization functions, which can also be
@@ -388,7 +383,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
     ----------
     [0] Cole et al. (2019) Cell Systems
         https://www.biorxiv.org/content/10.1101/235382v2
-    
+
     See Also
     --------
     standard
@@ -414,26 +409,26 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
         data = obj.count_data
     if remove_low_qual:
         # Remove low quality cells
-        remove = obj.meta_cells.status[obj.meta_cells.status!='OK']
+        remove = obj.meta_cells.status[obj.meta_cells.status != 'OK']
         data = data.drop(remove.index, axis=1, errors='ignore')
         # Remove uninformative genes (e.g. lowly expressed and ERCC)
-        remove = obj.meta_genes.status[obj.meta_genes.status!='OK']
+        remove = obj.meta_genes.status[obj.meta_genes.status != 'OK']
         data = data.drop(remove.index, axis=0, errors='ignore')
     if method == 'standard':
         norm = standard(data, scaling_factor)
-        norm_method='standard'
+        norm_method = 'standard'
     elif method == 'rpkm':
         norm = rpkm(data, gene_lengths)
-        norm_method='rpkm'
+        norm_method = 'rpkm'
     elif method == 'fqn':
         norm = fqn(data)
-        norm_method='fqn'
+        norm_method = 'fqn'
     elif method == 'clr':
         norm = clr(data, axis)
-        norm_method='clr'
+        norm_method = 'clr'
     elif method == 'vsn':
         norm = vsn(data)
-        norm_method='vsn'
+        norm_method = 'vsn'
     else:
         raise Exception('Unknown normalization method.')
     if log:
