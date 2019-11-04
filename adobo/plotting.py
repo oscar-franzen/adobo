@@ -46,7 +46,6 @@ def overall_scatter(obj, color='#E69F00', title=None, filename=None):
     plt.clf()
     plt.close(fig='all')
     count_data = obj.count_data
-    plt.close(fig='all')
     f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     ff = matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
     ax.get_yaxis().set_major_formatter(ff)
@@ -97,6 +96,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
     if not how in ('histogram', 'boxplot', 'barplot', 'violin'):
         raise Exception('"how" can only be "histogram", "boxplot", "barplot" or "violin".')
     plt.clf()
+    plt.close(fig='all')
     count_data = obj.count_data
     if what == 'reads':
         summary = count_data.sum(axis=0)
@@ -194,6 +194,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         targets[name] = obj.norm_data[name]
     if len(targets) == 0:
         raise Exception('Nothing found to work on.')
+    plt.clf()
     plt.close(fig='all')
     f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=fig_size)
     if ax.ndim == 1:
@@ -523,6 +524,7 @@ def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_s
     else:
         targets[name] = obj.norm_data[name]
     # setup plotting grid
+    plt.clf()
     plt.close(fig='all')
     fig, aa = plt.subplots(nrows=1,
                            ncols=len(targets),
