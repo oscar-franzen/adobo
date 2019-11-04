@@ -83,7 +83,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
     color : `str`
         Color of the plot. Default: '#E69F00'
     title : `str`
-        Title of the plot. Default: None
+        Change the default title of the plot. Default: None
     filename : `str`, optional
         Write plot to file instead of showing it on the screen. Default: None
 
@@ -135,8 +135,10 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
         raise Exception('The `how` parameter has an invalid value.')
     ax.set_ylabel(ylab)
     ax.set_xlabel(xlab)
-    if not title:
-        title = what
+    if not title and what == 'reads':
+        title = 'total number of reads per cell'
+    elif not title and what == 'genes':
+        title = 'total number of expressed genes per cell'
     ax.set_title(title)
     plt.tight_layout()
     if filename:
