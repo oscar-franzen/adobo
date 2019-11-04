@@ -13,6 +13,8 @@ import joblib
 import pandas as pd
 import numpy as np
 
+import adobo
+
 from ._constants import ASSAY_NOT_DONE
 
 class dataset:
@@ -42,6 +44,8 @@ class dataset:
         of time. Default: True
     output_file : `str`, optional
         A filename that will be used when calling save().
+    version : `str`
+        The adobo package version used to create this data object.
     """
     def __init__(self, raw_mat, desc='no desc set', output_file=None, input_file=None,
                  sparse=True, verbose=False):
@@ -76,6 +80,7 @@ class dataset:
         self.meta_genes['ERCC'] = [None]*raw_mat.shape[0]
         if verbose:
             print('Memory usage of loaded data: %s MB' % self.df_mem_usage('count_data'))
+        self.version = adobo.__version__
 
     def df_mem_usage(self, var):
         """Memory usage for a data frame in mega bytes
