@@ -330,8 +330,9 @@ def fqn(data):
     df = df.transpose()
     return df
 
-def norm(obj, method='standard', name=None, use_imputed=False, log2=True, small_const=1,
-         remove_low_qual=True, gene_lengths=None, scaling_factor=10000, axis='genes'):
+def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_func=np.log2,
+         small_const=1, remove_low_qual=True, gene_lengths=None, scaling_factor=10000,
+         axis='genes'):
     r"""Normalizes gene expression data
     
     Notes
@@ -357,8 +358,11 @@ def norm(obj, method='standard', name=None, use_imputed=False, log2=True, small_
     use_imputed : `bool`
         Use imputed data. If set to True, then :func:`adobo.preproc.impute` must have been
         run previously. Default: False
-    log2 : `bool`
-        Perform log2 transformation. Default: True
+    log : `bool`
+        Perform log transformation. Default: True
+    log_func : `numpy.func`
+        Logarithmic function to use. For example: np.log2, np.log1p, np.log10, etc.
+        Default: np.log2
     small_const : `float`
         A small constant to add to expression values to avoid log'ing genes with zero
         expression. Default: 1
@@ -432,8 +436,8 @@ def norm(obj, method='standard', name=None, use_imputed=False, log2=True, small_
         norm_method='vsn'
     else:
         raise Exception('Unknown normalization method.')
-    if log2:
-        norm = np.log2(norm+small_const)
+    if log:
+        norm = log_func(norm+small_const)
     ne = None
     if np.any(obj.meta_genes.ERCC):
         # Save normalized ERCC
@@ -442,7 +446,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log2=True, small_
         norm = norm[np.logical_not(obj.meta_genes.ERCC)]
     obj.norm_data[name] = {'data' : norm,
                            'method' : method,
-                           'log2' : log2,
+                           'log' : log,
                            'norm_ercc' : ne,
                            'dr' : {},
                            'clusters' : {},
