@@ -44,6 +44,7 @@ def overall_scatter(obj, color='#E69F00', title=None, filename=None):
     None
     """
     plt.clf()
+    plt.close(fig='all')
     count_data = obj.count_data
     plt.close(fig='all')
     f, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
@@ -93,6 +94,8 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
     """
     if not what in ('reads', 'genes'):
         raise Exception('"what" can only be "reads" or "genes".')
+    if not how in ('histogram', 'boxplot', 'barplot', 'violin'):
+        raise Exception('"how" can only be "histogram", "boxplot", "barplot" or "violin".')
     plt.clf()
     count_data = obj.count_data
     if what == 'reads':
@@ -121,7 +124,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
     elif how == 'histogram':
         ax.hist(summary, bins=bin_size, color=color)
         ax.set_xlabel('cells')
-        ylab = 'number of cells'
+        ylab = 'frequency'
         xlab = '%s bin' % what
     elif how == 'violin':
         parts = ax.violinplot(summary, showmedians=False)
