@@ -331,11 +331,9 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     # setup plotting grid
     plt.clf()
     plt.close(fig='all')
-    fig, aa = plt.subplots(nrows=len(targets),
-                           ncols=n_plots,
-                           figsize=fig_size,
+    fig, aa = plt.subplots(nrows=len(targets), ncols=n_plots, figsize=fig_size,
                            constrained_layout=True)
-    if n_plots == 1:
+    if not isinstance(aa, np.ndarray):
         aa = np.array([aa])
     if reduction == 'pca':
         red_key = 'comp'
@@ -344,8 +342,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     else:
         red_key = 'embedding'
     ttl = fig.suptitle(reduction)
-    if aa.ndim == 1:
-        aa = [aa]
+    if len(targets) == 2 and n_plots == 1:
+        aa = np.vstack(aa)
     for row, l in enumerate(targets):
         item = targets[l]
         # the embedding
