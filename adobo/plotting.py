@@ -331,8 +331,11 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
     plt.close(fig='all')
     fig, aa = plt.subplots(nrows=len(targets), ncols=n_plots, figsize=fig_size,
                            constrained_layout=True)
-    if aa.ndim > 1:
-        aa = aa.flatten()
+    if isinstance(aa, np.ndarray):
+        if aa.ndim > 1:
+            aa = aa.flatten()
+    else:
+        aa = np.array([aa])
     if reduction == 'pca':
         red_key = 'comp'
     elif reduction == 'force_graph':
