@@ -232,7 +232,7 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     elif count:
         plt.show()
 
-def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
+def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
              genes=(), edges=False, trajectory=None, filename=None, marker_size=0.8,
              font_size=8, colors='adobo', title=None, legend=True,
              min_cluster_size=10, fig_size=(10, 10), margins = None,
@@ -245,7 +245,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
           A data class object
     reduction : `{'tsne', 'umap', 'pca', 'force_graph'}`
         The dimensional reduction to use. Default: tsne
-    name : `tuple`
+    normalization : `tuple`
         A tuple of normalization to use. If it has the length zero, then all
         available normalizations will be used.
     clustering : `tuple`, optional
@@ -303,8 +303,8 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
         metadata = (metadata,)
     if type(genes) == str:
         genes = (genes,)
-    if type(name) == str:
-        name = (name,)
+    if type(normalization) == str:
+        normalization = (normalization,)
     if len(clustering) == 0:
         clustering = tuple({'q' : list(D[item]['clusters'].keys()) for item in D}['q'])
     if len(clustering) == 0:
@@ -319,22 +319,20 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     else:
         colors = colors
     n_plots = len(clustering) + len(metadata) + len(genes) # per row
-    #if n_plots == 1:
-    #    n_plots = 2
     plt.rc('xtick', labelsize=font_size)
     plt.rc('ytick', labelsize=font_size)
     targets = {}
-    if len(name) == 0:
-        targets = D
+    if len(normalization) == 0:
+        targets = tuple(D.keys())
     else:
-        targets[name] = D[name]
+        targets = normalization
     # setup plotting grid
     plt.clf()
     plt.close(fig='all')
     fig, aa = plt.subplots(nrows=len(targets), ncols=n_plots, figsize=fig_size,
                            constrained_layout=True)
-    if not isinstance(aa, np.ndarray):
-        aa = np.array([aa])
+    if aa.ndim > 1:
+        aa = aa.flatten()
     if reduction == 'pca':
         red_key = 'comp'
     elif reduction == 'force_graph':
@@ -342,10 +340,11 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     else:
         red_key = 'embedding'
     ttl = fig.suptitle(reduction)
-    if aa.ndim == 1:
-        aa = np.vstack(aa)
-    for row, l in enumerate(targets):
-        item = targets[l]
+    pl_idx = 0
+    for _, norm_name in enumerate(targets):
+        item = D[norm_name]
+        if verbose:
+            print(pl_idx, norm_name)
         # the embedding
         if not reduction in item['dr']:
             q = 'Reduction "%s" was not found. Run `ad.dr.tsne(...)` or \
@@ -355,7 +354,6 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
             raise Exception('Graph has not been generated. Run \
 `adobo.clustering.generate(...)` first.')
         E = item['dr'][reduction][red_key]
-        pl_idx = 0 # plot index
         markerscale = 5
         if marker_size > 5: markerscale = 5/2
         # plot clusterings
@@ -372,15 +370,14 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                 idx = np.array(cl) == k
                 e = E[idx]
                 col = colors[i]
-                aa[row][pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
+                aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
                                         color=col)
-            aa[row][pl_idx].set_title(cl_algo, size=font_size)
-            aa[row][pl_idx].set_aspect('equal')
+            aa[pl_idx].set_title('%s %s' % (norm_name, cl_algo), size=font_size)
+            aa[pl_idx].set_aspect('equal')
             if pl_idx == 0:
-                aa[row][pl_idx].set_ylabel(l)
+                aa[pl_idx].set_ylabel(norm_name)
             if legend:
-                plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-                aa[row][pl_idx].legend(list(groups), loc='upper left',
+                aa[pl_idx].legend(list(groups), loc='upper left',
                                        markerscale=markerscale,
                                        bbox_to_anchor=(1, 1),
                                        prop={'size': font_size})
@@ -393,13 +390,13 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                     w = l[:, clID]
                     centers.append(np.average(E, axis=0, weights=w))
                 centers = np.array(centers)
-                aa[row][pl_idx].plot(centers[:, 0], centers[:, 1], 'bo', color='blue')
+                aa[pl_idx].plot(centers[:, 0], centers[:, 1], 'bo', color='blue')
                 adj = obj.norm_data['standard']['slingshot'][cl_algo]['adjacency']
                 for i in np.arange(0, max(groups)+1):
                     for j in np.arange(i, max(groups))+1:
                         if adj.iloc[i, j] or adj.iloc[j, i]:
                             xy = centers[(i,j),:]
-                            aa[row][pl_idx].plot(xy[:, 0], xy[:, 1], color='black')
+                            aa[pl_idx].plot(xy[:, 0], xy[:, 1], color='black')
             if edges and reduction == 'force_graph':
                 d = {}
                 for k, i in E.iterrows():
@@ -415,7 +412,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                 g.add_edges(ll)
                 A = g.get_edgelist()
                 GG = nx.Graph(A)
-                edge_collection = nx.draw_networkx_edges(GG, d, ax=aa[row][pl_idx],
+                edge_collection = nx.draw_networkx_edges(GG, d, ax=aa[pl_idx],
                                                          width=0.3, edge_color='grey',
                                                          alpha=0.5)
                 edge_collection.set_zorder(-2)
@@ -431,24 +428,24 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                     idx = np.array(m_d) == k
                     e = E[idx]
                     col = colors[i]
-                    aa[row][pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1],
+                    aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1],
                                             s=marker_size, color=col)
                 if legend:
                     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-                    aa[row][pl_idx].legend(list(groups), loc='upper left',
+                    aa[pl_idx].legend(list(groups), loc='upper left',
                                            markerscale=markerscale,
                                            bbox_to_anchor=(1, 1),
                                            prop={'size': font_size})
             else:
                 # If data are continuous
                 cmap = sns.cubehelix_palette(as_cmap=True)
-                po = aa[row][pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1],
+                po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1],
                                              s=marker_size, c=m_d.values,
                                              cmap=cmap)
-                cbar = fig.colorbar(po, ax=aa[row][pl_idx])
+                cbar = fig.colorbar(po, ax=aa[pl_idx])
                 #cbar.set_label('foobar')
-            aa[row][pl_idx].set_title(meta_var, size=font_size)
-            aa[row][pl_idx].set_aspect('equal')
+            aa[pl_idx].set_title(meta_var, size=font_size)
+            aa[pl_idx].set_aspect('equal')
             pl_idx += 1
         # plot genes
         for gene in genes:
@@ -457,13 +454,13 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
                 raise Exception(m)
             ge = item['data'].loc[gene, :]
             cmap = sns.cubehelix_palette(as_cmap=True)
-            po = aa[row][pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1],
+            po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1],
                                          s=marker_size, c=ge.values, cmap=cmap)
-            divider = make_axes_locatable(aa[row][pl_idx])
+            divider = make_axes_locatable(aa[pl_idx])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(po, cax=cax)
-            aa[row][pl_idx].set_title(gene, size=font_size)
-            aa[row][pl_idx].set_aspect('equal')
+            aa[pl_idx].set_title(gene, size=font_size)
+            aa[pl_idx].set_aspect('equal')
             pl_idx += 1
         # turn off unused axes
         #if (len(clustering) + len(metadata) + len(genes)) == 1:
