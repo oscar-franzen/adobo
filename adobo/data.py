@@ -73,8 +73,10 @@ class dataset:
         self.meta_cells['detected_genes'] = np.sum(raw_mat > 0, axis=0)
         # meta data for genes
         self.meta_genes = pd.DataFrame(index=raw_mat.index)
-        self.meta_genes['expressed'] = raw_mat.apply(lambda x: sum(x > 0), axis=1)
-        self.meta_genes['expressed_perc'] = raw_mat.apply(lambda x: sum(x > 0)/len(x), axis=1)
+        if verbose:
+            print('Generating cell summary statistics...')
+        self.meta_genes['expressed'] = [np.sum(x>0) for _, x in raw_mat.iterrows()]
+        self.meta_genes['expressed_perc'] = self.meta_genes.expressed/raw_mat.shape[1]*100
         self.meta_genes['status'] = ['OK']*raw_mat.shape[0]
         self.meta_genes['mitochondrial'] = [None]*raw_mat.shape[0]
         self.meta_genes['ERCC'] = [None]*raw_mat.shape[0]
