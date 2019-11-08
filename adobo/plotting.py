@@ -342,7 +342,7 @@ def cell_viz(obj, reduction='tsne', name=(), clustering=(), metadata=(),
     else:
         red_key = 'embedding'
     ttl = fig.suptitle(reduction)
-    if len(targets) == 2 and n_plots == 1:
+    if aa.ndim == 1:
         aa = np.vstack(aa)
     for row, l in enumerate(targets):
         item = targets[l]
