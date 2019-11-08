@@ -150,7 +150,10 @@ class dataset:
     def _print_dict(self, d, q, indent=0):
         """Recursive function for printing content of norm_data """
         for key, value in d.items():
-            s = '\t' * indent + str(key)
+            if key == 'hvg':
+                self.norm_data[]
+            else:
+                s = '\t' * indent + str(key)
             q.append(s)
             if isinstance(value, dict):
                 self._print_dict(value, q, indent+1)
