@@ -149,6 +149,8 @@ def brennecke(data_norm, log, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
     res = res[np.logical_not(res.pvalue.isna())]
     res['padj'] = p_adjust_bh(res.pvalue)
     res = res[res['padj'] < fdr]
+    if res.shape[0] == 0:
+        warning('No highly variable genes identified.')
     res = res.sort_values('pvalue')
     return np.array(res.head(ngenes)['gene'])
 
@@ -397,13 +399,15 @@ def mm(data_norm, log, fdr=0.1, ngenes=1000):
     res = res.sort_values('pvalue')
     return res.head(ngenes)['gene']
 
-def find_hvg(obj, method='seurat', name=None, ngenes=1000, fdr=0.1, verbose=False):
+def find_hvg(obj, method='seurat', normalization=None, ngenes=1000, fdr=0.1, verbose=False):
     """Finding highly variable genes
 
     Notes
     -----
     A wrapper function around the individual HVG functions, which can also be called
     directly.
+    
+    The method 'brennecke' should not be applied on 'fqn' normalized data.
 
     Parameters
     ----------
@@ -411,7 +415,7 @@ def find_hvg(obj, method='seurat', name=None, ngenes=1000, fdr=0.1, verbose=Fals
           A dataset class object.
     method : `{'seurat', 'brennecke', 'scran', 'chen2016', 'mm'}`
         Specifies the method to be used.
-    name : `str`
+    normalization : `str`
         The name of the normalization to operate on. If this is empty or None then the
         function will be applied on all normalizations available.
     ngenes : `int`
@@ -436,10 +440,11 @@ def find_hvg(obj, method='seurat', name=None, ngenes=1000, fdr=0.1, verbose=Fals
         raise Exception('Run normalization first before running find_hvg. See here: \
 https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
     targets = {}
-    if name is None or name == '':
+    norm = normalization
+    if norm is None or norm == '':
         targets = obj.norm_data
     else:
-        targets[name] = obj.norm_data[name]
+        targets[norm] = obj.norm_data[norm]
     for k in targets:
         item = targets[k]
         if verbose:

@@ -259,6 +259,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         obj.norm_data[k]['dr']['pca'] = {'comp' : comp,
                                          'contr' : contr,
                                          'method' : method}
+        if verbose:
+            print('saving %s components' % ncomp)
         obj.set_assay(sys._getframe().f_code.co_name, method)
 
 def tsne(obj, run_on_PCA=True, name=None, perplexity=30, n_iter=2000, seed=None,
