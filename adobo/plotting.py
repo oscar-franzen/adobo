@@ -58,6 +58,8 @@ def overall_scatter(obj, color='#E69F00', title=None, filename=None):
     ax.set_xlabel('total reads')
     if title:
         ax.set_title(title)
+    if np.any(reads>100000):
+        plt.xticks(rotation=90)
     plt.tight_layout()
     if filename:
         plt.savefig(filename, bbox_inches='tight')
