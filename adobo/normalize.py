@@ -411,8 +411,9 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
         # Remove low quality cells
         remove = obj.meta_cells.status[obj.meta_cells.status != 'OK']
         data = data.drop(remove.index, axis=1, errors='ignore')
-        # Remove uninformative genes (e.g. lowly expressed and ERCC)
-        remove = obj.meta_genes.status[obj.meta_genes.status != 'OK']
+        # Remove uninformative genes (e.g. lowly expressed)
+        remove = obj.meta_genes.status[np.logical_and(obj.meta_genes.status != 'OK',
+                                                      obj.meta_genes.ERCC == False)]
         data = data.drop(remove.index, axis=0, errors='ignore')
     if method == 'standard':
         norm = standard(data, scaling_factor)
