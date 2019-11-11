@@ -284,4 +284,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         obj.norm_data[l]['clusters'][clust_alg] = {'membership' : mem}
         obj.set_assay('clustering')
         if verbose:
-            print(dict(Counter(cl)))
+            cd = dict(Counter(cl))
+            print('cluster cells')
+            for i in sorted(cd):
+                print(i, cd[i])
