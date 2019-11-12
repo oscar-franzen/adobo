@@ -235,10 +235,9 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         plt.show()
 
 def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
-             genes=(), edges=False, trajectory=None, filename=None, marker_size=0.8,
-             font_size=8, colors='adobo', title=None, legend=True,
-             min_cluster_size=10, fig_size=(10, 10), margins = None,
-             verbose=False, **args):
+             genes=(), edges=False, cell_types=False, trajectory=None, filename=None,
+             marker_size=0.8, font_size=8, colors='adobo', title=None, legend=True,
+             min_cluster_size=10, fig_size=(10, 10), margins=None, verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -258,6 +257,9 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         Specifies genes to plot.
     edges : `bool`
         Draw edges (only applicable if reduction='force_graph'). Default: False
+    cell_types : `bool`
+        Print cell type predictions, applicable if :py:func:`adobo.bio.cell_type_predict`
+        has been run. Default: False
     trajectory : `str`, optional
        The trajectory to plot. For example 'slingshot'. Default: None
     filename : `str`, optional
@@ -382,7 +384,17 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
             if pl_idx == 0:
                 aa[pl_idx].set_ylabel(norm_name)
             if legend:
-                aa[pl_idx].legend(list(groups), loc='upper left',
+                lab = list(groups)
+                if cell_types:
+                    try:
+                        d = obj.norm_data
+                        ctp = d[norm_name]['clusters'][cl_algo]['cell_type_prediction']
+                        z = zip(groups, ctp[['cell type']].values.flatten())
+                        lab = [str(q[0])+' '+q[1] for q in z]
+                    except KeyError:
+                        print('cell_types is set to True, but adobo.bio.cell_type_predict \
+    has not been called yet.')
+                aa[pl_idx].legend(lab, loc='upper left',
                                        markerscale=markerscale,
                                        bbox_to_anchor=(1, 1),
                                        prop={'size': font_size})

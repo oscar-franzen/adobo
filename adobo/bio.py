@@ -158,8 +158,12 @@ def cell_cycle_predict(obj, clf, tr_features, name=()):
         srs = pd.Series(pred, dtype='category', index=cols)
         obj.add_meta_data(axis='cells', key='cell_cycle', data=srs, type_='cat')
 
-def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=False):
-    """Predicts cell types
+def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=False):
+    """Predicts cell types using the expression of marker genes
+    
+    Notes
+    -----
+    Gene identifiers should be in symbol form, not ensembl identifiers, etc.
 
     Parameters
     ----------
@@ -258,7 +262,7 @@ def predict_cell_type(obj, name=(), clustering=(), min_cluster_size=10, verbose=
                 ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
                 median_expr = ret
                 median_expr.index = median_expr.index.str.upper()
-                if np.any(median_expr.index.str.match('^(.+)_.+')):
+                if median_expr.shape[0]==np.sum(median_expr.index.str.match('^(.+)_.+')):
                     input_symbols = median_expr.index.str.extract('^(.+)_.+')[0]
                     input_symbols = input_symbols.str.upper()
                     median_expr.index = input_symbols
