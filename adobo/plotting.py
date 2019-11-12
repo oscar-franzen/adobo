@@ -385,19 +385,29 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 aa[pl_idx].set_ylabel(norm_name)
             if legend:
                 lab = list(groups)
-                if cell_types:
-                    try:
-                        d = obj.norm_data
-                        ctp = d[norm_name]['clusters'][cl_algo]['cell_type_prediction']
-                        z = zip(groups, ctp[['cell type']].values.flatten())
-                        lab = [str(q[0])+' '+q[1] for q in z]
-                    except KeyError:
-                        print('cell_types is set to True, but adobo.bio.cell_type_predict \
-    has not been called yet.')
                 aa[pl_idx].legend(lab, loc='upper left',
                                        markerscale=markerscale,
                                        bbox_to_anchor=(1, 1),
                                        prop={'size': font_size})
+                if cell_types:
+                    try:
+                        d = obj.norm_data
+                        ctp = d[norm_name]['clusters'][cl_algo]['cell_type_prediction']
+                        cur_hands, cur_labs = aa[pl_idx].get_legend_handles_labels()
+                        cl = ctp[['cell type']].values.flatten()
+                        z = zip(groups, ctp[['cell type']].values.flatten())
+                        lab = [str(q[0])+' '+q[1] for q in z]
+                        z = zip(cur_hands, cur_labs, lab, cl)
+                        sl = [tup for tup in sorted(z, key=lambda x: x[3])]
+                        aa[pl_idx].legend(np.array(sl)[:, 0],
+                                          np.array(sl)[:, 2],
+                                          loc='upper left',
+                                          markerscale=markerscale,
+                                          bbox_to_anchor=(1, 1),
+                                          prop={'size': font_size})
+                    except KeyError:
+                        print('cell_types is set to True, but adobo.bio.cell_type_predict \
+has not been called yet.')
             if trajectory == 'slingshot':
                 # cluster weights matrix
                 l = np.array([(cl == clID).astype(int) for clID in groups])
