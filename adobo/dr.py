@@ -410,13 +410,15 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         if not run_on_PCA:
             X = item['data']
         else:
-            X = item['dr']['pca']['comp']
+            try:
+                X = item['dr']['pca']['comp']
+            except KeyError:
+                raise Exception('Run `adobo.dr.pca(...)` first.')
         if verbose:
             print('Running UMAP on the %s normalization' % k)
         reducer = um.UMAP(random_state=seed, verbose=verbose, n_neighbors=n_neighbors,
-                          metric=distance, n_epochs=n_epochs,
-                          learning_rate=learning_rate, min_dist=min_dist, spread=spread,
-                          **args)
+                          metric=distance, n_epochs=n_epochs, learning_rate=learning_rate,
+                          min_dist=min_dist, spread=spread, **args)
         emb = reducer.fit_transform(X)
         emb = pd.DataFrame(emb, index=X.index)
         obj.norm_data[k]['dr']['umap'] = {'embedding' : emb }
