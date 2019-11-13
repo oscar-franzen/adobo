@@ -446,5 +446,6 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
                            'norm_ercc' : ne,
                            'dr' : {},
                            'clusters' : {},
-                           'slingshot' : {}}
+                           'slingshot' : {},
+                           'de' : {}}
     obj.set_assay(sys._getframe().f_code.co_name, norm_method)

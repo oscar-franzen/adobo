@@ -23,6 +23,7 @@ from . import dr
 from . import bio
 from . import clustering
 from . import traj # ectory
+from . import de
 
 debug = 0
 

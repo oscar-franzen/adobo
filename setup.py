@@ -28,7 +28,8 @@ setup(
         'psutil >= 5.4.2',
         'datatable >= 0.9.0',
         'fa2', # https://github.com/bhargavchippada/forceatlas2
-        'networkx >= 2.3'
+        'networkx >= 2.3',
+        'patsy >= 0.5.1'
     ],
     ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
                            extra_compile_args=['-fPIC','-lm'])]
