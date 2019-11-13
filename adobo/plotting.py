@@ -237,7 +237,8 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
 def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
              genes=(), edges=False, cell_types=False, trajectory=None, filename=None,
              marker_size=0.8, font_size=8, colors='adobo', title=None, legend=True,
-             min_cluster_size=10, fig_size=(10, 10), margins=None, verbose=False, **args):
+             legend_marker_scale=10, min_cluster_size=10, fig_size=(10, 10),
+             margins=None, verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -278,6 +279,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         Title of the plot. By default the title is set to the reduction technique.
     legend : `bool`
         Add legend or not. Default: True
+    legend_marker_scale : `int`
+        Scale the markers in the legend. Default: 10
     min_cluster_size : `int`
         Can be used to prevent clusters below a certain number of cells to be
         plotted. Default: 10
@@ -361,8 +364,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
             raise Exception('Graph has not been generated. Run \
 `adobo.clustering.generate(...)` first.')
         E = item['dr'][reduction][red_key]
-        markerscale = 5
-        if marker_size > 5: markerscale = 5/2
+        markerscale = legend_marker_scale
         # plot clusterings
         for cl_algo in clustering:
             if not cl_algo in item['clusters']:
