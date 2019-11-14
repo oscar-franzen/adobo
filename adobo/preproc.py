@@ -352,9 +352,10 @@ def impute(obj, filtered=True, res=0.5, drop_thre=0.5, nworkers='auto', verbose=
 
     References
     ----------
-    Li & Li (2018) An accurate and robust imputation method scImpute for single-cell
-        RNA-seq data https://www.nature.com/articles/s41467-018-03405-7
-        https://github.com/Vivianstats/scImpute
+    .. [1] Li & Li (2018)
+           An accurate and robust imputation method scImpute for single-cell
+           RNA-seq data https://www.nature.com/articles/s41467-018-03405-7
+    .. [2] https://github.com/Vivianstats/scImpute
 
     Returns
     -------

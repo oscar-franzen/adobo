@@ -43,9 +43,9 @@ def cell_cycle_train(verbose=False):
     
     References
     ----------
-    Buettner et al. (2015) Computational analysis of cell-to-cell heterogeneity in
-        single-cell RNA-sequencing data reveals hidden subpopulations of cells. Nat
-        Biotech.
+    .. [1] Buettner et al. (2015) Computational analysis of cell-to-cell heterogeneity in
+           single-cell RNA-sequencing data reveals hidden subpopulations of cells. Nat
+           Biotech.
 
     Returns
     -------

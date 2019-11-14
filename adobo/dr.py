@@ -25,10 +25,6 @@ def force_graph(obj, name=(), iterations=1000, edgeWeightInfluence=1.0,
                 jitterTolerance=1.0, barnesHutOptimize=True, scalingRatio=2.0,
                 gravity=1.0, strongGravityMode=False, verbose=False):
     """Generates a force-directed graph
-    
-    References
-    ----------
-    https://en.wikipedia.org/wiki/Force-directed_graph_drawing
 
     Parameters
     ----------
@@ -53,6 +49,10 @@ def force_graph(obj, name=(), iterations=1000, edgeWeightInfluence=1.0,
         A stronger gravity view. Default: False
     verbose : `bool`
         Be verbose or not.
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Force-directed_graph_drawing
 
     Returns
     -------
@@ -93,13 +93,13 @@ def force_graph(obj, name=(), iterations=1000, edgeWeightInfluence=1.0,
 
 def irlb(data_norm, ncomp=75, seed=None):
     """Truncated SVD by implicitly restarted Lanczos bidiagonalization
-    
+
     Notes
     -----
     The augmented implicitly restarted Lanczos bidiagonalization algorithm (IRLBA) finds
     a few approximate largest singular values and corresponding singular vectors using a
     method of Baglama and Reichel.
-    
+
     Parameters
     ----------
     data_norm : :py:class:`pandas.DataFrame`
@@ -108,13 +108,13 @@ def irlb(data_norm, ncomp=75, seed=None):
         Number of components to return. Default: 75
     seed : `int`
         For reproducibility. Default: None
-    
+
     References
     ----------
-    Baglama et al (2005) Augmented Implicitly Restarted Lanczos Bidiagonalization Methods
-        SIAM Journal on Scientific Computing
-    https://github.com/bwlewis/irlbpy
-    
+    .. [1] Baglama et al (2005) Augmented Implicitly Restarted Lanczos Bidiagonalization
+           Methods SIAM Journal on Scientific Computing
+    .. [2] https://github.com/bwlewis/irlbpy
+
     Returns
     -------
     `pd.DataFrame`
@@ -133,7 +133,7 @@ def irlb(data_norm, ncomp=75, seed=None):
 
 def svd(data_norm, ncomp=75, only_sdev=False):
     """Principal component analysis via singular value decomposition
-    
+
     Parameters
     ----------
     data_norm : :class:`pandas.DataFrame`
@@ -144,11 +144,11 @@ def svd(data_norm, ncomp=75, only_sdev=False):
         Number of components to return. Default: 75
     only_sdev : `bool`
         Only return the standard deviation of the components. Default: False
-    
+
     References
     ----------
-    (SE) https://tinyurl.com/yyt6df5x
-    
+    .. [1] https://tinyurl.com/yyt6df5x
+
     Returns
     -------
     `pd.DataFrame`
@@ -169,19 +169,18 @@ def svd(data_norm, ncomp=75, only_sdev=False):
     if only_sdev:
         sdev = s/np.sqrt(nfeatures-1)
         return sdev
-    else:
-        v = s[2].transpose()
-        d = s[1]
-        retx = inp.dot(v)
-        retx = retx.iloc[:, 0:ncomp]
-        comp = retx
-        contr = pd.DataFrame(np.abs(v[:, 0:ncomp]), index=inp.columns)
-        return comp, contr
+    v = s[2].transpose()
+    d = s[1]
+    retx = inp.dot(v)
+    retx = retx.iloc[:, 0:ncomp]
+    comp = retx
+    contr = pd.DataFrame(np.abs(v[:, 0:ncomp]), index=inp.columns)
+    return comp, contr
 
 def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
         verbose=False, seed=None):
     """Principal Component Analysis
-    
+
     Notes
     -----
     A wrapper function around the individual normalization functions, which can also be
@@ -211,7 +210,7 @@ def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
 
     References
     ----------
-    https://en.wikipedia.org/wiki/Principal_component_analysis
+    .. [1] https://en.wikipedia.org/wiki/Principal_component_analysis
 
     Returns
     -------
@@ -227,7 +226,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         targets = obj.norm_data
     else:
         targets[name] = obj.norm_data[name]
-    
+
     for k in targets:
         item = targets[k]
         data = item['data']
@@ -240,10 +239,10 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             print('Using all genes')
         if scale:
             d_scaled = sklearn_scale(
-                            data.transpose(),  # cells as rows and genes as columns
-                            axis=0,            # over genes, i.e. features (columns)
-                            with_mean=True,    # subtracting the column means
-                            with_std=True)     # scale the data to unit variance
+                                data.transpose(),  # cells as rows and genes as columns
+                                axis=0,            # over genes, i.e. features (columns)
+                                with_mean=True,    # subtracting the column means
+                                with_std=True)     # scale the data to unit variance
             d_scaled = pd.DataFrame(d_scaled.transpose(), index=data.index)
         if verbose:
             v = (method, k, data.shape[0], data.shape[1])
@@ -267,7 +266,7 @@ def tsne(obj, run_on_PCA=True, name=None, perplexity=30, n_iter=2000, seed=None,
          verbose=False, **args):
     """
     Projects data to a two dimensional space using the tSNE algorithm.
-    
+
     Notes
     -----
     It is recommended to perform this function on data in PCA space. This function calls
@@ -297,9 +296,9 @@ def tsne(obj, run_on_PCA=True, name=None, perplexity=30, n_iter=2000, seed=None,
 
     References
     ----------
-    van der Maaten, L.J.P.; Hinton, G.E. Visualizing High-Dimensional Data
-        Using t-SNE. Journal of Machine Learning Research 9:2579-2605, 2008.
-    https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html
+    .. [1] van der Maaten, L.J.P.; Hinton, G.E. Visualizing High-Dimensional Data
+           Using t-SNE. Journal of Machine Learning Research 9:2579-2605, 2008.
+    .. [2] https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html
 
     Returns
     -------
@@ -345,7 +344,7 @@ def umap(obj, run_on_PCA=True, name=None, n_neighbors=15, distance='euclidean',
     """
     Projects data to a low-dimensional space using the Uniform Manifold Approximation
     and Projection (UMAP) algorithm
-    
+
     Notes
     -----
     UMAP is a non-linear data reduction algorithm.
@@ -386,10 +385,10 @@ def umap(obj, run_on_PCA=True, name=None, n_neighbors=15, distance='euclidean',
 
     References
     ----------
-    McInnes L, Healy J, Melville J (2018) UMAP: Uniform Manifold Approximation and
-        Projection for Dimension Reduction, https://arxiv.org/abs/1802.03426
-    https://github.com/lmcinnes/umap
-    https://umap-learn.readthedocs.io/en/latest/
+    .. [1] McInnes L, Healy J, Melville J (2018) UMAP: Uniform Manifold Approximation and
+           Projection for Dimension Reduction, https://arxiv.org/abs/1802.03426
+    .. [2] https://github.com/lmcinnes/umap
+    .. [3] https://umap-learn.readthedocs.io/en/latest/
 
     Returns
     -------
@@ -421,5 +420,5 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
                           min_dist=min_dist, spread=spread, **args)
         emb = reducer.fit_transform(X)
         emb = pd.DataFrame(emb, index=X.index)
-        obj.norm_data[k]['dr']['umap'] = {'embedding' : emb }
+        obj.norm_data[k]['dr']['umap'] = {'embedding' : emb}
     obj.set_assay(sys._getframe().f_code.co_name)

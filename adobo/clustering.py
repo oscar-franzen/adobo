@@ -69,7 +69,7 @@ def snn(nn_idx, k=10, prune_snn=0.067, verbose=False):
     
     References
     ----------
-    http://mlwiki.org/index.php/SNN_Clustering
+    .. [1] http://mlwiki.org/index.php/SNN_Clustering
         
     Returns
     -------
@@ -128,8 +128,8 @@ def leiden(snn_graph, res=0.8, seed=42):
     
     References
     ----------
-    [0] https://github.com/vtraag/leidenalg
-    [1] Traag et al. (2018) https://arxiv.org/abs/1810.08473
+    .. [1] https://github.com/vtraag/leidenalg
+    .. [2] Traag et al. (2018) https://arxiv.org/abs/1810.08473
     
     Returns
     -------
@@ -159,15 +159,16 @@ def igraph(snn_graph, clust_alg):
     ----------
     snn_graph : :py:class:`pandas.DataFrame`
         Source and target nodes.
-    clust_alg : `{'walktrap', 'spinglass', 'multilevel', 'infomap', 'label_prop', 'leading_eigenvector'}`
+    clust_alg : `{'walktrap', 'spinglass', 'multilevel', 'infomap', 'label_prop',
+                  'leading_eigenvector'}`
         Specifies the community detection algorithm.
     
     References
     ----------
-    Pons & Latapy (2006) Computing Communities in Large NetworksUsing Random Walks,
-        Journal of Graph Algorithms and Applications
-    Reichardt & Bornholdt (2006) Statistical mechanics of community detection,
-        Physical Review E
+    .. [1] Pons & Latapy (2006) Computing Communities in Large NetworksUsing Random Walks,
+           Journal of Graph Algorithms and Applications
+    .. [2] Reichardt & Bornholdt (2006) Statistical mechanics of community detection,
+           Physical Review E
     
     Returns
     -------
@@ -247,8 +248,8 @@ def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg=
     
     References
     ----------
-    Yang et al. (2016) A Comparative Analysis of Community Detection Algorithms on
-        Artificial Networks. Scientific Reports
+    .. [1] Yang et al. (2016) A Comparative Analysis of Community Detection Algorithms on
+           Artificial Networks. Scientific Reports
     
     Returns
     -------

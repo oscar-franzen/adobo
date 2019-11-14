@@ -38,8 +38,8 @@ def combine_tests(obj, normalization=(), clustering=(), method='simes',
 
     References
     ----------
-    Simes, R. J. (1986). An improved Bonferroni procedure for multiple tests of
-        significance. Biometrika, 73(3):751-754. 
+    .. [1] Simes, R. J. (1986). An improved Bonferroni procedure for multiple tests of
+           significance. Biometrika, 73(3):751-754. 
 
     Returns
     -------
@@ -125,8 +125,8 @@ def linear_model(obj, normalization=(), clustering=(), direction='up',
 
     References
     ----------
-    https://www.bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf
-    https://newonlinecourses.science.psu.edu/stat555/node/12/
+    .. [1] https://www.bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf
+    .. [2] https://newonlinecourses.science.psu.edu/stat555/node/12/
 
     Returns
     -------

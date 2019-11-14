@@ -49,7 +49,7 @@ def seurat(data, ngenes=1000, num_bins=20):
 
     References
     ----------
-    https://cran.r-project.org/web/packages/Seurat/index.html
+    .. [1] https://cran.r-project.org/web/packages/Seurat/index.html
 
     Returns
     -------
@@ -99,7 +99,7 @@ def brennecke(data_norm, log, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
 
     References
     ----------
-    Brennecke et al. (2013) Nature Methods https://doi.org/10.1038/nmeth.2645
+    .. [1] Brennecke et al. (2013) Nature Methods https://doi.org/10.1038/nmeth.2645
 
     Returns
     -------
@@ -181,9 +181,9 @@ def scran(data_norm, ercc, log, ngenes=1000):
 
     References
     ----------
-    Lun ATL, McCarthy DJ, Marioni JC (2016). “A step-by-step workflow for low-level
-    analysis of single-cell RNA-seq data with Bioconductor.” F1000Research,
-    doi.org/10.12688/f1000research.9501.2
+    .. [1] Lun ATL, McCarthy DJ, Marioni JC (2016). “A step-by-step workflow for low-level
+           analysis of single-cell RNA-seq data with Bioconductor.” F1000Research,
+           https://doi.org/10.12688/f1000research.9501.2
 
     Returns
     -------
@@ -242,8 +242,8 @@ def chen2016(data_norm, log, fdr=0.1, ngenes=1000):
 
     References
     ----------
-    https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-016-2897-6
-    https://github.com/hillas/scVEGs/blob/master/scVEGs.r
+    .. [1] https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-016-2897-6
+    .. [2] https://github.com/hillas/scVEGs/blob/master/scVEGs.r
 
     Returns
     -------
@@ -344,8 +344,8 @@ def mm(data_norm, log, fdr=0.1, ngenes=1000):
 
     References
     ----------
-    https://doi.org/10.1093/bioinformatics/bty1044
-    https://github.com/tallulandrews/M3Drop
+    .. [1] https://doi.org/10.1093/bioinformatics/bty1044
+    .. [2] https://github.com/tallulandrews/M3Drop
 
     Returns
     -------
@@ -430,8 +430,8 @@ def find_hvg(obj, method='seurat', normalization=None, ngenes=1000, fdr=0.1,
 
     References
     ----------
-    Yip et al. (2018) Briefings in Bioinformatics
-    https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bby011/4898116
+    .. [1] Yip et al. (2018) Briefings in Bioinformatics
+           https://academic.oup.com/bib/advance-article/doi/10.1093/bib/bby011/4898116
 
     Returns
     -------

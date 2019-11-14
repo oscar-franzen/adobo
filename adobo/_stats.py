@@ -24,8 +24,8 @@ def bw_nrd(x):
     
     References
     ----------
-    Scott, D. W. (1992) _Multivariate Density Estimation: Theory,
-    Practice, and Visualization._ New York: Wiley.
+    .. [1] Scott, D. W. (1992) _Multivariate Density Estimation: Theory,
+           Practice, and Visualization._ New York: Wiley.
     
     Returns
     -------
@@ -51,7 +51,7 @@ def row_geometric_mean(mat, eps=1):
     
     References
     ----------
-    https://en.wikipedia.org/wiki/Geometric_mean
+    .. [1] https://en.wikipedia.org/wiki/Geometric_mean
     
     Returns
     -------

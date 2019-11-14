@@ -37,9 +37,9 @@ def slingshot(obj, name=(), min_cluster_size=10, verbose=False):
     
     References
     ----------
-    Street et al. (2018) BMC Genomics. Slingshot: cell lineage and pseudotime
-        inference for single-cell transcriptomics
-    https://bioconductor.org/packages/release/bioc/html/slingshot.html
+    .. [1] Street et al. (2018) BMC Genomics. Slingshot: cell lineage and pseudotime
+           inference for single-cell transcriptomics
+    .. [2] https://bioconductor.org/packages/release/bioc/html/slingshot.html
 
     Parameters
     ----------
