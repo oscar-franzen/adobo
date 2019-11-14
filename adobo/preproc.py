@@ -8,6 +8,7 @@ Summary
 -------
 Functions for pre-processing scRNA-seq data.
 """
+import os
 import sys
 import glob
 import ctypes
@@ -25,6 +26,7 @@ from sklearn.linear_model import ElasticNet
 from scipy.optimize import root
 from scipy.special import digamma
 
+import adobo.IO
 from .clustering import knn, snn, leiden
 from .hvg import seurat
 from .dr import irlb
@@ -606,7 +608,7 @@ physical cores on this machine (n=%s).' % ncores)
 "imp_count_data" attribute.' % t)
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def symbol_flip(obj):
+def symbol_switch(obj, species):
     """Changes gene symbol format
 
     Notes
@@ -621,9 +623,22 @@ def symbol_flip(obj):
     species : '{'human', 'mouse'}'
         Species. Default: 'human'
 
-
     Returns
     -------
     Modifies the passed object.
     """
-    pass
+    if not species in ('human', 'mouse'):
+        raise Exception('species can be human or mouse.')
+    v = (os.path.dirname(adobo.IO.__file__), species)
+    gs = pd.read_csv('%s/data/%s.gencode_v32.genes.txt' % v, sep='\t', header=None)
+    gs.index = gs.loc[:, 0]
+    gs = gs[gs.index.isin(obj.count_data.index)]
+    
+    missing = obj.count_data.index[np.logical_not(obj.count_data.index.isin(gs.index))]
+    gs = pd.concat([gs, pd.DataFrame({ 0 : missing, 1: ['NA']*len(missing) })])
+    gs.index = gs.iloc[:, 0]
+    gs = gs.reindex(obj.count_data.index)
+    
+    X = obj.count_data
+    X.index = (gs[[1]].values+'_'+gs[[0]].values).flatten()
+    obj.count_data = X
