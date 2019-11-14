@@ -44,6 +44,12 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     ----------
     https://cran.r-project.org/web/packages/sctransform/index.html
     https://www.biorxiv.org/content/10.1101/576827v1
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='vsn')
 
     Returns
     -------
@@ -172,6 +178,12 @@ def clr(data, axis='genes'):
     References
     ----------
     Hafemeister et al. (2019) https://www.biorxiv.org/content/10.1101/576827v1
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='clr')
 
     Returns
     -------
@@ -204,6 +216,12 @@ def standard(data, scaling_factor=10000):
     ----------
     Evans et al. (2018) Briefings in Bioinformatics
     https://academic.oup.com/bib/article/19/5/776/3056951
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='standard')
 
     Returns
     -------
@@ -294,6 +312,12 @@ def fqn(data):
         https://academic.oup.com/bioinformatics/article/19/2/185/372664
     [1] Cole et al. (2019) Cell Systems
         https://www.biorxiv.org/content/10.1101/235382v2
+        
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='fqn')
 
     Returns
     -------
@@ -386,13 +410,11 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
     [0] Cole et al. (2019) Cell Systems
         https://www.biorxiv.org/content/10.1101/235382v2
 
-    See Also
-    --------
-    standard
-    rpkm
-    fqn
-    clr
-    vsn
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp)
 
     Returns
     -------

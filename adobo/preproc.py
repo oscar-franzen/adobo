@@ -52,7 +52,7 @@ def reset_filters(obj):
 
 def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=False):
     """Removes cells with too few reads and genes with very low expression
-    
+
     Notes
     -----
     The cells are filtered first and then genes.
@@ -71,6 +71,13 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
         the gene. Set to None to ignore this option. Default: 0.001
     verbose : `bool`, optional
         Be verbose or not. Default: False
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.preproc.simple_filter(exp, minreads=1000, maxreads=15000, minexpgenes=0.01, \
+verbose=True)
 
     Returns
     -------
@@ -351,7 +358,7 @@ def impute(obj, filtered=True, res=0.5, drop_thre=0.5, nworkers='auto', verbose=
 
     Returns
     -------
-        Modifies the passed object.
+    Modifies the passed object.
     """
     ncores = psutil.cpu_count(logical=False)
     if type(nworkers) == str:
@@ -597,3 +604,25 @@ physical cores on this machine (n=%s).' % ncores)
         print('imputation finished in %.2f minutes. imputed data are present in the \
 "imp_count_data" attribute.' % t)
     obj.set_assay(sys._getframe().f_code.co_name)
+
+def symbol_flip(obj):
+    """Changes gene symbol format
+
+    Notes
+    -----
+    If gene symbols are in the format ENS[0-9]+, this function changes gene identifiers
+    to symbol_ENS[0-9]+.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    species : '{'human', 'mouse'}'
+        Species. Default: 'human'
+
+
+    Returns
+    -------
+    Modifies the passed object.
+    """
+    pass
