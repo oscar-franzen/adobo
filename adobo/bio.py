@@ -253,6 +253,8 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
         item = targets[k]
         X = item['data']
         clusters = item['clusters']
+        if len(clusters) == 0:
+            raise Exception('No clusters found, run adobo.clustering.generate(...) first.')
         for algo in clusters:
             if len(clustering) == 0 or algo in clustering:
                 cl = clusters[algo]['membership']
@@ -262,7 +264,7 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
                 ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
                 median_expr = ret
                 median_expr.index = median_expr.index.str.upper()
-                if median_expr.shape[0]==np.sum(median_expr.index.str.match('^(.+)_.+')):
+                if median_expr.shape[0] == np.sum(median_expr.index.str.match('^(.+)_.+')):
                     input_symbols = median_expr.index.str.extract('^(.+)_.+')[0]
                     input_symbols = input_symbols.str.upper()
                     median_expr.index = input_symbols
@@ -283,6 +285,9 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
                     _df = _df[cols[-1:]+cols[:-1]]
                     bucket.append(_df)
                 final_tbl = pd.concat(bucket)
+                if final_tbl.shape[0] == 0:
+                    raise Exception('Final table is empty. Check gene symbols of input \
+data.')
                 padj = p_adjust_bh(final_tbl['pvalue'])
                 final_tbl['padj_BH'] = padj
                 final_tbl.columns = ['cluster',
