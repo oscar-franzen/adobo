@@ -327,7 +327,7 @@ def fqn(data):
 
 def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_func=np.log2,
          small_const=1, remove_low_qual=True, gene_lengths=None, scaling_factor=10000,
-         axis='genes'):
+         axis='genes', retx=False):
     r"""Normalizes gene expression data
 
     Notes
@@ -378,6 +378,8 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
     axis : {'genes', 'cells'}
         Only applicable when `method="clr"`, defines the axis to normalize across.
         Default: 'genes'
+    retx : `bool`
+        Return the normalized data as well. Default: False
 
     References
     ----------
@@ -448,4 +450,6 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
                            'clusters' : {},
                            'slingshot' : {},
                            'de' : {}}
+    if retx:
+        return norm
     obj.set_assay(sys._getframe().f_code.co_name, norm_method)

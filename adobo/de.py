@@ -17,7 +17,69 @@ import numpy as np
 
 from ._stats import p_adjust_bh
 
+def combine_tests(obj, normalization=(), clustering=(), method='simes',
+                  min_cluster_size=10):
+    """Uses Simes' method for combining p-values
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A dataset class object.
+    normalization : `tuple`
+        A tuple of normalization to use. If it has the length zero, then all available
+        normalizations will be used.
+    clustering : `tuple`, optional
+        Specifies the clustering outcomes to work on.
+    method : `{'simes'}`
+        Method for combining p-values. Only Simes' is implemented.
+    min_cluster_size : `int`
+        Minimum number of cells per cluster (clusters smaller than this are ignored).
+        Default: 10
+
+    References
+    ----------
+    Simes, R. J. (1986). An improved Bonferroni procedure for multiple tests of
+        significance. Biometrika, 73(3):751-754. 
+
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    if not method in ('simes',):
+        raise Exception('Unsupported method for combining p-values. Only Simes method \
+is available at the moment.')
+    targets = {}
+    if len(normalization) == 0 or normalization == '':
+        targets = obj.norm_data
+    else:
+        targets[name] = obj.norm_data[name]
+    for i, k in enumerate(targets):
+        item = targets[k]
+        clusters = item['clusters']
+        for algo in clusters:
+            if len(clustering) == 0 or algo in clustering:
+                try:
+                    pval_mat = obj.norm_data[k]['de'][algo]['mat_format']
+                except KeyError:
+                    raise Exception('P-values have not been generated yet. Please run \
+adobo.de.linear_model(...) first.')
+                cl = clusters[algo]['membership']
+                # remove clusters with too few cells
+                q = pd.Series(cl).value_counts()
+                res = []
+                for cc in q[q >= min_cluster_size].index:
+                    idx = pval_mat.columns.str.match('^%s_vs'%cc)
+                    subset_mat = pval_mat.iloc[:,idx]
+                    r = subset_mat.rank(axis=1)
+                    T = (subset_mat.shape[1]*subset_mat/r).min(axis=1).sort_values()
+                    T[T>1] = 1
+                    df = pd.DataFrame({'cluster' : [cc]*len(T), 'gene' : T.index, 'pvalue.Simes' : T})
+                    res.append(df)
+                res = pd.concat(res)
+                obj.norm_data[k]['de'][algo]['combined'] = res
+
 def _choose_leftright_pvalues(left, right, direction):
+    """Internal helper function."""
     if direction == 'up':
         pv = right
     elif direction == 'down':
@@ -26,7 +88,7 @@ def _choose_leftright_pvalues(left, right, direction):
         pv = np.minimum(left,right)*2
     return pv
 
-def linear_model(obj, normalization=(), clustering=(), direction='any',
+def linear_model(obj, normalization=(), clustering=(), direction='up',
                  min_cluster_size=10, verbose=False):
     """Performs differential expression analysis between clusters using a linear model
     and t-statistics
@@ -51,9 +113,10 @@ def linear_model(obj, normalization=(), clustering=(), direction='any',
         normalizations will be used.
     clustering : `tuple`, optional
         Specifies the clustering outcomes to work on.
-    direction : `{'any', 'up', 'down'}`
+    direction : `{'up', 'down', 'any'}`
         Can be 'any' for any direction 'up' for up-regulated and 'down' for
-        down-regulated. Default: any
+        down-regulated. Normally we want to find genes being upregulated in cluster A
+        compared with cluster B. Default: up
     min_cluster_size : `int`
         Minimum number of cells per cluster (clusters smaller than this are ignored).
         Default: 10
@@ -185,4 +248,4 @@ normalization' % k)
                            'logFC' : pd.concat(out_lfc, ignore_index=True),
                            'mean.A' : pd.concat(out_mge_g1, ignore_index=True),
                            'mean.B' : pd.concat(out_mge_g2, ignore_index=True)})
-                obj.norm_data[k]['de'][algo] = ll
+                obj.norm_data[k]['de'][algo] = {'long_format' : ll, 'mat_format' : out_merged}

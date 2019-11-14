@@ -67,8 +67,8 @@ def overall_scatter(obj, color='#E69F00', title=None, filename=None):
         plt.show()
     plt.close()
 
-def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
-            title=None, filename=None):
+def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
+            color='#E69F00', title=None, filename=None):
     """Generates a plot of read counts per cell or expressed genes per cell
 
     Parameters
@@ -82,6 +82,10 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
         Type of plot to generate. Default: 'histogram'
     bin_size : `int`
         If `how` is a histogram, then this is the bin size. Default: 100
+    cut_off : `int`
+        Set a cut off for genes or reads by drawing a red line and print the number
+        of cells over and under the cut off. Only valid if how='histogram'.
+        Default: None
     color : `str`
         Color of the plot. Default: '#E69F00'
     title : `str`
@@ -105,7 +109,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
         ylab = 'raw read counts'
         xlab = 'cells'
     elif what == 'genes':
-        summary = [np.sum(r[1] > 0) for r in count_data.transpose().iterrows()]
+        summary = np.array([np.sum(r[1] > 0) for r in count_data.transpose().iterrows()])
         ylab = 'detected genes'
         xlab = 'cells'
     colors = [color]*(len(summary))
@@ -128,6 +132,11 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
         ax.set_xlabel('cells')
         ylab = 'frequency'
         xlab = '%s bin' % what
+        if cut_off:
+            ax.axvline(linewidth=1, color='r', x=cut_off)
+            above = np.sum(summary>cut_off)
+            below = np.sum(summary<=cut_off)
+            ax.text(x=cut_off, y=1, s='%s above\n%s below' % (above, below))
     elif how == 'violin':
         parts = ax.violinplot(summary, showmedians=False)
         for pc in parts['bodies']:
@@ -145,6 +154,8 @@ def overall(obj, what='reads', how='histogram', bin_size=100, color='#E69F00',
     elif not title and what == 'genes':
         title = 'total number of expressed genes per cell'
     ax.set_title(title)
+    if np.any(summary>100000):
+        plt.xticks(rotation=90)
     plt.tight_layout()
     if filename:
         plt.savefig(filename, bbox_inches='tight')

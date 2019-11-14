@@ -399,7 +399,8 @@ def mm(data_norm, log, fdr=0.1, ngenes=1000):
     res = res.sort_values('pvalue')
     return res.head(ngenes)['gene']
 
-def find_hvg(obj, method='seurat', normalization=None, ngenes=1000, fdr=0.1, verbose=False):
+def find_hvg(obj, method='seurat', normalization=None, ngenes=1000, fdr=0.1,
+             verbose=False):
     """Finding highly variable genes
 
     Notes
