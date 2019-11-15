@@ -391,7 +391,9 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 e = E[idx]
                 col = colors[i]
                 aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
-                                        color=col)
+                                        color=col, label=k) # don't remove label, it is
+                                                            # needed for sorting items
+                                                            # in the legend
             aa[pl_idx].set_title('%s %s' % (norm_name, cl_algo), size=font_size)
             aa[pl_idx].set_aspect('equal')
             if pl_idx == 0:
@@ -407,10 +409,10 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                         d = obj.norm_data
                         ctp = d[norm_name]['clusters'][cl_algo]['cell_type_prediction']
                         cur_hands, cur_labs = aa[pl_idx].get_legend_handles_labels()
-                        cl = ctp[['cell type']].values.flatten()
+                        ct = ctp[['cell type']].values.flatten()
                         z = zip(groups, ctp[['cell type']].values.flatten())
                         lab = [str(q[0])+' '+q[1] for q in z]
-                        z = zip(cur_hands, cur_labs, lab, cl)
+                        z = zip(cur_hands, cur_labs, lab, ct)
                         sl = [tup for tup in sorted(z, key=lambda x: x[3])]
                         aa[pl_idx].legend(np.array(sl)[:, 0],
                                           np.array(sl)[:, 2],
