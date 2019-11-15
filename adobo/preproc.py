@@ -622,6 +622,12 @@ def symbol_switch(obj, species):
         A data class object.
     species : '{'human', 'mouse'}'
         Species. Default: 'human'
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.preproc.symbol_switch(exp, species='human')
 
     Returns
     -------
