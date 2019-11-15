@@ -1,7 +1,7 @@
 # adobo.
 #
 # Description: An analysis framework for scRNA-seq data.
-#  How to use: https://github.com/oscar-franzen/adobo/
+#  How to use: https://oscar-franzen.github.io/adobo/
 #     Contact: Oscar Franzen <p.oscar.franzen@gmail.com>
 import sys
 import re
