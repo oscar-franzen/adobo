@@ -248,8 +248,8 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
 def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
              genes=(), edges=False, cell_types=False, trajectory=None, filename=None,
              marker_size=0.8, font_size=8, colors='adobo', title=None, legend=True,
-             legend_marker_scale=10, min_cluster_size=10, fig_size=(10, 10),
-             margins=None, verbose=False, **args):
+             legend_marker_scale=10, legend_position=(1, 1), min_cluster_size=10,
+             fig_size=(10, 10), margins=None, verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -292,6 +292,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         Add legend or not. Default: True
     legend_marker_scale : `int`
         Scale the markers in the legend. Default: 10
+    legend_position : `tuple`
+        A tuple of length two describing the position of the legend. Default: (1,1)
     min_cluster_size : `int`
         Can be used to prevent clusters below a certain number of cells to be
         plotted. Default: 10
@@ -403,7 +405,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 lab = (z.index.astype(str)+' (n='+z.astype(str)+')').values
                 aa[pl_idx].legend(lab, loc='upper left',
                                        markerscale=markerscale,
-                                       bbox_to_anchor=(1, 1),
+                                       bbox_to_anchor=legend_position,
                                        prop={'size': font_size})
                 if cell_types:
                     try:
@@ -419,7 +421,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                                           np.array(sl)[:, 2],
                                           loc='upper left',
                                           markerscale=markerscale,
-                                          bbox_to_anchor=(1, 1),
+                                          bbox_to_anchor=legend_position,
                                           prop={'size': font_size})
                     except KeyError:
                         print('cell_types is set to True, but adobo.bio.cell_type_predict \

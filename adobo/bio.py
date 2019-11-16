@@ -86,7 +86,7 @@ def cell_cycle_train(verbose=False):
     # np.sum(clf.predict(X) != Y)
     return clf, features
     
-def cell_cycle_predict(obj, clf, tr_features, name=()):
+def cell_cycle_predict(obj, clf, tr_features, name=(), verbose=False):
     """Predicts cell cycle phase
     
     Notes
@@ -108,6 +108,8 @@ def cell_cycle_predict(obj, clf, tr_features, name=()):
     name : `tuple`
         A tuple of normalization to use. If it has the length zero, then all available
         normalizations will be used.
+    verbose : `bool`
+        Be verbose. Default: False
     
     Returns
     -------
@@ -125,7 +127,8 @@ def cell_cycle_predict(obj, clf, tr_features, name=()):
         X = item['data']
         cols = X.columns
         if X.index[0].rfind('ENSMUSG') < 0:
-            raise Exception('Gene identifiers must use ENSG format.')
+            raise Exception('Gene identifiers must use ENSMUSG format. Are you sure this \
+is mouse data?')
         X_g = X.index
         if re.search('ENSMUSG\d+\.\d+', X_g[0]):
             X_g = X_g.str.extract('^(.*)\.[0-9]+$', expand=False)
@@ -257,6 +260,8 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
             raise Exception('No clusters found, run adobo.clustering.generate(...) first.')
         for algo in clusters:
             if len(clustering) == 0 or algo in clustering:
+                if verbose:
+                    print('Running on the %s clustering' % algo)
                 cl = clusters[algo]['membership']
                 ret = X.groupby(cl, axis=1).aggregate(np.median)
                 q = pd.Series(cl).value_counts()
