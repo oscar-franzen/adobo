@@ -18,6 +18,7 @@ import seaborn as sns
 from sklearn.preprocessing import scale as sklearn_scale
 import networkx as nx
 import igraph as ig
+import mplcursors
 
 import adobo
 from .dr import svd
@@ -399,6 +400,15 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                                                             # in the legend
             aa[pl_idx].set_title('%s %s' % (norm_name, cl_algo), size=font_size)
             aa[pl_idx].set_aspect('equal')
+            
+            def _hh(sel):
+                v = np.logical_and(E.iloc[:, 0] == sel.target[0],
+                                   E.iloc[:, 1] == sel.target[1])
+                c_idx = np.arange(0, E.shape[0])[v]
+                cl_target = cl[c_idx[0]]
+                sel.annotation.set_text('cluster %s' % cl_target)
+            mplcursors.cursor(aa[pl_idx]).connect("add", _hh)
+            
             if pl_idx == 0:
                 aa[pl_idx].set_ylabel(norm_name)
             if legend:
