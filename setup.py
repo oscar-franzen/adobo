@@ -29,7 +29,8 @@ setup(
         'datatable >= 0.9.0',
         'fa2', # https://github.com/bhargavchippada/forceatlas2
         'networkx >= 2.3',
-        'patsy >= 0.5.1'
+        'patsy >= 0.5.1',
+        'mplcursors >= 0.3'
     ],
     ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
                            extra_compile_args=['-fPIC','-lm'])]
