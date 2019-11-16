@@ -382,10 +382,11 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 raise Exception('Clustering "%s" not found.' % cl_algo)
             cl = item['clusters'][cl_algo]['membership']
             groups = np.unique(cl)
+            z = pd.Series(dict(Counter(cl)))
             if min_cluster_size > 0:
-                z = pd.Series(dict(Counter(cl)))
                 remove = z[z < min_cluster_size].index.values
                 groups = groups[np.logical_not(pd.Series(groups).isin(remove))]
+            z = z[z.index.isin(groups)].sort_index()
             for i, k in enumerate(groups):
                 idx = np.array(cl) == k
                 e = E[idx]
@@ -399,7 +400,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
             if pl_idx == 0:
                 aa[pl_idx].set_ylabel(norm_name)
             if legend:
-                lab = list(groups)
+                lab = (z.index.astype(str)+' (n='+z.astype(str)+')').values
                 aa[pl_idx].legend(lab, loc='upper left',
                                        markerscale=markerscale,
                                        bbox_to_anchor=(1, 1),
