@@ -431,12 +431,19 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 foo = sel[0].axes.get_gid().split('_')
                 _red, _norm_name, _cl_algo = foo
                 cl_i = obj.norm_data[_norm_name]['clusters'][_cl_algo]['membership']
+                if cell_types:
+                    ct_i = obj.norm_data[_norm_name]['clusters'][_cl_algo]['cell_type_prediction']
                 E_i = obj.norm_data[_norm_name]['dr'][reduction]['embedding']
                 v = np.logical_and(E_i.iloc[:, 0] == sel.target[0],
                                    E_i.iloc[:, 1] == sel.target[1])
                 c_idx = np.arange(0, E_i.shape[0])[v]
                 cl_target = cl_i[c_idx[0]]
-                sel.annotation.set_text('cluster %s' % cl_target)
+                if cell_types:
+                    ct_target = ct_i[ct_i.index==cl_target].loc[:, 'cell type'].values[0]
+                    lab = 'cluster: %s\ncell type: %s' % (cl_target, ct_target)
+                else:
+                    lab = 'cluster %s' % cl_target
+                sel.annotation.set_text(lab)
             mplcursors.cursor(aa[pl_idx]).connect('add', _hh)
             
             if pl_idx == 0:
