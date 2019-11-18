@@ -8,6 +8,7 @@ Summary
 -------
 This module contains functions to cluster data.
 """
+import sys
 from collections import Counter
 import pandas as pd
 import numpy as np
@@ -15,7 +16,8 @@ from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import coo_matrix
 import leidenalg as la
 import igraph as ig
-import sys
+import community as community_louvain
+import networkx as nx
 
 from ._log import warning
 
@@ -206,6 +208,43 @@ def igraph(snn_graph, clust_alg):
         raise Exception('Unsupported community detection algorithm specified.')
     return cl
 
+def louvain(snn_graph, res=0.8, seed=42):
+    """Runs the Louvain algorithm
+    
+    Parameters
+    ----------
+    snn_graph : :py:class:`pandas.DataFrame`
+        Source and target nodes.
+    res : `float`
+        Resolution parameter, change to modify cluster resolution. Default: 0.8
+    seed : `int`
+        For reproducibility.
+    
+    References
+    ----------
+    .. [1] https://github.com/taynaud/python-louvain
+    .. [2] https://perso.uclouvain.be/vincent.blondel/research/louvain.html
+    .. [3] Blondel et al., Fast unfolding of communities in large networks (2008),
+           Journal of Statistical Mechanics: Theory and Experiment
+    
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    # construct the graph object
+    nn = set(snn_graph[snn_graph.columns[0]])
+    g = ig.Graph()
+    g.add_vertices(len(nn))
+    g.vs['name'] = list(range(1, len(nn)+1))
+    ll = []
+    for i in snn_graph.itertuples(index=False):
+        ll.append(tuple(i))
+    g.add_edges(ll)
+    A = g.get_edgelist()
+    GG = nx.Graph(A)
+    partition = community_louvain.best_partition(GG, resolution=res, random_state=seed)
+    return [partition[i] for i in sorted(partition)]
+
 def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg='leiden',
              prune_snn=0.067, res=0.8, save_graph=True, seed=42, verbose=False):
     """
@@ -229,7 +268,7 @@ def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg=
     graph : `{'snn'}`
         Type of graph to generate. Only shared nearest neighbor (snn) supported at the
         moment.
-    clust_alg : `{'leiden', 'walktrap', 'spinglass', 'multilevel', 'infomap',
+    clust_alg : `{'leiden', 'louvain', 'walktrap', 'spinglass', 'multilevel', 'infomap',
                   'label_prop', 'leading_eigenvector'}`
         Clustering algorithm to be used.
     prune_snn : `float`
@@ -256,8 +295,8 @@ def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg=
     `dict`
         A dict containing cluster sizes (number of cells), only retx is set to True.
     """
-    m = ('leiden', 'walktrap', 'spinglass', 'multilevel', 'infomap', 'label_prop',
-         'leading_eigenvector')
+    m = ('leiden', 'louvain', 'walktrap', 'spinglass', 'multilevel', 'infomap',
+         'label_prop', 'leading_eigenvector')
     if not clust_alg in m:
         raise Exception('Supported community detection algorithms are: %s' % ', '.join(m))
     if not obj.norm_data:
@@ -280,6 +319,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         snn_graph = snn(nn_idx, k, prune_snn, verbose)
         if clust_alg == 'leiden':
             cl = leiden(snn_graph, res, seed)
+        elif clust_alg == 'louvain':
+            cl = louvain(snn_graph, res, seed)
         else:
             cl = igraph(snn_graph, clust_alg)
         mem = pd.Series(cl, index=comp.index)

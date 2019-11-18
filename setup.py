@@ -30,7 +30,8 @@ setup(
         'fa2', # https://github.com/bhargavchippada/forceatlas2
         'networkx >= 2.3',
         'patsy >= 0.5.1',
-        'mplcursors >= 0.3'
+        'mplcursors >= 0.3',
+        'community >= 0.13' # louvain
     ],
     ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
                            extra_compile_args=['-fPIC','-lm'])]
