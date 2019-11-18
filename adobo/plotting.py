@@ -312,7 +312,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         (but if the number of clusters exceed 50, then random colors will be
         used). Default: adobo
     title : `str`
-        Title of the plot. By default the title is set to the reduction technique.
+        An optional title of the plot.
     legend : `bool`
         Add legend or not. Default: True
     legend_marker_scale : `int`
@@ -387,7 +387,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         red_key = 'coords'
     else:
         red_key = 'embedding'
-    ttl = fig.suptitle(reduction)
+    if title:
+        fig.suptitle(title)
     pl_idx = 0
     for _, norm_name in enumerate(targets):
         item = D[norm_name]
