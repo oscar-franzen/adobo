@@ -238,13 +238,14 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             data = data[data.index.isin(hvg)]
         elif verbose:
             print('Using all genes')
+        idx = data.index
         if scale:
-            d_scaled = sklearn_scale(
+            data = sklearn_scale(
                                 data.transpose(),  # cells as rows and genes as columns
                                 axis=0,            # over genes, i.e. features (columns)
                                 with_mean=True,    # subtracting the column means
                                 with_std=True)     # scale the data to unit variance
-            d_scaled = pd.DataFrame(d_scaled.transpose(), index=data.index)
+            data = pd.DataFrame(data.transpose(), index=idx)
         if verbose:
             v = (method, k, data.shape[0], data.shape[1])
             print('Running PCA (method=%s) on the %s normalization (dimensions \

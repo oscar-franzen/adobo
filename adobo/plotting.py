@@ -21,7 +21,7 @@ import igraph as ig
 import mplcursors
 
 import adobo
-from .dr import svd
+from .dr import svd, irlb
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
@@ -164,14 +164,15 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
         plt.show()
     plt.close()
 
-def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
-                     fontsize=6, fig_size=(10, 5), filename=None, verbose=False,
-                     **args):
-    """Examine the top contributing genes to each PCA component
+def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2],
+                     top=10, color='#fcc603', fontsize=6, fig_size=(10, 5), filename=None,
+                     verbose=False, **args):
+    """Examine the top contributing genes to each PCA component. Optionally, one can
+    examine the PCA components of a cell cluster instead.
 
     Note
     ----
-    Genes are ranked by their absolute value. Additional parameters are passed
+    Genes are sorted by their absolute value. Additional parameters are passed
     into :py:func:`matplotlib.pyplot.savefig`.
 
     Parameters
@@ -181,6 +182,10 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     name : `str`
         The name of the normalization to operate on. If this is empty or None
         then the function will be applied on all normalizations available.
+    clust_alg : `str`
+        Name of the clustering strategy.
+    cluster : `int`
+        Name of the cluster.
     dim : `list` or `int`
         If list, then it specifies indices of components to plot. If integer, then it
         specifies the first components to plot. First component has index zero.
@@ -236,6 +241,14 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
                 ax[row][d].axis('off')
             continue
         count += 1
+        if clust_alg and cluster:
+            X = item['data']
+            try:
+                cl = item['clusters'][clust_alg]['membership']
+            except KeyError:
+                raise Exception('%s not found' % clust_alg)
+            X_ss = X.loc[:, cl==cluster]
+            dc = irlb(X_ss)
         contr = item['dr']['pca']['contr'][dim]
         idx = 0
         for i, d in contr.iteritems():
