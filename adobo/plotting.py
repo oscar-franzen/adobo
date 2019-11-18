@@ -424,7 +424,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                                         color=col, label=k) # don't remove label, it is
                                                             # needed for sorting items
                                                             # in the legend
-            aa[pl_idx].set_title('%s %s' % (norm_name, cl_algo), size=font_size)
+            aa[pl_idx].set_title('%s %s %s' % (norm_name, cl_algo, reduction),
+                                 size=font_size)
             aa[pl_idx].set_aspect('equal')
             aa[pl_idx].set_gid(reduction+'_'+norm_name+'_' +cl_algo)
             
@@ -446,9 +447,9 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                     lab = 'cluster %s' % cl_target
                 sel.annotation.set_text(lab)
             mplcursors.cursor(aa[pl_idx]).connect('add', _hh)
-            
             if pl_idx == 0:
-                aa[pl_idx].set_ylabel(norm_name)
+                aa[pl_idx].set_ylabel('%s 1' % reduction)
+                aa[pl_idx].set_xlabel('%s 2' % reduction)
             if legend:
                 lab = (z.index.astype(str)+' (n='+z.astype(str)+')').values
                 aa[pl_idx].legend(lab, loc='upper left',
