@@ -241,15 +241,22 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
                 ax[row][d].axis('off')
             continue
         count += 1
+        contr = item['dr']['pca']['contr']
         if clust_alg and cluster:
             X = item['data']
             try:
                 cl = item['clusters'][clust_alg]['membership']
             except KeyError:
                 raise Exception('%s not found' % clust_alg)
-            X_ss = X.loc[:, cl==cluster]
-            dc = irlb(X_ss)
-        contr = item['dr']['pca']['contr'][dim]
+            X_ss = X.loc[:, (cl==cluster).to_numpy()]
+            X_ss = sklearn_scale(
+                                X_ss.transpose(),  # cells as rows and genes as columns
+                                axis=0,            # over genes, i.e. features (columns)
+                                with_mean=True,    # subtracting the column means
+                                with_std=True)     # scale the data to unit variance
+            X_ss = pd.DataFrame(X_ss.transpose(), index=X.index)
+            _, contr = irlb(X_ss)
+        contr = contr[dim]
         idx = 0
         for i, d in contr.iteritems():
             d = d.sort_values(ascending=False)
