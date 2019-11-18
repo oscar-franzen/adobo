@@ -181,9 +181,9 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
     name : `str`
         The name of the normalization to operate on. If this is empty or None
         then the function will be applied on all normalizations available.
-    dim : `list`
-        A list of indices specifying components to plot. First component has
-        index zero.
+    dim : `list` or `int`
+        If list, then it specifies indices of components to plot. If integer, then it
+        specifies the first components to plot. First component has index zero.
     top : `int`
         Specifies the number of top scoring genes to include. Default: 10
     color : `str`
@@ -196,6 +196,15 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         Write to a file instead of showing the plot on screen.
     verbose : `bool`
         Be verbose or not. Default: False
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='standard')
+    >>> ad.hvg.find_hvg(exp)
+    >>> ad.dr.pca(exp)
+    >>> ad.plotting.pca_contributors(exp, dim=4)
 
     Returns
     -------
@@ -210,6 +219,8 @@ def pca_contributors(obj, name=None, dim=[0, 1, 2], top=10, color='#fcc603',
         raise Exception('Nothing found to work on.')
     plt.clf()
     plt.close(fig='all')
+    if not isinstance(dim, list):
+        dim = np.arange(0,dim)
     f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=fig_size)
     if ax.ndim == 1:
         ax = [ax]
