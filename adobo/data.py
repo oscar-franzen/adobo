@@ -276,3 +276,50 @@ Commands executed:
         target[key] = data
         if type_ == 'cat':
             target[key] = target[key].astype('category')
+    
+    def remove_analysis(self, what=()):
+        """Remove analysis results
+
+        Parameters
+        ----------
+        what : `tuple`
+            A tuple of strings specifying what you want to remove. Each string should be
+            a key in norm_data[n] where n is the normalization.
+        
+        Example
+        -------
+        >>> import adobo as ad
+        >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+        >>> ad.normalize.norm(exp)
+        >>> ad.hvg.find_hvg(exp)
+        >>> ad.dr.pca(exp)
+        >>> ad.clustering.generate(exp)
+        >>> exp.norm_data['standard']['clusters']['leiden']
+            {'membership': V1        6
+            V2        0
+            V3        5
+            V4        1
+            V5        0
+                     ..
+            V8377     1
+            V8378    10
+            V8379    11
+            V8380     3
+            V8381     2
+            Length: 8381, dtype: int64}
+        >>> exp.remove_analysis(what=('clusters',))
+        >>> exp.norm_data['standard']['clusters']['leiden']
+            Traceback (most recent call last):
+              File "<stdin>", line 1, in <module>
+            KeyError: 'leiden'
+
+        Returns
+        -------
+        Nothing.
+        """
+        if len(what) == 0:
+            raise Exception('"what" is empty. It should specify a list of keys of what \
+should be removed.')
+        for n in self.norm_data:
+            for k in what:
+                self.norm_data[n][k] = {}

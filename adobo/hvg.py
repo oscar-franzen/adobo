@@ -428,6 +428,13 @@ def find_hvg(obj, method='seurat', normalization=None, ngenes=1000, fdr=0.1,
     verbose : `bool`
         Be verbose or not.
 
+    Example
+    -------    
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp)
+    >>> ad.hvg.find_hvg(exp)
+
     References
     ----------
     .. [1] Yip et al. (2018) Briefings in Bioinformatics
@@ -446,6 +453,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         targets = obj.norm_data
     else:
         targets[norm] = obj.norm_data[norm]
+    # remove previous cluster analysis, b/c this changes after running hvg
+    obj.remove_analysis(('clusters', 'dr'))
     for k in targets:
         item = targets[k]
         if verbose:
