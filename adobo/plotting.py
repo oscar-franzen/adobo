@@ -390,6 +390,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 remove = z[z < min_cluster_size].index.values
                 groups = groups[np.logical_not(pd.Series(groups).isin(remove))]
             z = z[z.index.isin(groups)].sort_index()
+            
             for i, k in enumerate(groups):
                 idx = np.array(cl) == k
                 e = E[idx]
@@ -400,14 +401,19 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                                                             # in the legend
             aa[pl_idx].set_title('%s %s' % (norm_name, cl_algo), size=font_size)
             aa[pl_idx].set_aspect('equal')
+            aa[pl_idx].set_gid(reduction+'_'+norm_name+'_' +cl_algo)
             
             def _hh(sel):
-                v = np.logical_and(E.iloc[:, 0] == sel.target[0],
-                                   E.iloc[:, 1] == sel.target[1])
-                c_idx = np.arange(0, E.shape[0])[v]
-                cl_target = cl[c_idx[0]]
+                foo = sel[0].axes.get_gid().split('_')
+                _red, _norm_name, _cl_algo = foo
+                cl_i = obj.norm_data[_norm_name]['clusters'][_cl_algo]['membership']
+                E_i = obj.norm_data[_norm_name]['dr'][reduction]['embedding']
+                v = np.logical_and(E_i.iloc[:, 0] == sel.target[0],
+                                   E_i.iloc[:, 1] == sel.target[1])
+                c_idx = np.arange(0, E_i.shape[0])[v]
+                cl_target = cl_i[c_idx[0]]
                 sel.annotation.set_text('cluster %s' % cl_target)
-            mplcursors.cursor(aa[pl_idx]).connect("add", _hh)
+            mplcursors.cursor(aa[pl_idx]).connect('add', _hh)
             
             if pl_idx == 0:
                 aa[pl_idx].set_ylabel(norm_name)

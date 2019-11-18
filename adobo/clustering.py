@@ -272,7 +272,10 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         item = targets[l]
         if verbose:
             print('Running clustering on the %s normalization' % l)
-        comp = item['dr']['pca']['comp']
+        try:
+            comp = item['dr']['pca']['comp']
+        except KeyError:
+            raise Exception('Compute principal components first using adobo.dr.pca(...)')
         nn_idx = knn(comp, k, distance)
         snn_graph = snn(nn_idx, k, prune_snn, verbose)
         if clust_alg == 'leiden':
