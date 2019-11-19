@@ -765,6 +765,8 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
         cl = [0]*X.shape[1]
     ret = X.groupby(cl, axis=1).aggregate(rank_func)
     if cluster!=None:
+        if np.any([i>ret.shape[1] for i in cluster]):
+            raise Exception('Wrong cell cluster index specified.')
         ret = ret[cluster]
     idx = 0
     if not gene:
