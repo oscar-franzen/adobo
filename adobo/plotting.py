@@ -714,10 +714,18 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     >>> ad.hvg.find_hvg(exp)
     >>> ad.dr.pca(exp)
     >>> ad.clustering.generate(exp, clust_alg='leiden')
+    >>>
     >>> # top 10 genes in cluster 0
-    >>> ad.plotting.genes(exp, top=10, cluster=0)
+    >>> ad.plotting.genes_violin(exp, top=10, cluster=0)
+    >>>
     >>> # top 10 genes across all clusters
-    >>> ad.plotting.genes(exp, top=10)
+    >>> ad.plotting.genes_violin(exp, top=10)
+    >>>
+    >>> # plotting one gene across all clusters
+    >>> ad.plotting.genes_violin(exp, gene='ENSG00000163220')
+    >>>
+    >>> # same, but using a box plot
+    >>> ad.plotting.genes_violin(exp, gene='ENSG00000163220', violin=False)
 
     Returns
     -------
