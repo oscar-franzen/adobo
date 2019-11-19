@@ -210,6 +210,9 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
     >>> ad.hvg.find_hvg(exp)
     >>> ad.dr.pca(exp)
     >>> ad.plotting.pca_contributors(exp, dim=4)
+    >>> # decomposition of a specific cluster
+    >>> ad.clustering.generate(exp, clust_alg='leiden')
+    >>> ad.plotting.pca_contributors(exp, dim=4, cluster_alg='leiden', cluster=0)
 
     Returns
     -------
