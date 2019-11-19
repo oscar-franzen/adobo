@@ -165,7 +165,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
     plt.close()
 
 def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2],
-                     top=10, color='#fcc603', fontsize=6, fig_size=(10, 5), filename=None,
+                     top=10, color='#fcc603', fontsize=6, figsize=(10, 5), filename=None,
                      verbose=False, **args):
     """Examine the top contributing genes to each PCA component. Optionally, one can
     examine the PCA components of a cell cluster instead.
@@ -195,7 +195,7 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
         Color of the bars. As a string or hex code. Default: "#fcc603"
     fontsize : `int`
         Specifies font size. Default: 6
-    fig_size : `tuple`
+    figsize : `tuple`
         Figure size in inches. Default: (10, 10)
     filename : `str`, optional
         Write to a file instead of showing the plot on screen.
@@ -229,7 +229,7 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
     plt.close(fig='all')
     if not isinstance(dim, list):
         dim = np.arange(0,dim)
-    f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=fig_size)
+    f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=figsize)
     if ax.ndim == 1:
         ax = [ax]
     f.subplots_adjust(wspace=1)
@@ -284,7 +284,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
              genes=(), edges=False, cell_types=False, trajectory=None, filename=None,
              marker_size=0.8, font_size=8, colors='adobo', title=None, legend=True,
              legend_marker_scale=10, legend_position=(1, 1), min_cluster_size=10,
-             fig_size=(10, 10), margins=None, verbose=False, **args):
+             figsize=(10, 10), margins=None, verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -332,7 +332,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
     min_cluster_size : `int`
         Can be used to prevent clusters below a certain number of cells to be
         plotted. Default: 10
-    fig_size : `tuple`
+    figsize : `tuple`
         Figure size in inches. Default: (10, 10)
     margins : `dict`
         Can be used to adjust margins. Should be a dict with one or more of the
@@ -384,7 +384,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
     # setup plotting grid
     plt.clf()
     plt.close(fig='all')
-    fig, aa = plt.subplots(nrows=len(targets), ncols=n_plots, figsize=fig_size,
+    fig, aa = plt.subplots(nrows=len(targets), ncols=n_plots, figsize=figsize,
                            constrained_layout=True)
     if isinstance(aa, np.ndarray):
         if aa.ndim > 1:
@@ -585,7 +585,7 @@ has not been called yet.')
         plt.show()
 
 def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_size=8,
-              fig_size=(10, 10), verbose=True, **args):
+              figsize=(10, 10), verbose=True, **args):
     """Generates a PCA elbow plot
 
     Notes
@@ -608,7 +608,7 @@ def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_s
         Name of an output file instead of showing on screen.
     font_size : `float`
         Font size. Default: 8
-    fig_size : `tuple`
+    figsize : `tuple`
         Figure size in inches. Default: (10, 10)
     verbose : `bool`
         Be verbose or not. Default: True
@@ -627,7 +627,7 @@ def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_s
     plt.close(fig='all')
     fig, aa = plt.subplots(nrows=1,
                            ncols=len(targets),
-                           figsize=fig_size)
+                           figsize=figsize)
     if len(targets) == 1:
         aa = [aa]
     else:
@@ -658,6 +658,114 @@ def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_s
         aa[i].set_ylabel('cumulative variance (percent of total)')
         aa[i].set_xlabel('components')
         aa[i].set_title(k)
+    if filename != None:
+        plt.savefig(filename, **args)
+    else:
+        plt.show()
+
+def genes_violin(obj, normalization='', clust_alg=None, cluster=None, genes=None,
+                 rank_func=np.median, top=10, violin=True, fontsize=6, figsize=(10, 5),
+                 filename=None, **args):
+    """Plot individual genes using violin plot (or box plot). Can be used to plot the top
+    genes in the total dataset or top genes in individual clusters. Specific genes can
+    also be selected using the parameter `genes`.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A data class object
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None
+        then the function will be applied on the last normalization that was applied.
+    clust_alg : `str`
+        Name of the clustering strategy. If empty or None, the last one will be used.
+    cluster : `list` or `int`
+        List of cluster identifiers to plot. If a list, then expecting a list of cluster
+        indices. An integer specifies only one cluster index. If None, then shows the
+        expression across all clusters. Default: None
+    genes : `list`
+        Specify a list of genes to plot instead of plotting the top expressed. If this is
+        none, then the top is plotted based on the ranking function specified below.
+        Default: None
+    rank_func : `np.median`
+        Ranking function. numpy's median is the default.
+    top : `int`
+        Specifies the number of top scoring genes to include. Default: 10
+    violin : `bool`
+        Draws a violin plot (otherwise box plot). Default: True
+    fontsize : `int`
+        Specifies font size. Default: 6
+    figsize : `tuple`
+        Figure size in inches. Default: (10, 10)
+    filename : `str`, optional
+        Write to a file instead of showing the plot on screen.
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='standard')
+    >>> ad.hvg.find_hvg(exp)
+    >>> ad.dr.pca(exp)
+    >>> ad.clustering.generate(exp, clust_alg='leiden')
+    >>> # top 10 genes in cluster 0
+    >>> ad.plotting.genes(exp, top=10, cluster=0)
+    >>> # top 10 genes across all clusters
+    >>> ad.plotting.genes(exp, top=10)
+
+    Returns
+    -------
+    Nothing
+    """
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
+    if clust_alg == None or clust_alg == '':
+        clust_alg = list(target['clusters'].keys())[-1]
+    # setup plotting grid
+    plt.clf()
+    plt.close(fig='all')
+    rows = 1
+    if isinstance(cluster, int):
+        cluster = [cluster]
+    if cluster!=None:
+        rows = len(cluster)
+    fig, aa = plt.subplots(nrows=rows,
+                           ncols=1,
+                           figsize=figsize)
+    X = target['data']
+    if cluster!=None:
+        try:
+            cl = target['clusters'][clust_alg]['membership']
+        except KeyError:
+            raise Exception('Clustering %s not found' % clust_alg)
+        cl = cl.values
+    else:
+        cl = [0]*X.shape[1]
+    ret = X.groupby(cl, axis=1).aggregate(rank_func)
+    if cluster!=None:
+        ret = ret[cluster]
+    for i, d in ret.iteritems():
+        d = d.sort_values(ascending=False)
+        d = d.head(top)
+        X_ss = X[X.index.isin(d.index)]
+        if violin:
+            p = sns.violinplot(ax = aa, data=X_ss.transpose())
+        else:
+            p = sns.boxplot(ax = aa, data=X_ss.transpose())
+        p.set_xticklabels(labels=X_ss.index.values, rotation=90, fontsize=fontsize)
+        p.set_ylabel('expression')
+        p.set_xlabel('')
+        if cluster != None and len(cluster) > 0:
+            p.set_title('cluster %s' % i)
+        else:
+            p.set_title('across all clusters')
+    plt.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
     else:
