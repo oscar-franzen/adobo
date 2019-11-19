@@ -665,7 +665,7 @@ def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_s
 
 def genes_violin(obj, normalization='', clust_alg=None, cluster=None, genes=None,
                  rank_func=np.median, top=10, violin=True, fontsize=6, figsize=(10, 5),
-                 filename=None, **args):
+                 linewidth=0.5, filename=None, **args):
     """Plot individual genes using violin plot (or box plot). Can be used to plot the top
     genes in the total dataset or top genes in individual clusters. Specific genes can
     also be selected using the parameter `genes`.
@@ -697,8 +697,12 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, genes=None
         Specifies font size. Default: 6
     figsize : `tuple`
         Figure size in inches. Default: (10, 10)
+    linewidth : `float`
+        Border width. Default: 0.5
     filename : `str`, optional
         Write to a file instead of showing the plot on screen.
+    **args
+        Passed on into seaborn's violinplot and boxplot functions 
     
     Example
     -------
@@ -738,6 +742,8 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, genes=None
     fig, aa = plt.subplots(nrows=rows,
                            ncols=1,
                            figsize=figsize)
+    if rows == 1:
+        aa = [aa]
     X = target['data']
     if cluster!=None:
         try:
@@ -750,14 +756,17 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, genes=None
     ret = X.groupby(cl, axis=1).aggregate(rank_func)
     if cluster!=None:
         ret = ret[cluster]
+    idx = 0
     for i, d in ret.iteritems():
         d = d.sort_values(ascending=False)
         d = d.head(top)
         X_ss = X[X.index.isin(d.index)]
         if violin:
-            p = sns.violinplot(ax = aa, data=X_ss.transpose())
+            p = sns.violinplot(ax = aa[idx], data=X_ss.transpose(), linewidth=linewidth,
+                               **args)
         else:
-            p = sns.boxplot(ax = aa, data=X_ss.transpose())
+            p = sns.boxplot(ax = aa[idx], data=X_ss.transpose(), linewidth=linewidth,
+                            **args)
         p.set_xticklabels(labels=X_ss.index.values, rotation=90, fontsize=fontsize)
         p.set_ylabel('expression')
         p.set_xlabel('')
@@ -765,8 +774,9 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, genes=None
             p.set_title('cluster %s' % i)
         else:
             p.set_title('across all clusters')
+        idx += 1
     plt.tight_layout()
     if filename != None:
-        plt.savefig(filename, **args)
+        plt.savefig(filename)
     else:
         plt.show()
