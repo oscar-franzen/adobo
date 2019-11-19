@@ -245,7 +245,7 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
             continue
         count += 1
         contr = item['dr']['pca']['contr']
-        if clust_alg and cluster:
+        if clust_alg!=None and cluster!=None:
             X = item['data']
             try:
                 cl = item['clusters'][clust_alg]['membership']
