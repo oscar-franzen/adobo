@@ -150,7 +150,7 @@ normalization' % k)
                 # remove clusters with too few cells
                 q = pd.Series(cl).value_counts()
                 cl_remove = q[q < min_cluster_size].index
-                X_f = X.loc[np.logical_not(cl.isin(cl_remove)), :]
+                X_f = X.loc[np.logical_not(cl.isin(cl_remove)).values, :]
                 cl = cl[np.logical_not(cl.isin(cl_remove))]
                 
                 # full design matrix
@@ -178,7 +178,7 @@ normalization' % k)
                 clusts = np.unique(cl)
                 
                 # mean gene expression for every gene in every cluster
-                mge = [X_f.loc[cl == o, :].mean() for o in clusts]
+                mge = [X_f.loc[(cl == o).values, :].mean() for o in clusts]
 
                 # perform all pairwise comparisons of clusters (t-tests)
                 comparisons = []
