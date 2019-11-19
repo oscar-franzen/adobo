@@ -766,7 +766,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
             X_ss = X[X.index.isin(d.index)]
             if violin:
                 p = sns.violinplot(ax=aa[idx], data=X_ss.transpose(), linewidth=linewidth,
-                                   scale=scale, **args)
+                                   order=d.index,scale=scale, **args)
             else:
                 p = sns.boxplot(ax=aa[idx], data=X_ss.transpose(), linewidth=linewidth,
                                 **args)
@@ -779,10 +779,13 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
                 p.set_title('across all clusters')
             idx += 1
     else:
-        X_ss = X.loc[gene, :]
+        try:
+            X_ss = X.loc[gene, :]
+        except KeyError:
+            raise Exception('The gene %s was not found.' % gene)
         if violin:
             sns.violinplot(ax=aa[0], y=X_ss, x=cl, linewidth=linewidth, fontsize=fontsize,
-                           **args)
+                           scale=scale, **args)
         else:
             sns.boxplot(ax=aa[0], y=X_ss, x=cl, linewidth=linewidth, **args)
     plt.tight_layout()
