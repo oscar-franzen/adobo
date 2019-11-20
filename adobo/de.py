@@ -9,6 +9,7 @@ Summary
 Functions for differential expression.
 """
 import scipy.linalg
+from scipy.stats import combine_pvalues as scipy_combine_pvalues
 import statsmodels.api as sm
 import patsy
 
@@ -19,7 +20,7 @@ from ._stats import p_adjust_bh
 
 def combine_tests(obj, normalization=(), clustering=(), method='simes',
                   min_cluster_size=10):
-    """Uses Simes' method for combining p-values
+    """Combines p-values from differential expression analysis
 
     Parameters
     ----------
@@ -30,7 +31,7 @@ def combine_tests(obj, normalization=(), clustering=(), method='simes',
         normalizations will be used.
     clustering : `tuple`, optional
         Specifies the clustering outcomes to work on.
-    method : `{'simes'}`
+    method : `{'simes', 'fisher', 'stouffer'}`
         Method for combining p-values. Only Simes' is implemented.
     min_cluster_size : `int`
         Minimum number of cells per cluster (clusters smaller than this are ignored).
@@ -40,14 +41,15 @@ def combine_tests(obj, normalization=(), clustering=(), method='simes',
     ----------
     .. [1] Simes, R. J. (1986). An improved Bonferroni procedure for multiple tests of
            significance. Biometrika, 73(3):751-754.
+    .. [2] https://tinyurl.com/yxy3dy4v
 
     Returns
     -------
     Nothing. Modifies the passed object.
     """
-    if not method in ('simes',):
-        raise Exception('Unsupported method for combining p-values. Only Simes method \
-is available at the moment.')
+    if not method in ('simes', 'fisher', 'stouffer'):
+        raise Exception('Unsupported method for combining p-values. Methods available: \
+simes, fisher, and stouffer')
     targets = {}
     if len(normalization) == 0 or normalization == '':
         targets = obj.norm_data
@@ -70,11 +72,19 @@ adobo.de.linear_model(...) first.')
                 for cc in q[q >= min_cluster_size].index:
                     idx = pval_mat.columns.str.match('^%s_vs'%cc)
                     subset_mat = pval_mat.iloc[:, idx]
-                    r = subset_mat.rank(axis=1)
-                    T = (subset_mat.shape[1]*subset_mat/r).min(axis=1).sort_values()
-                    T[T > 1] = 1
+                    if method == 'simes':
+                        r = subset_mat.rank(axis=1)
+                        T = (subset_mat.shape[1]*subset_mat/r).min(axis=1).sort_values()
+                        T[T > 1] = 1
+                    else:
+                        T = []
+                        for gene, r in subset_mat.iterrows():
+                            if method == 'stouffer':
+                                r[r == 0] = min(r[r > 0]) # a p=0 results in NaN
+                            T.append(scipy_combine_pvalues(r, method=method)[1])
+                        T = pd.Series(T, index=subset_mat.index)
                     df = pd.DataFrame({'cluster' : [cc]*len(T),
-                                       'gene' : T.index, 'pvalue.Simes' : T})
+                                       'gene' : T.index, 'combined_pvalue' : T})
                     res.append(df)
                 res = pd.concat(res)
                 obj.norm_data[k]['de'][algo]['combined'] = res
