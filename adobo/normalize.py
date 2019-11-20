@@ -350,8 +350,8 @@ def fqn(data):
     return df
 
 def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_func=np.log2,
-         small_const=1, remove_low_qual=True, gene_lengths=None, scaling_factor=10000,
-         axis='genes', retx=False):
+         small_const=1, remove_low_qual=True, remove_mito=True, gene_lengths=None,
+         scaling_factor=10000, axis='genes', retx=False):
     r"""Normalizes gene expression data
 
     Notes
@@ -388,6 +388,9 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
     remove_low_qual : `bool`
         Remove low quality cells and uninformative genes identified by prior steps.
         Default: True
+    remove_mito : `bool`
+        Remove mitochondrial genes (if these have been detected with
+        `adobo.preproc.find_mitochondrial_genes`). Default: True
     gene_lengths : :class:`pandas.Series` or `str`
         A :class:`pandas.Series` containing the gene lengths in base pairs and gene names
         set as index. The names must match the gene names used in `data` (the order does
@@ -439,6 +442,10 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
         remove = obj.meta_genes.status[np.logical_and(obj.meta_genes.status != 'OK',
                                                       obj.meta_genes.ERCC == False)]
         data = data.drop(remove.index, axis=0, errors='ignore')
+        # Remove mitochondrial genes
+        if remove_mito:
+            remove = obj.meta_genes[obj.meta_genes.mitochondrial==True]
+            data = data.drop(remove.index, axis=0, errors='ignore')
     if method == 'standard':
         norm = standard(data, scaling_factor)
         norm_method = 'standard'
