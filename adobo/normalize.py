@@ -442,10 +442,10 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
         remove = obj.meta_genes.status[np.logical_and(obj.meta_genes.status != 'OK',
                                                       obj.meta_genes.ERCC == False)]
         data = data.drop(remove.index, axis=0, errors='ignore')
-        # Remove mitochondrial genes
-        if remove_mito:
-            remove = obj.meta_genes[obj.meta_genes.mitochondrial==True]
-            data = data.drop(remove.index, axis=0, errors='ignore')
+    # Remove mitochondrial genes
+    if remove_mito:
+        remove = obj.meta_genes[obj.meta_genes.mitochondrial==True]
+        data = data.drop(remove.index, axis=0, errors='ignore')
     if method == 'standard':
         norm = standard(data, scaling_factor)
         norm_method = 'standard'
