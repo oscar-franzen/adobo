@@ -18,17 +18,24 @@ import numpy as np
 
 from ._stats import p_adjust_bh
 
-def combine_tests(obj, normalization=(), clustering=(), method='simes',
-                  min_cluster_size=10):
-    """Combines p-values from differential expression analysis
+def combine_tests(obj, normalization=None, clust_alg=None, clustering=(), method='simes',
+                  min_cluster_size=10, mtc='BH', retx=True, verbose=False):
+    """Generates a set of marker genes for every cluster by combining tests from
+    pairwise analysis.
+    
+    Notes
+    -----
+    Run `adobo.de.linear_model` before running this function.
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A dataset class object.
-    normalization : `tuple`
-        A tuple of normalization to use. If it has the length zero, then all available
-        normalizations will be used.
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None
+        then the function will be applied on the last normalization that was applied.
+    clust_alg : `str`
+        Name of the clustering strategy. If empty or None, the last one will be used.
     clustering : `tuple`, optional
         Specifies the clustering outcomes to work on.
     method : `{'simes', 'fisher', 'stouffer'}`
@@ -36,6 +43,22 @@ def combine_tests(obj, normalization=(), clustering=(), method='simes',
     min_cluster_size : `int`
         Minimum number of cells per cluster (clusters smaller than this are ignored).
         Default: 10
+    mtc : `{'BH', 'bonferroni'}`
+        Method to use for multiple testing correction. BH is Benjamini-Hochberg's
+        procedure. Default: 'BH'
+    retx : `bool`
+        Returns a data frame with results. Default: True
+    verbose : `bool`
+        Be verbose or not. Default: False
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='standard')
+    >>> ad.hvg.find_hvg(exp)
+    >>> ad.dr.pca(exp)
+    >>> ad.clustering.generate(exp, clust_alg='leiden')
 
     References
     ----------
@@ -45,49 +68,60 @@ def combine_tests(obj, normalization=(), clustering=(), method='simes',
 
     Returns
     -------
-    Nothing. Modifies the passed object.
+    pandas.DataFrame or None (depending on `retx`)
+        Differential expression results.
     """
     if not method in ('simes', 'fisher', 'stouffer'):
         raise Exception('Unsupported method for combining p-values. Methods available: \
 simes, fisher, and stouffer')
-    targets = {}
-    if len(normalization) == 0 or normalization == '':
-        targets = obj.norm_data
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
     else:
-        targets[name] = obj.norm_data[name]
-    for i, k in enumerate(targets):
-        item = targets[k]
-        clusters = item['clusters']
-        for algo in clusters:
-            if len(clustering) == 0 or algo in clustering:
-                try:
-                    pval_mat = obj.norm_data[k]['de'][algo]['mat_format']
-                except KeyError:
-                    raise Exception('P-values have not been generated yet. Please run \
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
+    if clust_alg == None or clust_alg == '':
+        clust_alg = list(target['clusters'].keys())[-1]
+    cl = target['clusters'][clust_alg]['membership']
+    try:
+        pval_mat = obj.norm_data[norm]['de'][clust_alg]['mat_format']
+    except KeyError:
+        raise Exception('P-values have not been generated yet. Please run \
 adobo.de.linear_model(...) first.')
-                cl = clusters[algo]['membership']
-                # remove clusters with too few cells
-                q = pd.Series(cl).value_counts()
-                res = []
-                for cc in q[q >= min_cluster_size].index:
-                    idx = pval_mat.columns.str.match('^%s_vs'%cc)
-                    subset_mat = pval_mat.iloc[:, idx]
-                    if method == 'simes':
-                        r = subset_mat.rank(axis=1)
-                        T = (subset_mat.shape[1]*subset_mat/r).min(axis=1).sort_values()
-                        T[T > 1] = 1
-                    else:
-                        T = []
-                        for gene, r in subset_mat.iterrows():
-                            if method == 'stouffer':
-                                r[r == 0] = min(r[r > 0]) # a p=0 results in NaN
-                            T.append(scipy_combine_pvalues(r, method=method)[1])
-                        T = pd.Series(T, index=subset_mat.index)
-                    df = pd.DataFrame({'cluster' : [cc]*len(T),
-                                       'gene' : T.index, 'combined_pvalue' : T})
-                    res.append(df)
-                res = pd.concat(res)
-                obj.norm_data[k]['de'][algo]['combined'] = res
+    # remove clusters with too few cells
+    q = pd.Series(cl).value_counts()
+    res = []
+    for cc in q[q >= min_cluster_size].index:
+        if verbose:
+            print('Working on cluster %s/%s' % (cc, len(q[q >= min_cluster_size])))
+        idx = pval_mat.columns.str.match('^%s_vs'%cc)
+        subset_mat = pval_mat.iloc[:, idx]
+        if method == 'simes':
+            r = subset_mat.rank(axis=1)
+            T = (subset_mat.shape[1]*subset_mat/r).min(axis=1).sort_values()
+            T[T > 1] = 1
+        else:
+            T = []
+            for gene, r in subset_mat.iterrows():
+                if method == 'stouffer':
+                    r[r == 0] = min(r[r > 0]) # a p=0 results in NaN
+                T.append(scipy_combine_pvalues(r, method=method)[1])
+            T = pd.Series(T, index=subset_mat.index)
+        df = pd.DataFrame({'cluster' : [cc]*len(T),
+                           'gene' : T.index, 'combined_pvalue' : T})
+        res.append(df)
+    res = pd.concat(res)
+    if mtc == 'BH':
+        padj = p_adjust_bh(res.combined_pvalue)
+    elif mtc == 'BH':
+        padj = np.minimum(1, res.combined_pvalue*len(res.combined_pvalue))
+    res['mtc_p'] = padj
+    res = res.reset_index(drop=True)
+    obj.norm_data[k]['de'][algo]['combined'] = res
+    if retx:
+        return res
 
 def _choose_leftright_pvalues(left, right, direction):
     """Internal helper function."""
