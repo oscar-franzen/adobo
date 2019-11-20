@@ -8,8 +8,12 @@ Summary
 -------
 Functions for differential expression.
 """
+import time
+from multiprocessing import Pool
+import psutil
 import scipy.linalg
 from scipy.stats import combine_pvalues as scipy_combine_pvalues
+from scipy.stats import mannwhitneyu
 import statsmodels.api as sm
 import patsy
 
@@ -18,10 +22,10 @@ import numpy as np
 
 from ._stats import p_adjust_bh
 
-def combine_tests(obj, normalization=None, clust_alg=None, clustering=(), method='simes',
+def combine_tests(obj, normalization=None, clust_alg=None, method='fisher',
                   min_cluster_size=10, mtc='BH', retx=True, verbose=False):
     """Generates a set of marker genes for every cluster by combining tests from
-    pairwise analysis.
+    pairwise analyses.
     
     Notes
     -----
@@ -36,10 +40,8 @@ def combine_tests(obj, normalization=None, clust_alg=None, clustering=(), method
         then the function will be applied on the last normalization that was applied.
     clust_alg : `str`
         Name of the clustering strategy. If empty or None, the last one will be used.
-    clustering : `tuple`, optional
-        Specifies the clustering outcomes to work on.
-    method : `{'simes', 'fisher', 'stouffer'}`
-        Method for combining p-values. Only Simes' is implemented.
+    method : `{'fisher', 'simes', 'stouffer'}`
+        Method for combining p-values. Default: fisher
     min_cluster_size : `int`
         Minimum number of cells per cluster (clusters smaller than this are ignored).
         Default: 10
@@ -47,7 +49,8 @@ def combine_tests(obj, normalization=None, clust_alg=None, clustering=(), method
         Method to use for multiple testing correction. BH is Benjamini-Hochberg's
         procedure. Default: 'BH'
     retx : `bool`
-        Returns a data frame with results. Default: True
+        Returns a data frame with results (only modifying the object if False).
+        Default: True
     verbose : `bool`
         Be verbose or not. Default: False
     
@@ -55,16 +58,19 @@ def combine_tests(obj, normalization=None, clust_alg=None, clustering=(), method
     -------
     >>> import adobo as ad
     >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
-    >>> ad.normalize.norm(exp, method='standard')
+    >>> ad.normalize.norm(exp)
     >>> ad.hvg.find_hvg(exp)
     >>> ad.dr.pca(exp)
-    >>> ad.clustering.generate(exp, clust_alg='leiden')
+    >>> ad.clustering.generate(exp)
+    >>> ad.de.linear_model(exp)
+    >>> ad.de.combine_tests(exp)
 
     References
     ----------
     .. [1] Simes, R. J. (1986). An improved Bonferroni procedure for multiple tests of
            significance. Biometrika, 73(3):751-754.
     .. [2] https://tinyurl.com/yxy3dy4v
+    .. [3] https://en.wikipedia.org/wiki/Fisher%27s_method
 
     Returns
     -------
@@ -95,7 +101,7 @@ adobo.de.linear_model(...) first.')
     res = []
     for cc in q[q >= min_cluster_size].index:
         if verbose:
-            print('Working on cluster %s/%s' % (cc, len(q[q >= min_cluster_size])))
+            print('Working on cluster %s/%s' % (cc, len(q[q >= min_cluster_size])-1))
         idx = pval_mat.columns.str.match('^%s_vs'%cc)
         subset_mat = pval_mat.iloc[:, idx]
         if method == 'simes':
@@ -115,11 +121,11 @@ adobo.de.linear_model(...) first.')
     res = pd.concat(res)
     if mtc == 'BH':
         padj = p_adjust_bh(res.combined_pvalue)
-    elif mtc == 'BH':
+    elif mtc == 'bonferroni':
         padj = np.minimum(1, res.combined_pvalue*len(res.combined_pvalue))
     res['mtc_p'] = padj
     res = res.reset_index(drop=True)
-    obj.norm_data[k]['de'][algo]['combined'] = res
+    obj.norm_data[norm]['de'][clust_alg]['combined'] = res
     if retx:
         return res
 
@@ -296,3 +302,101 @@ normalization' % k)
                                    'mean.B' : pd.concat(out_mge_g2, ignore_index=True)})
                 obj.norm_data[k]['de'][algo] = {'long_format' : ll,
                                                 'mat_format' : out_merged}
+
+def _wilcox_worker(cc1, cc2, cl, X, min_n, verbose):
+    """Used internally in wilcox. This function must be outside of wilcox() for
+    apply_async to work."""
+    if verbose:
+        print('Working on cluster %s vs %s' % (cc1, cc2))
+    X_ss1 = X.iloc[:, (cl==cc1).values]
+    X_ss2 = X.iloc[:, (cl==cc2).values]
+    z = zip(X_ss1.iterrows(), X_ss2.iterrows())
+    pvs = []
+    for d in z:
+        if len(np.unique(d[0][1])) > min_n and len(np.unique(d[1][1])) > min_n:
+            pv = mannwhitneyu(d[0][1], d[1][1])
+            pvs.append(pv[1])
+        else:
+            pvs.append(np.nan)
+    pvs = pd.Series(pvs, index=X_ss1.index, name='%s_vs_%s' % (cc1, cc2))
+    return pvs
+
+def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=10,
+           nworkers='auto', retx=False, verbose=False):
+    """Performs differential expression analysis between clusters using the Wilcoxon
+    rank-sum test (Mann–Whitney U test)
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A dataset class object.
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None
+        then the function will be applied on the last normalization that was applied.
+    clust_alg : `str`
+        Name of the clustering strategy. If empty or None, the last one will be used.
+    min_cluster_size : `int`
+        Minimum number of cells per cluster (clusters smaller than this are ignored).
+        Default: 10
+    min_n : `int`
+        Minimum number of unique observations per group. Default: 10
+    nworkers : `int` or `{'auto'}`
+        If a string, then the only accepted value is 'auto', and the number of worker
+        processes will be the total number of detected physical cores. If an integer
+        then it specifies the number of worker processes. Default: 'auto'
+    retx : `bool`
+        Returns a data frame with results (only modifying the object if False).
+        Default: False
+    verbose : `bool`
+        Be verbose or not. Default: False
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test
+    .. [2] https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html
+
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    start_time = time.time()
+    if type(nworkers) == str:
+        if nworkers == 'auto':
+            nworkers = psutil.cpu_count(logical=False)
+        else:
+            raise Exception('Invalid value for parameter "nworkers".')
+    if verbose:
+        print('%s worker processes will be used' % nworkers)
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
+    if clust_alg == None or clust_alg == '':
+        clust_alg = list(target['clusters'].keys())[-1]
+    cl = target['clusters'][clust_alg]['membership']
+    q = pd.Series(cl).value_counts()
+    q = q[q >= min_cluster_size].index
+    res = []
+    X = target['data']
+    pool = Pool(nworkers)
+
+    def _update_results(y):
+        res.append(y)
+    for cc1 in q:
+        for cc2 in np.arange(cc1+1,len(q)):
+            args = (cc1, cc2, cl, X, min_n, verbose)
+            pool.apply_async(_wilcox_worker, args=args, callback=_update_results)
+
+    pool.close()
+    pool.join()
+    res = pd.concat(res, axis=1)
+    obj.norm_data[k]['de'][algo] = {'long_format' : None, 'mat_format' : res}
+    end_time = time.time()
+    if verbose:
+        print('Analysis took %.2f minutes' % ((end_time-start_time)/60))
+    if retx:
+        return res
