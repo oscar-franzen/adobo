@@ -113,6 +113,7 @@ adobo.de.linear_model(...) first.')
             for gene, r in subset_mat.iterrows():
                 if method == 'stouffer':
                     r[r == 0] = min(r[r > 0]) # a p=0 results in NaN
+                r = r[r.notna()]
                 T.append(scipy_combine_pvalues(r, method=method)[1])
             T = pd.Series(T, index=subset_mat.index)
         df = pd.DataFrame({'cluster' : [cc]*len(T),
@@ -313,11 +314,8 @@ def _wilcox_worker(cc1, cc2, cl, X, min_n, verbose):
     z = zip(X_ss1.iterrows(), X_ss2.iterrows())
     pvs = []
     for d in z:
-        if len(np.unique(d[0][1])) > min_n and len(np.unique(d[1][1])) > min_n:
-            pv = mannwhitneyu(d[0][1], d[1][1])
-            pvs.append(pv[1])
-        else:
-            pvs.append(np.nan)
+        pv = mannwhitneyu(d[0][1], d[1][1])
+        pvs.append(pv[1])
     pvs = pd.Series(pvs, index=X_ss1.index, name='%s_vs_%s' % (cc1, cc2))
     return pvs
 
@@ -395,7 +393,7 @@ def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=1
     pool.close()
     pool.join()
     res = pd.concat(res, axis=1)
-    obj.norm_data[k]['de'][algo] = {'long_format' : None, 'mat_format' : res}
+    obj.norm_data[norm]['de'][clust_alg] = {'long_format' : None, 'mat_format' : res}
     end_time = time.time()
     if verbose:
         print('Analysis took %.2f minutes' % ((end_time-start_time)/60))
