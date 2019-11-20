@@ -59,7 +59,7 @@ def overall_scatter(obj, color='#E69F00', title=None, filename=None):
     ax.set_xlabel('total reads')
     if title:
         ax.set_title(title)
-    if np.any(reads>100000):
+    if np.any(reads > 100000):
         plt.xticks(rotation=90)
     plt.tight_layout()
     if filename:
@@ -135,8 +135,8 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
         xlab = '%s bin' % what
         if cut_off:
             ax.axvline(linewidth=1, color='r', x=cut_off)
-            above = np.sum(summary>cut_off)
-            below = np.sum(summary<=cut_off)
+            above = np.sum(summary > cut_off)
+            below = np.sum(summary <= cut_off)
             ax.text(x=cut_off, y=1, s='%s above\n%s below' % (above, below))
     elif how == 'violin':
         parts = ax.violinplot(summary, showmedians=False)
@@ -155,7 +155,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
     elif not title and what == 'genes':
         title = 'total number of expressed genes per cell'
     ax.set_title(title)
-    if np.any(summary>100000):
+    if np.any(summary > 100000):
         plt.xticks(rotation=90)
     plt.tight_layout()
     if filename:
@@ -201,7 +201,7 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
         Write to a file instead of showing the plot on screen.
     verbose : `bool`
         Be verbose or not. Default: False
-    
+
     Example
     -------
     >>> import adobo as ad
@@ -228,7 +228,7 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
     plt.clf()
     plt.close(fig='all')
     if not isinstance(dim, list):
-        dim = np.arange(0,dim)
+        dim = np.arange(0, dim)
     f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=figsize)
     if ax.ndim == 1:
         ax = [ax]
@@ -245,13 +245,13 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
             continue
         count += 1
         contr = item['dr']['pca']['contr']
-        if clust_alg!=None and cluster!=None:
+        if clust_alg != None and cluster != None:
             X = item['data']
             try:
                 cl = item['clusters'][clust_alg]['membership']
             except KeyError:
                 raise Exception('%s not found' % clust_alg)
-            X_ss = X.loc[:, (cl==cluster).to_numpy()]
+            X_ss = X.loc[:, (cl == cluster).to_numpy()]
             X_ss = sklearn_scale(
                                 X_ss.transpose(),  # cells as rows and genes as columns
                                 axis=0,            # over genes, i.e. features (columns)
@@ -425,33 +425,34 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 remove = z[z < min_cluster_size].index.values
                 groups = groups[np.logical_not(pd.Series(groups).isin(remove))]
             z = z[z.index.isin(groups)].sort_index()
-            
+
             for i, k in enumerate(groups):
                 idx = np.array(cl) == k
                 e = E[idx]
                 col = colors[i]
                 aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
-                                        color=col, label=k) # don't remove label, it is
-                                                            # needed for sorting items
-                                                            # in the legend
+                                   color=col, label=k) # don't remove label, it is
+                                                       # needed for sorting items
+                                                       # in the legend
             aa[pl_idx].set_title('%s %s %s' % (norm_name, cl_algo, reduction),
                                  size=font_size)
             aa[pl_idx].set_aspect('equal')
             aa[pl_idx].set_gid(reduction+'_'+norm_name+'_' +cl_algo)
-            
+
             def _hh(sel):
                 foo = sel[0].axes.get_gid().split('_')
                 _red, _norm_name, _cl_algo = foo
                 cl_i = obj.norm_data[_norm_name]['clusters'][_cl_algo]['membership']
                 if cell_types:
-                    ct_i = obj.norm_data[_norm_name]['clusters'][_cl_algo]['cell_type_prediction']
+                    key = 'cell_type_prediction'
+                    ct_i = obj.norm_data[_norm_name]['clusters'][_cl_algo][key]
                 E_i = obj.norm_data[_norm_name]['dr'][reduction]['embedding']
                 v = np.logical_and(E_i.iloc[:, 0] == sel.target[0],
                                    E_i.iloc[:, 1] == sel.target[1])
                 c_idx = np.arange(0, E_i.shape[0])[v]
                 cl_target = cl_i[c_idx[0]]
                 if cell_types:
-                    ct_target = ct_i[ct_i.index==cl_target].loc[:, 'cell type'].values[0]
+                    ct_target = ct_i[ct_i.index == cl_target].loc[:, 'cell type'].values[0]
                     lab = 'cluster: %s\ncell type: %s' % (cl_target, ct_target)
                 else:
                     lab = 'cluster %s' % cl_target
@@ -462,10 +463,9 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 aa[pl_idx].set_xlabel('%s 2' % reduction)
             if legend:
                 lab = (z.index.astype(str)+' (n='+z.astype(str)+')').values
-                aa[pl_idx].legend(lab, loc='upper left',
-                                       markerscale=markerscale,
-                                       bbox_to_anchor=legend_position,
-                                       prop={'size': font_size})
+                aa[pl_idx].legend(lab, loc='upper left', markerscale=markerscale,
+                                  bbox_to_anchor=legend_position,
+                                  prop={'size': font_size})
                 if cell_types:
                     try:
                         d = obj.norm_data
@@ -499,7 +499,7 @@ has not been called yet.')
                 for i in np.arange(0, max(groups)+1):
                     for j in np.arange(i, max(groups))+1:
                         if adj.iloc[i, j] or adj.iloc[j, i]:
-                            xy = centers[(i,j),:]
+                            xy = centers[(i, j), :]
                             aa[pl_idx].plot(xy[:, 0], xy[:, 1], color='black')
             if edges and reduction == 'force_graph':
                 d = {}
@@ -532,20 +532,18 @@ has not been called yet.')
                     idx = np.array(m_d) == k
                     e = E[idx]
                     col = colors[i]
-                    aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1],
-                                            s=marker_size, color=col)
+                    aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
+                                       color=col)
                 if legend:
                     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
                     aa[pl_idx].legend(list(groups), loc='upper left',
-                                           markerscale=markerscale,
-                                           bbox_to_anchor=(1, 1),
-                                           prop={'size': font_size})
+                                      markerscale=markerscale, bbox_to_anchor=(1, 1),
+                                      prop={'size': font_size})
             else:
                 # If data are continuous
                 cmap = sns.cubehelix_palette(as_cmap=True)
-                po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1],
-                                             s=marker_size, c=m_d.values,
-                                             cmap=cmap)
+                po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
+                                        c=m_d.values, cmap=cmap)
                 cbar = fig.colorbar(po, ax=aa[pl_idx])
                 #cbar.set_label('foobar')
             aa[pl_idx].set_title(meta_var, size=font_size)
@@ -558,8 +556,8 @@ has not been called yet.')
                 raise Exception(m)
             ge = item['data'].loc[gene, :]
             cmap = sns.cubehelix_palette(as_cmap=True)
-            po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1],
-                                         s=marker_size, c=ge.values, cmap=cmap)
+            po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
+                                    c=ge.values, cmap=cmap)
             divider = make_axes_locatable(aa[pl_idx])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(po, cax=cax)
@@ -704,8 +702,8 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     filename : `str`, optional
         Write to a file instead of showing the plot on screen.
     **args
-        Passed on into seaborn's violinplot and boxplot functions 
-    
+        Passed on into seaborn's violinplot and boxplot functions
+
     Example
     -------
     >>> import adobo as ad
@@ -747,7 +745,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     rows = 1
     if isinstance(cluster, int):
         cluster = [cluster]
-    if cluster!=None and gene==None:
+    if cluster != None and gene == None:
         rows = len(cluster)
     fig, aa = plt.subplots(nrows=rows,
                            ncols=1,
@@ -755,7 +753,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     if rows == 1:
         aa = [aa]
     X = target['data']
-    if cluster!=None or gene:
+    if cluster != None or gene:
         try:
             cl = target['clusters'][clust_alg]['membership']
         except KeyError:
@@ -764,8 +762,8 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     else:
         cl = [0]*X.shape[1]
     ret = X.groupby(cl, axis=1).aggregate(rank_func)
-    if cluster!=None:
-        if np.any([i>ret.shape[1] for i in cluster]):
+    if cluster != None:
+        if np.any([i > ret.shape[1] for i in cluster]):
             raise Exception('Wrong cell cluster index specified.')
         ret = ret[cluster]
     idx = 0
@@ -776,7 +774,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
             X_ss = X[X.index.isin(d.index)]
             if violin:
                 p = sns.violinplot(ax=aa[idx], data=X_ss.transpose(), linewidth=linewidth,
-                                   order=d.index,scale=scale, **args)
+                                   order=d.index, scale=scale, **args)
             else:
                 p = sns.boxplot(ax=aa[idx], data=X_ss.transpose(), linewidth=linewidth,
                                 **args)
