@@ -322,7 +322,7 @@ def _wilcox_worker(cc1, cc2, cl, X, min_n, verbose):
     return pvs
 
 def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=10,
-           nworkers='auto', retx=False, verbose=False):
+           nworkers='auto', retx=False, verbose=True):
     """Performs differential expression analysis between clusters using the Wilcoxon
     rank-sum test (Mann–Whitney U test)
 
@@ -348,7 +348,7 @@ def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=1
         Returns a data frame with results (only modifying the object if False).
         Default: False
     verbose : `bool`
-        Be verbose or not. Default: False
+        Be verbose or not. Default: True
 
     References
     ----------
