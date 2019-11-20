@@ -386,6 +386,7 @@ def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=1
 
     def _update_results(y):
         res.append(y)
+
     for cc1 in q:
         for cc2 in np.arange(cc1+1,len(q)):
             args = (cc1, cc2, cl, X, min_n, verbose)
