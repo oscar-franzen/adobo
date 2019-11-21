@@ -131,9 +131,7 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_f
         cmd = '%s %s | head -n1' % (tool, filename)
         h = subprocess.check_output(cmd, shell=True).decode('ascii').replace('\n','')
         if sep == '\s':
-            hs = h.split('\t')
-            if len(hs) == 1:
-                hs = h.split(' ')
+            hs = re.split('[\s,]', h)
             if len(hs) > 1:
                 if len(hs) == count_data.shape[1]:
                     count_data.columns = hs
