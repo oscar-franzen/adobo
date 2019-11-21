@@ -16,23 +16,23 @@ from statsmodels import robust
 
 def bw_nrd(x):
     """Selects bandwidth for gaussian kernels
-    
+
     Parameters
     ----------
     x : `list`
         An input list of data points.
-    
+
     References
     ----------
     .. [1] Scott, D. W. (1992) _Multivariate Density Estimation: Theory,
            Practice, and Visualization._ New York: Wiley.
-    
+
     Returns
     -------
     int
         KDE bandwidth.
     """
-    
+
     r = np.quantile(x, (0.25, 0.75))
     h = float(r[1]-r[0])/1.34
     bw = 1.06 * min(np.sqrt(np.var(x)), h) * len(x)**(-1/5)
@@ -48,25 +48,25 @@ def row_geometric_mean(mat, eps=1):
         columns=cells).
     eps : float
         A small constant to avoid log(0)=-inf (default: 1).
-    
+
     References
     ----------
     .. [1] https://en.wikipedia.org/wiki/Geometric_mean
-    
+
     Returns
     -------
     :class:`pandas.Series`
         Computed values.
     """
-    return mat.apply(lambda x : np.exp(np.mean(np.log(x+eps)))-eps, axis=1)
-    
+    return mat.apply(lambda x: np.exp(np.mean(np.log(x+eps)))-eps, axis=1)
+
 def theta_ml(y, mu, limit=10, eps=np.finfo(float).eps, verbose=False):
     """Estimates theta of the Negative Binomial Distribution using maximum likelihood
-    
+
     Notes
     -----
     Adapted from the theta.ml function of the R package MASS.
-    
+
     Parameters
     ----------
     y : `list`
@@ -75,35 +75,35 @@ def theta_ml(y, mu, limit=10, eps=np.finfo(float).eps, verbose=False):
         Estimated mean vector.
     limit : `int`
         Maximum number of iterations (default: 10).
-    
+
     Returns
     -------
     :float
         Estimated theta.
     """
     digamma = scipy.special.digamma
-    trigamma = lambda x : scipy.special.polygamma(1, x)
+    trigamma = lambda x: scipy.special.polygamma(1, x)
     log = np.log
-    
+
     def score(n, th, mu, y, w):
         return sum(w*(digamma(th+y)-digamma(th)+log(th)+1-log(th+mu)-(y+th)/(mu+th)))
-    
+
     def info(n, th, mu, y, w):
         return sum(w*(-trigamma(th+y)+trigamma(th)-1/th+2/(mu+th)-(y+th)/(mu+th)**2))
-    
+
     weights = [1]*len(y)
     n = sum(weights)
     t0 = n/sum(weights*(y/mu-1)**2)
     it = 0
     del_ = 1
-    
+
     while it < limit and np.abs(del_) > eps:
         it = it+1
         t0 = abs(t0)
-        i = info(n, t0,  mu, y, weights)
+        i = info(n, t0, mu, y, weights)
         del_ = score(n, t0, mu, y, weights)/i
         t0 = t0 + del_
-    
+
     if t0 < 0 and verbose:
         print('theta_ml(): estimate truncated at zero')
     if it == limit and verbose:
