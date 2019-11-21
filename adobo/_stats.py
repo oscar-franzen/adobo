@@ -78,7 +78,7 @@ def theta_ml(y, mu, limit=10, eps=np.finfo(float).eps, verbose=False):
 
     Returns
     -------
-    :float
+    float
         Estimated theta.
     """
     digamma = scipy.special.digamma
@@ -131,7 +131,23 @@ def is_outlier(y, x, thres=10):
     return np.minimum(abs(score1), abs(score2)) > thres
 
 def p_adjust_bh(p):
-    """Benjamini-Hochberg p-value correction for multiple hypothesis testing."""
+    """The Benjamini-Hochberg p-value correction for multiple hypothesis testing.
+
+    Parameters
+    ----------
+    p : `list`
+        A list of p-values.
+
+    References
+    ----------
+    .. [1] Benjamini & Hochberg (1995) Controlling the false discovery rate: a practical
+        and powerful approach to multiple testing.  J Royal Statistical Society, Series B
+
+    Returns
+    -------
+    int
+        Adjusted p-values.
+    """
     p = np.asfarray(p)
     p = np.ma.array(p, mask=np.isnan(p)) # to handle nan
     by_descend = p.argsort()[::-1]
