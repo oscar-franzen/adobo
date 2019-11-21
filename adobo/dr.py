@@ -9,6 +9,7 @@ Summary
 Functions for dimensional reduction.
 """
 import sys
+from random import sample
 import pandas as pd
 import numpy as np
 import scipy.linalg
@@ -31,7 +32,8 @@ def force_graph(obj, name=(), iterations=1000, edgeWeightInfluence=1.0,
     obj : :class:`adobo.data.dataset`
         A data class object.
     name : `str`
-        The name of the normalization to operate on. Default is to run on all.
+        The name of the normalization to operate on. If this is empty or None
+        then the function will be applied on the last normalization that was applied.
     iterations : `int`
         Number of iterations. Default: 1000
     edgeWeightInfluence : `float`
@@ -91,7 +93,7 @@ def force_graph(obj, name=(), iterations=1000, edgeWeightInfluence=1.0,
         obj.norm_data[l]['dr']['force_graph'] = {'coords' : pd.DataFrame(npa)}
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def irlb(data_norm, ncomp=75, seed=None):
+def irlb(data_norm, ncomp=75, var_weigh=True, seed=None):
     """Truncated SVD by implicitly restarted Lanczos bidiagonalization
 
     Notes
@@ -99,6 +101,8 @@ def irlb(data_norm, ncomp=75, seed=None):
     The augmented implicitly restarted Lanczos bidiagonalization algorithm (IRLBA) finds
     a few approximate largest singular values and corresponding singular vectors using a
     method of Baglama and Reichel.
+    
+    Cells should be rows and genes as columns.
 
     Parameters
     ----------
@@ -106,6 +110,8 @@ def irlb(data_norm, ncomp=75, seed=None):
         A pandas data frame containing normalized gene expression data.
     ncomp : `int`
         Number of components to return. Default: 75
+    var_weigh : `bool`
+        Weigh by the variance of each component. Default: True
     seed : `int`
         For reproducibility. Default: None
 
@@ -124,11 +130,14 @@ def irlb(data_norm, ncomp=75, seed=None):
     """
     inp = data_norm
     lanc = irlbpy.lanczos(inp, nval=ncomp, maxit=1000, seed=seed)
-    # weighing by var
-    comp = np.dot(lanc.V, np.diag(lanc.s))
+    if var_weigh:
+        # weighing by variance
+        comp = np.dot(lanc.U, np.diag(lanc.s))
+    else:
+        comp = lanc.U
     comp = pd.DataFrame(comp)
     # gene contributions
-    contr = pd.DataFrame(np.abs(lanc.U), index=inp.index)
+    contr = pd.DataFrame(np.abs(lanc.V), index=inp.columns)
     return comp, contr
 
 def svd(data_norm, ncomp=75, only_sdev=False):
@@ -163,22 +172,23 @@ def svd(data_norm, ncomp=75, only_sdev=False):
     """
     inp = data_norm
     nfeatures = inp.shape[0]
-    inp = inp.transpose()
+    #inp = inp.transpose()
     compute_uv = not only_sdev
-    s = scipy.linalg.svd(inp, compute_uv=compute_uv)
+    # at this point, inp should have cells as columns and genes as rows
+    U, s, Vh = scipy.linalg.svd(inp, compute_uv=compute_uv)
     if only_sdev:
         sdev = s/np.sqrt(nfeatures-1)
         return sdev
-    v = s[2].transpose()
     d = s[1]
-    retx = inp.dot(v)
+    Vh = Vh.transpose()
+    retx = inp.dot(Vh)
     retx = retx.iloc[:, 0:ncomp]
     comp = retx
-    contr = pd.DataFrame(np.abs(v[:, 0:ncomp]), index=inp.columns)
+    contr = pd.DataFrame(Vh[:, 0:ncomp], index=inp.columns)
     return comp, contr
 
 def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
-        verbose=False, seed=None):
+        var_weigh=True, verbose=False, seed=42):
     """Principal Component Analysis
 
     Notes
@@ -203,10 +213,12 @@ def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
         Use all genes instead of only HVG. Default: False
     scale : `bool`
         Scales input data prior to PCA. Default: True
+    var_weigh : `bool`
+        Weigh by the variance of each component. Default: True
     verbose : `bool`
         Be noisy or not. Default: False
     seed : `int`
-        For reproducibility (only irlb). Default: None
+        For reproducibility (only irlb). Default: 42
 
     References
     ----------
@@ -239,24 +251,26 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         elif verbose:
             print('Using all genes')
         idx = data.index
+        cols = data.columns
         if scale:
             data = sklearn_scale(
                                 data.transpose(),  # cells as rows and genes as columns
                                 axis=0,            # over genes, i.e. features (columns)
                                 with_mean=True,    # subtracting the column means
                                 with_std=True)     # scale the data to unit variance
-            data = pd.DataFrame(data.transpose(), index=idx)
+            # cells should be rows and genes as columns
+            data = pd.DataFrame(data, columns=idx, index=cols)
         if verbose:
             v = (method, k, data.shape[0], data.shape[1])
             print('Running PCA (method=%s) on the %s normalization (dimensions \
 %s genes x %s cells)' % v)
         if method == 'irlb':
-            comp, contr = irlb(data, ncomp, seed)
+            comp, contr = irlb(data, ncomp, var_weigh, seed)
         elif method == 'svd':
             comp, contr = svd(data, ncomp)
         else:
             raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
-        comp.index = data.columns
+        comp.index = data.index
         obj.norm_data[k]['dr']['pca'] = {'comp' : comp,
                                          'contr' : contr,
                                          'method' : method}
@@ -266,8 +280,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
 
 def tsne(obj, run_on_PCA=True, name=None, perplexity=30, n_iter=2000, seed=None,
          verbose=False, **args):
-    """
-    Projects data to a two dimensional space using the tSNE algorithm.
+    """Projects data to a two dimensional space using the tSNE algorithm.
 
     Notes
     -----
@@ -343,8 +356,7 @@ adobo.dr.pca()')
 def umap(obj, run_on_PCA=True, name=None, n_neighbors=15, distance='euclidean',
          n_epochs=None, learning_rate=1.0, min_dist=0.1, spread=1.0, seed=None,
          verbose=False, **args):
-    """
-    Projects data to a low-dimensional space using the Uniform Manifold Approximation
+    """Projects data to a low-dimensional space using the Uniform Manifold Approximation
     and Projection (UMAP) algorithm
 
     Notes
@@ -424,3 +436,72 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         emb = pd.DataFrame(emb, index=X.index)
         obj.norm_data[k]['dr']['umap'] = {'embedding' : emb}
     obj.set_assay(sys._getframe().f_code.co_name)
+
+def jackstraw(obj, normalization=None, permutations=100, ncomp=15, subset_frac_genes=0.05):
+    """Determine the number of relevant PCA components.
+    
+    Notes
+    -----
+    Permutes a subset of the data matrix and compares PCA scores with the original.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A dataset class object.
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on all normalizations available.
+    permutations : `int`
+        Number of permutations to run. Default: 100
+    ncomp : `int`
+        Number of principal components to calculate significance for. Default: 15
+    subset_frac_genes : `float`
+        Proportion genes to use. Default: 0.10
+    verbose : `bool`
+        Be verbose. Default: False
+
+    References
+    ----------
+    .. [1] Chung & Storey (2015) Statistical significance of variables driving
+            systematic variation in high-dimensional data, Bioinformatics
+            https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4325543/
+
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    item = obj.norm_data[norm]
+    try:
+        l = item['dr']['pca']['contr']
+    except KeyError:
+        raise Exception('Run `adobo.dr.pca(...)` first.')
+    if ncomp > X.shape[1]:
+        raise Exception('"ncomp" is higher than the number of available components \
+computed by adobo.dr.pca(...)')
+    X = item['data']
+    try:
+        hvg = item['hvg']['genes']
+    except KeyError:
+        raise Exception('Run adobo.dr.find_hvg() first.')
+    X = X[X.index.isin(hvg)]
+    idx = X.index
+    cols = X.columns
+    X = sklearn_scale(X.transpose(),  # cells as rows and genes as columns
+                      axis=0,         # over genes, i.e. features (columns)
+                      with_mean=True, # subtracting the column means
+                      with_std=True)  # scale the data to unit variance
+    X = pd.DataFrame(X.transpose(), index=idx, columns=cols)
+    for perm in np.arange(0,permutations):
+        shuffled_genes = sample(list(idx.values), round(len(idx)*subset_frac_genes))
+        X_cp = X.copy()
+        data_perm = X_cp.loc[shuffled_genes, :]
+        # shuffle rows
+        data_perm = pd.DataFrame(np.random.permutation(data_perm),
+                                 index=data_perm.index, columns=data_perm.columns)
+        X_cp.loc[shuffled_genes, :] = data_perm
+        comp, contr = irlb(X_cp, ncomp=ncomp)
+        q = contr.loc[shuffled_genes, :]
