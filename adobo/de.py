@@ -304,7 +304,7 @@ normalization' % k)
                 obj.norm_data[k]['de'][algo] = {'long_format' : ll,
                                                 'mat_format' : out_merged}
 
-def _wilcox_worker(cc1, cc2, cl, X, min_n, verbose):
+def _wilcox_worker(cc1, cc2, cl, X, verbose):
     """Used internally in wilcox. This function must be outside of wilcox() for
     apply_async to work."""
     if verbose:
@@ -314,13 +314,18 @@ def _wilcox_worker(cc1, cc2, cl, X, min_n, verbose):
     z = zip(X_ss1.iterrows(), X_ss2.iterrows())
     pvs = []
     for d in z:
-        pv = mannwhitneyu(d[0][1], d[1][1])
+        try:
+            pv = mannwhitneyu(d[0][1], d[1][1])
+        except ValueError:
+            # reaches here if all zeros in both groups, then assume p-value is 1
+            # (no difference at all)
+            pv = np.nan, 1
         pvs.append(pv[1])
     pvs = pd.Series(pvs, index=X_ss1.index, name='%s_vs_%s' % (cc1, cc2))
     return pvs
 
-def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=10,
-           nworkers='auto', retx=False, verbose=True):
+def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, nworkers='auto',
+           retx=False, verbose=True):
     """Performs differential expression analysis between clusters using the Wilcoxon
     rank-sum test (Mann–Whitney U test)
 
@@ -336,8 +341,6 @@ def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=1
     min_cluster_size : `int`
         Minimum number of cells per cluster (clusters smaller than this are ignored).
         Default: 10
-    min_n : `int`
-        Minimum number of unique observations per group. Default: 10
     nworkers : `int` or `{'auto'}`
         If a string, then the only accepted value is 'auto', and the number of worker
         processes will be the total number of detected physical cores. If an integer
@@ -369,6 +372,8 @@ def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=1
         norm = list(obj.norm_data.keys())[-1]
     else:
         norm = normalization
+    if verbose and normalization == None:
+        print('Working on %s' % norm)
     try:
         target = obj.norm_data[norm]
     except KeyError:
@@ -387,7 +392,7 @@ def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, min_n=1
 
     for cc1 in q:
         for cc2 in np.arange(cc1+1,len(q)):
-            args = (cc1, cc2, cl, X, min_n, verbose)
+            args = (cc1, cc2, cl, X, verbose)
             pool.apply_async(_wilcox_worker, args=args, callback=_update_results)
 
     pool.close()
