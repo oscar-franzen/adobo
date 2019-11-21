@@ -94,8 +94,8 @@ simes, fisher, and stouffer')
     try:
         pval_mat = obj.norm_data[norm]['de'][clust_alg]['mat_format']
     except KeyError:
-        raise Exception('P-values have not been generated yet. Please run \
-adobo.de.linear_model(...) first.')
+        raise Exception('P-values have not been generated yet. Please first run \
+adobo.de.linear_model or adobo.de.wilcox(...)')
     # remove clusters with too few cells
     q = pd.Series(cl).value_counts()
     res = []
