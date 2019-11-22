@@ -24,5 +24,4 @@ CLUSTER_COLORS_DEFAULT = ['#5EECD9', '#E3B7E2', '#9BF236', '#DD61DF', '#D9BC96',
        '#84A1B2', '#B7EDA1', '#7FAADE', '#C3DEE4', '#AF7AE7', '#827A3E',
        '#A8B73F', '#E9E7DC']
 
-# for barplots
-YLW_CURRY='#fcc603'
+YLW_CURRY='#E69F00'

@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
-from sklearn.preprocessing import scale as sklearn_scale
 import networkx as nx
 import igraph as ig
 import mplcursors
@@ -25,7 +24,7 @@ from .dr import svd, irlb
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
-def overall_scatter(obj, color='#E69F00', title=None, filename=None):
+def overall_scatter(obj, color=YLW_CURRY, title=None, filename=None):
     """Generates a scatter plot showing the total number of reads on one axis
        and the number of detected genes on the other axis
 
@@ -69,7 +68,7 @@ def overall_scatter(obj, color='#E69F00', title=None, filename=None):
     plt.close()
 
 def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
-            color='#E69F00', title=None, filename=None):
+            color=YLW_CURRY, title=None, filename=None):
     """Generates a plot of read counts per cell or expressed genes per cell
 
     Parameters
@@ -165,7 +164,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
     plt.close()
 
 def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
-                     dim=[0, 1, 2, 3, 4], top=10, color='#fcc603', fontsize=6,
+                     dim=[0, 1, 2, 3, 4], top=10, color=YLW_CURRY, fontsize=6,
                      figsize=(10, 5), filename=None, **args):
     """Examine the top contributing genes to each PCA component. Optionally, one can
     examine the PCA components of a cell cluster instead.
@@ -573,7 +572,7 @@ has not been called yet.')
         plt.show()
 
 def pca_elbow(obj, normalization=None, comp_max=100, all_genes=False, filename=None,
-              font_size=8, figsize=(6, 4), color='#fcc603', title='PCA elbow plot',
+              font_size=8, figsize=(6, 4), color=YLW_CURRY, title='PCA elbow plot',
               **args):
     """Generates a PCA elbow plot
 
