@@ -196,11 +196,12 @@ def svd(data_norm, scale=True, ncomp=75, only_sdev=False):
         inp = pd.DataFrame(inp, columns=idx, index=cols)
     nfeatures = inp.shape[0]
     compute_uv = not only_sdev
-    # cells should be rows and genes as columns
-    U, s, Vh = scipy.linalg.svd(inp, compute_uv=compute_uv)
     if only_sdev:
+        s = scipy.linalg.svd(inp, compute_uv=compute_uv)
         sdev = s/np.sqrt(nfeatures-1)
         return sdev
+    # cells should be rows and genes as columns
+    U, s, Vh = scipy.linalg.svd(inp, compute_uv=compute_uv)
     Vh = Vh.transpose()
     retx = inp.dot(Vh)
     retx = retx.iloc[:, 0:ncomp]

@@ -21,7 +21,7 @@ import igraph as ig
 import mplcursors
 
 import adobo
-from .dr import pca, svd, irlb
+from .dr import svd, irlb
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
@@ -166,7 +166,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
 
 def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
                      dim=[0, 1, 2, 3, 4], top=10, color='#fcc603', fontsize=6,
-                     figsize=(10, 5), filename=None, verbose=False, **args):
+                     figsize=(10, 5), filename=None, **args):
     """Examine the top contributing genes to each PCA component. Optionally, one can
     examine the PCA components of a cell cluster instead.
 
@@ -200,8 +200,6 @@ def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
         Figure size in inches. Default: (10, 10)
     filename : `str`, optional
         Write to a file instead of showing the plot on screen.
-    verbose : `bool`
-        Be verbose or not. Default: False
 
     Example
     -------
@@ -574,24 +572,25 @@ has not been called yet.')
     else:
         plt.show()
 
-def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_size=8,
-              figsize=(10, 10), verbose=True, **args):
+def pca_elbow(obj, normalization=None, comp_max=100, all_genes=False, filename=None,
+              font_size=8, figsize=(6, 4), color='#fcc603', title='PCA elbow plot',
+              **args):
     """Generates a PCA elbow plot
 
     Notes
     -----
-    Can be used for determining the number of principal components to include. PCA is
-    based on singular value decomposition.
+    Can be useful for determining the number of components to include. Here, PCA is
+    computed using singular value decomposition.
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
           A data class object
-    name : `tuple`
-        A tuple of normalization to use. If it has the length zero, then all available
-        normalizations will be used.
+    normalization : `str`
+        The name of the normalization to operate on. If empty or None, the last one
+        generated is be used. Default: None
     comp_max : `int`
-        Maximum number of components to include.
+        Maximum number of components to include. Default: 100
     all_genes : `bool`
         Run on all genes, i.e. not only highly variable genes. Default: False
     filename : `str`, optional
@@ -600,54 +599,44 @@ def pca_elbow(obj, name=(), comp_max=200, all_genes=False, filename=None, font_s
         Font size. Default: 8
     figsize : `tuple`
         Figure size in inches. Default: (10, 10)
-    verbose : `bool`
-        Be verbose or not. Default: True
+    color : `str`
+        Color of the line. Default: #fcc603
+    title : `str`
+        A plot title.
 
     Returns
     -------
     Nothing.
     """
-    targets = {}
-    if len(name) == 0 or name == '':
-        targets = obj.norm_data
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
     else:
-        targets[name] = obj.norm_data[name]
-    # setup plotting grid
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
     plt.clf()
     plt.close(fig='all')
-    fig, aa = plt.subplots(nrows=1,
-                           ncols=len(targets),
-                           figsize=figsize)
-    if len(targets) == 1:
-        aa = [aa]
-    else:
-        aa = aa.flatten()
-    for i, k in enumerate(targets):
-        if verbose:
-            print('Running %s' % k)
-        item = targets[k]
-        if not 'hvg' in item and not all_genes:
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+    X = target['data']
+    if not all_genes:
+        try:
+            hvg = target['hvg']['genes']
+        except KeyError:
             raise Exception('Run adobo.dr.find_hvg() first.')
-        X = item['data']
-        if not all_genes:
-            hvg = item['hvg']['genes']
-            X = X[X.index.isin(hvg)]
-        else:
-            if verbose:
-                print('Using all genes')
-        d_scaled = sklearn_scale(X.transpose(),     # cells as rows and genes as columns
-                                 axis=0,            # over genes, i.e. features (columns)
-                                 with_mean=True,    # subtracting the column means
-                                 with_std=True)     # scale the data to unit variance
-        d_scaled = pd.DataFrame(d_scaled.transpose(), index=X.index)
-        sdev = svd(d_scaled, ncomp=None, only_sdev=True)
-        var = sdev**2
-        pvar = var/sum(var)
-        cs = np.cumsum(pvar)[0:comp_max]
-        aa[i].plot(cs)
-        aa[i].set_ylabel('cumulative variance (percent of total)')
-        aa[i].set_xlabel('components')
-        aa[i].set_title(k)
+        X = X[X.index.isin(hvg)]
+    else:
+        if verbose:
+            print('Using all genes')
+    sdev = svd(X, only_sdev=True)
+    var = sdev**2
+    pvar = var/sum(var)
+    cs = np.cumsum(pvar)[0:comp_max]
+    ax.plot(cs, color=color)
+    ax.set_ylabel('cumulative variance (percent of total)')
+    ax.set_xlabel('components')
+    ax.set_title(title)
     if filename != None:
         plt.savefig(filename, **args)
     else:
