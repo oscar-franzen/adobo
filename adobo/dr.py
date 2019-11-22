@@ -451,7 +451,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         obj.norm_data[k]['dr']['umap'] = {'embedding' : emb}
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def jackstraw(obj, normalization=None, permutations=100, ncomp=15, subset_frac_genes=0.05):
+def jackstraw(obj, normalization=None, permutations=100, ncomp=15,
+              subset_frac_genes=0.05, verbose=False):
     """Determine the number of relevant PCA components.
     
     Notes
@@ -490,11 +491,11 @@ def jackstraw(obj, normalization=None, permutations=100, ncomp=15, subset_frac_g
         norm = normalization
     item = obj.norm_data[norm]
     try:
-        loadings = item['dr']['pca']['contr']
+        loadings = np.abs(item['dr']['pca']['contr'])
     except KeyError:
         raise Exception('Run `adobo.dr.pca(...)` first.')
     X = item['data']
-    if ncomp > X.shape[1]:
+    if ncomp > loadings.shape[1]:
         raise Exception('"ncomp" is higher than the number of available components \
 computed by adobo.dr.pca(...)')
     try:
@@ -502,19 +503,34 @@ computed by adobo.dr.pca(...)')
     except KeyError:
         raise Exception('Run adobo.dr.find_hvg() first.')
     X = X[X.index.isin(hvg)]
+    X_scaled = sklearn_scale(X.transpose(), axis=0, with_mean=True,
+                             with_std=True).transpose()
+    X_scaled = pd.DataFrame(X_scaled, index=X.index, columns=X.columns)
+    
     perm_loadings = []
     for perm in np.arange(0, permutations):
-        print(perm)
-        shuffled_genes = sample(list(X.index), round(X.shape[0]*subset_frac_genes))
-        X_cp = X.copy()
-        data_perm = X_cp.loc[shuffled_genes, :]
-        # shuffle rows
-        data_perm = pd.DataFrame(np.random.permutation(data_perm),
-                                 index=data_perm.index, columns=data_perm.columns)
-        # put shuffled genes back into the original data
-        X_cp.loc[shuffled_genes, :] = data_perm
-        comp, contr = irlb(X_cp, ncomp=ncomp)
-        pl = contr.loc[shuffled_genes, :]
-        pl = contr[contr.index.isin(shuffled_genes)].iloc[:, 0:ncomp]
+        if verbose:
+            print('random set %s ' % perm)
+        rand_genes = sample(list(X.index), round(X.shape[0]*subset_frac_genes))
+        X_cp = X_scaled.copy()
+        data_perm = X_cp.loc[rand_genes, :]
+        # permutate every row
+        data_perm = [np.random.permutation(_col) for g, _col in data_perm.iterrows()]
+        data_perm = pd.DataFrame(np.array(data_perm), index=rand_genes,
+                                 columns=X_cp.columns)
+        # put permutated data back into the original data
+        X_cp.loc[rand_genes, :] = data_perm
+        comp, contr = irlb(X_cp, scale=False, ncomp=ncomp)
+        pl = contr[contr.index.isin(rand_genes)].iloc[:, 0:ncomp]
         pl = np.abs(pl)
         perm_loadings.append(pl)
+    perm_loadings = pd.concat(perm_loadings, axis=0, ignore_index=True)
+    res = []
+    for i, pc in perm_loadings.iloc[:, 0:ncomp].transpose().iterrows():
+        real = loadings[i]
+        emp_p = [np.sum(pc>val)/len(pc) for g, val in real.iteritems()]
+        res.append(pd.Series(emp_p, name=i))
+    res = pd.concat(res, axis=1, ignore_index=True)
+    n = [q1+q2 for q1, q2 in zip(['PC']*res.shape[1], res.columns.values.astype(str))]
+    res.columns = n
+    return res
