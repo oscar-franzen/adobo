@@ -93,7 +93,7 @@ def force_graph(obj, name=(), iterations=1000, edgeWeightInfluence=1.0,
         obj.norm_data[l]['dr']['force_graph'] = {'coords' : pd.DataFrame(npa)}
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def irlb(data_norm, ncomp=75, var_weigh=True, seed=None):
+def irlb(data_norm, scale=True, ncomp=75, var_weigh=True, seed=None):
     """Truncated SVD by implicitly restarted Lanczos bidiagonalization
 
     Notes
@@ -108,6 +108,8 @@ def irlb(data_norm, ncomp=75, var_weigh=True, seed=None):
     ----------
     data_norm : :py:class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
+    scale : `bool`
+        Scales input data prior to PCA. Default: True
     ncomp : `int`
         Number of components to return. Default: 75
     var_weigh : `bool`
@@ -129,6 +131,16 @@ def irlb(data_norm, ncomp=75, var_weigh=True, seed=None):
         A py:class:`pandas.DataFrame` containing the contributions of every gene (rows).
     """
     inp = data_norm
+    idx = inp.index
+    cols = inp.columns
+    inp = inp.transpose()
+    if scale:
+        inp = sklearn_scale(inp,  # cells as rows and genes as columns
+                            axis=0,           # over genes, i.e. features (columns)
+                            with_mean=True,   # subtracting the column means
+                            with_std=True)    # scale the data to unit variance
+        inp = pd.DataFrame(inp, columns=idx, index=cols)
+    # cells should be rows and genes as columns
     lanc = irlbpy.lanczos(inp, nval=ncomp, maxit=1000, seed=seed)
     if var_weigh:
         # weighing by variance
@@ -136,11 +148,11 @@ def irlb(data_norm, ncomp=75, var_weigh=True, seed=None):
     else:
         comp = lanc.U
     comp = pd.DataFrame(comp)
-    # gene contributions
-    contr = pd.DataFrame(np.abs(lanc.V), index=inp.columns)
+    # gene loadings
+    contr = pd.DataFrame(lanc.V, index=inp.columns)
     return comp, contr
 
-def svd(data_norm, ncomp=75, only_sdev=False):
+def svd(data_norm, scale=True, ncomp=75, only_sdev=False):
     """Principal component analysis via singular value decomposition
 
     Parameters
@@ -149,6 +161,8 @@ def svd(data_norm, ncomp=75, only_sdev=False):
         A pandas data frame containing normalized gene expression data. Preferrably this
         should be a subset of the normalized gene expression matrix containing highly
         variable genes.
+    scale : `bool`
+        Scales input data prior to PCA. Default: True
     ncomp : `int`
         Number of components to return. Default: 75
     only_sdev : `bool`
@@ -171,19 +185,27 @@ def svd(data_norm, ncomp=75, only_sdev=False):
         if only_sdev is set to True.
     """
     inp = data_norm
+    idx = inp.index
+    cols = inp.columns
+    inp = inp.transpose()
+    if scale:
+        inp = sklearn_scale(inp,  # cells as rows and genes as columns
+                            axis=0,           # over genes, i.e. features (columns)
+                            with_mean=True,   # subtracting the column means
+                            with_std=True)    # scale the data to unit variance
+        inp = pd.DataFrame(inp, columns=idx, index=cols)
     nfeatures = inp.shape[0]
-    #inp = inp.transpose()
     compute_uv = not only_sdev
-    # at this point, inp should have cells as columns and genes as rows
+    # cells should be rows and genes as columns
     U, s, Vh = scipy.linalg.svd(inp, compute_uv=compute_uv)
     if only_sdev:
         sdev = s/np.sqrt(nfeatures-1)
         return sdev
-    d = s[1]
     Vh = Vh.transpose()
     retx = inp.dot(Vh)
     retx = retx.iloc[:, 0:ncomp]
     comp = retx
+    # gene loadings
     contr = pd.DataFrame(Vh[:, 0:ncomp], index=inp.columns)
     return comp, contr
 
@@ -250,24 +272,14 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             data = data[data.index.isin(hvg)]
         elif verbose:
             print('Using all genes')
-        idx = data.index
-        cols = data.columns
-        if scale:
-            data = sklearn_scale(
-                                data.transpose(),  # cells as rows and genes as columns
-                                axis=0,            # over genes, i.e. features (columns)
-                                with_mean=True,    # subtracting the column means
-                                with_std=True)     # scale the data to unit variance
-            # cells should be rows and genes as columns
-            data = pd.DataFrame(data, columns=idx, index=cols)
         if verbose:
             v = (method, k, data.shape[0], data.shape[1])
             print('Running PCA (method=%s) on the %s normalization (dimensions \
 %s genes x %s cells)' % v)
         if method == 'irlb':
-            comp, contr = irlb(data, ncomp, var_weigh, seed)
+            comp, contr = irlb(data, scale, ncomp, var_weigh, seed)
         elif method == 'svd':
-            comp, contr = svd(data, ncomp)
+            comp, contr = svd(data, scale, ncomp)
         else:
             raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
         comp.index = data.index

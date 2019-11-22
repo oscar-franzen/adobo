@@ -21,7 +21,7 @@ import igraph as ig
 import mplcursors
 
 import adobo
-from .dr import svd, irlb
+from .dr import pca, svd, irlb
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
@@ -164,9 +164,9 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
         plt.show()
     plt.close()
 
-def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2],
-                     top=10, color='#fcc603', fontsize=6, figsize=(10, 5), filename=None,
-                     verbose=False, **args):
+def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
+                     dim=[0, 1, 2, 3, 4], top=10, color='#fcc603', fontsize=6,
+                     figsize=(10, 5), filename=None, verbose=False, **args):
     """Examine the top contributing genes to each PCA component. Optionally, one can
     examine the PCA components of a cell cluster instead.
 
@@ -179,11 +179,12 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
     ----------
     obj : :class:`adobo.data.dataset`
           A data class object
-    name : `str`
-        The name of the normalization to operate on. If this is empty or None
-        then the function will be applied on all normalizations available.
+    normalization : `str`
+        The name of the normalization to operate on. If empty or None, the last one
+        generated is be used. Default: None
     clust_alg : `str`
-        Name of the clustering strategy.
+        Name of the clustering strategy. If empty or None, the last one generated is
+        be used. Default: None
     cluster : `int`
         Name of the cluster.
     dim : `list` or `int`
@@ -212,72 +213,63 @@ def pca_contributors(obj, name=None, clust_alg=None, cluster=None, dim=[0, 1, 2]
     >>> ad.plotting.pca_contributors(exp, dim=4)
     >>> # decomposition of a specific cluster
     >>> ad.clustering.generate(exp, clust_alg='leiden')
-    >>> ad.plotting.pca_contributors(exp, dim=4, cluster_alg='leiden', cluster=0)
+    >>> ad.plotting.pca_contributors(exp, dim=4, cluster=0)
 
     Returns
     -------
     Nothing
     """
-    targets = {}
-    if name is None or name == '':
-        targets = obj.norm_data
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
     else:
-        targets[name] = obj.norm_data[name]
-    if len(targets) == 0:
-        raise Exception('Nothing found to work on.')
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
+    if clust_alg == None or clust_alg == '':
+        try:
+            clust_alg = list(target['clusters'].keys())[-1]
+        except KeyError:
+            pass
     plt.clf()
     plt.close(fig='all')
     if not isinstance(dim, list):
         dim = np.arange(0, dim)
-    f, ax = plt.subplots(nrows=len(targets), ncols=len(dim), figsize=figsize)
-    if ax.ndim == 1:
-        ax = [ax]
+    f, ax = plt.subplots(nrows=1, ncols=len(dim), figsize=figsize)
     f.subplots_adjust(wspace=1)
-    count = 0
-    for row, k in enumerate(targets):
-        item = targets[k]
-        if verbose:
-            print('Plotting the %s normalization' % k)
-        if not 'pca' in item['dr']:
-            print('pca decomposition not found for the %s normalization' % k)
-            for d in dim:
-                ax[row][d].axis('off')
-            continue
-        count += 1
-        contr = item['dr']['pca']['contr']
-        if clust_alg != None and cluster != None:
-            X = item['data']
-            try:
-                cl = item['clusters'][clust_alg]['membership']
-            except KeyError:
-                raise Exception('%s not found' % clust_alg)
-            X_ss = X.loc[:, (cl == cluster).to_numpy()]
-            X_ss = sklearn_scale(
-                                X_ss.transpose(),  # cells as rows and genes as columns
-                                axis=0,            # over genes, i.e. features (columns)
-                                with_mean=True,    # subtracting the column means
-                                with_std=True)     # scale the data to unit variance
-            X_ss = pd.DataFrame(X_ss.transpose(), index=X.index)
-            _, contr = irlb(X_ss)
-        contr = contr[dim]
-        idx = 0
-        for i, d in contr.iteritems():
-            d = d.sort_values(ascending=False)
-            d = d.head(top)
-            y_pos = np.arange(len(d))
-            ax[row][idx].barh(y_pos, d.values, color=YLW_CURRY)
-            ax[row][idx].set_yticks(y_pos)
-            ax[row][idx].set_yticklabels(d.index.values, fontsize=fontsize)
-            ax[row][idx].set_xlabel('abs(PCA score)', fontsize=fontsize)
-            ax[row][idx].set_title('comp. %s' % (i+1), fontsize=fontsize)
-            ax[row][idx].invert_yaxis() # labels read top-to-bottom
-            if idx == 0:
-                ax[row][idx].set_ylabel(k)
-            idx += 1
+    try:
+        contr = target['dr']['pca']['contr']
+    except KeyError:
+        raise Exception('PCA decomposition not found.')
+    if cluster != None:
+        X = target['data']
+        try:
+            cl = target['clusters'][clust_alg]['membership']
+        except KeyError:
+            raise Exception('"%s" not found, run adobo.clustering.\
+generate(...)' % clust_alg)
+        X_ss = X.loc[:, (cl == cluster).to_numpy()]
+        hvg = target['hvg']['genes']
+        X_ss = X_ss[X_ss.index.isin(hvg)]
+        _, contr = irlb(X_ss)
+    contr = contr[dim]
+    idx = 0
+    for i, d in contr.iteritems():
+        d = d.sort_values(ascending=False)
+        d = d.head(top)
+        y_pos = np.arange(len(d))
+        ax[idx].barh(y_pos, d.values, color=YLW_CURRY)
+        ax[idx].set_yticks(y_pos)
+        ax[idx].set_yticklabels(d.index.values, fontsize=fontsize)
+        ax[idx].set_xlabel('abs(PCA score)', fontsize=fontsize)
+        ax[idx].set_title('comp. %s' % (i+1), fontsize=fontsize)
+        ax[idx].invert_yaxis() # labels read top-to-bottom
+        idx += 1
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
-    elif count:
+    else:
         plt.show()
 
 def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
