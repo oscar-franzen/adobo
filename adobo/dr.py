@@ -19,6 +19,7 @@ import umap as um
 import igraph as ig
 from fa2 import ForceAtlas2
 
+from .dr import svd, irlb
 from . import irlbpy
 from ._log import warning
 
@@ -283,7 +284,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             comp, contr = svd(data, scale, ncomp)
         else:
             raise Exception('Unkown PCA method spefified. Valid choices are: irlb and svd')
-        comp.index = data.index
+        comp.index = data.columns
         obj.norm_data[k]['dr']['pca'] = {'comp' : comp,
                                          'contr' : contr,
                                          'method' : method}
@@ -489,32 +490,31 @@ def jackstraw(obj, normalization=None, permutations=100, ncomp=15, subset_frac_g
         norm = normalization
     item = obj.norm_data[norm]
     try:
-        l = item['dr']['pca']['contr']
+        loadings = item['dr']['pca']['contr']
     except KeyError:
         raise Exception('Run `adobo.dr.pca(...)` first.')
+    X = item['data']
     if ncomp > X.shape[1]:
         raise Exception('"ncomp" is higher than the number of available components \
 computed by adobo.dr.pca(...)')
-    X = item['data']
     try:
         hvg = item['hvg']['genes']
     except KeyError:
         raise Exception('Run adobo.dr.find_hvg() first.')
     X = X[X.index.isin(hvg)]
-    idx = X.index
-    cols = X.columns
-    X = sklearn_scale(X.transpose(),  # cells as rows and genes as columns
-                      axis=0,         # over genes, i.e. features (columns)
-                      with_mean=True, # subtracting the column means
-                      with_std=True)  # scale the data to unit variance
-    X = pd.DataFrame(X.transpose(), index=idx, columns=cols)
-    for perm in np.arange(0,permutations):
-        shuffled_genes = sample(list(idx.values), round(len(idx)*subset_frac_genes))
+    perm_loadings = []
+    for perm in np.arange(0, permutations):
+        print(perm)
+        shuffled_genes = sample(list(X.index), round(X.shape[0]*subset_frac_genes))
         X_cp = X.copy()
         data_perm = X_cp.loc[shuffled_genes, :]
         # shuffle rows
         data_perm = pd.DataFrame(np.random.permutation(data_perm),
                                  index=data_perm.index, columns=data_perm.columns)
+        # put shuffled genes back into the original data
         X_cp.loc[shuffled_genes, :] = data_perm
         comp, contr = irlb(X_cp, ncomp=ncomp)
-        q = contr.loc[shuffled_genes, :]
+        pl = contr.loc[shuffled_genes, :]
+        pl = contr[contr.index.isin(shuffled_genes)].iloc[:, 0:ncomp]
+        pl = np.abs(pl)
+        perm_loadings.append(pl)

@@ -31,7 +31,7 @@ setup(
         'networkx >= 2.3',
         'patsy >= 0.5.1',
         'mplcursors >= 0.3',
-        'community >= 0.13' # louvain
+        'python-louvain >= 0.13' # louvain (module is called community)
     ],
     ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
                            extra_compile_args=['-fPIC','-lm'])]
