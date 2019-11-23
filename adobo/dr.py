@@ -23,6 +23,7 @@ from fa2 import ForceAtlas2
 
 from . import irlbpy
 from ._log import warning
+from ._stats import p_adjust_bh
 
 def force_graph(obj, name=(), iterations=1000, edgeWeightInfluence=1.0,
                 jitterTolerance=1.0, barnesHutOptimize=True, scalingRatio=2.0,
@@ -453,7 +454,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
     obj.set_assay(sys._getframe().f_code.co_name)
 
 def jackstraw(obj, normalization=None, permutations=500, ncomp=None,
-              subset_frac_genes=0.05, score_thr = 1e-05, verbose=False):
+              subset_frac_genes=0.05, score_thr = 1e-03, verbose=False):
     """Determine the number of relevant PCA components.
     
     Notes
@@ -492,10 +493,9 @@ def jackstraw(obj, normalization=None, permutations=500, ncomp=None,
     pandas.DataFrame
         A genes by principal component data frame containing empirical p-values for the
         significance of every gene of the PC.
-    dict
-        A dictionary containing a single p-value for every PC generated from a Chi^2 test.
-        The dict can be used to select the number of components to include by examinng 
-        p-values.
+    pandas.DataFrame
+        A data frame containing a single p-value for every PC generated from a Chi^2 test.
+        Can be used to select the number of components to include by examinng p-values.
     """
     start_time = time.time()
     if normalization == None or normalization == '':
@@ -551,7 +551,7 @@ computed by adobo.dr.pca(...)')
     n = [q1+q2 for q1, q2 in zip(['PC']*res.shape[1], res.columns.values.astype(str))]
     res.columns = n
     # generate one p-value per component
-    final = {}
+    final = []
     for i, pc in res.transpose().iterrows():
         nsign_found = np.sum(pc<score_thr)
         nsign_expected = np.floor(len(pc)*score_thr) # expecting a uniform distribution
@@ -561,8 +561,11 @@ computed by adobo.dr.pca(...)')
             pv = chi2_contingency(np.array(ct))[1]
         except ValueError:
             pv = 1
-        final['PC%s'%i] = pv
-        print(i, pv)
+        final.append([i, pv])
+    final = pd.DataFrame(final)
+    final['p.adj'] = p_adjust_bh(final[1])
+    final.columns = ['PC', 'chi2_p', 'chi2_p_adj']
+    final['significant'] = final.chi2_p_adj<0.05
     end_time = time.time()
     if verbose:
         print('Analysis took %.2f minutes' % ((end_time-start_time)/60))
