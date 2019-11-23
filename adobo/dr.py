@@ -473,6 +473,8 @@ def jackstraw(obj, normalization=None, permutations=100, ncomp=15,
         Number of principal components to calculate significance for. Default: 15
     subset_frac_genes : `float`
         Proportion genes to use. Default: 0.10
+    score_thr : `float`
+        Threshold for significance. Default: 1e-05
     verbose : `bool`
         Be verbose. Default: False
 
