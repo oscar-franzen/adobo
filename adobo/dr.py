@@ -9,6 +9,7 @@ Summary
 Functions for dimensional reduction.
 """
 import sys
+import time
 from random import sample
 import pandas as pd
 import numpy as np
@@ -451,13 +452,14 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         obj.norm_data[k]['dr']['umap'] = {'embedding' : emb}
     obj.set_assay(sys._getframe().f_code.co_name)
 
-def jackstraw(obj, normalization=None, permutations=100, ncomp=15,
+def jackstraw(obj, normalization=None, permutations=500, ncomp=None,
               subset_frac_genes=0.05, score_thr = 1e-05, verbose=False):
     """Determine the number of relevant PCA components.
     
     Notes
     -----
-    Permutes a subset of the data matrix and compares PCA scores with the original.
+    Permutes a subset of the data matrix and compares PCA scores with the original. The
+    final output is a p-value for each component generated using a Chi-sq test.
 
     Parameters
     ----------
@@ -467,9 +469,11 @@ def jackstraw(obj, normalization=None, permutations=100, ncomp=15,
         The name of the normalization to operate on. If this is empty or None then the
         function will be applied on all normalizations available.
     permutations : `int`
-        Number of permutations to run. Default: 100
+        Number of permutations to run. Default: 500
     ncomp : `int`
-        Number of principal components to calculate significance for. Default: 15
+        Number of principal components to calculate significance for. If None, then
+        will calculate for all components previously saved from py:func:`adobo.dr.pca`.
+        Default: None
     subset_frac_genes : `float`
         Proportion genes to use. Default: 0.10
     score_thr : `float`
@@ -493,6 +497,7 @@ def jackstraw(obj, normalization=None, permutations=100, ncomp=15,
         The dict can be used to select the number of components to include by examinng 
         p-values.
     """
+    start_time = time.time()
     if normalization == None or normalization == '':
         norm = list(obj.norm_data.keys())[-1]
     else:
@@ -503,9 +508,13 @@ def jackstraw(obj, normalization=None, permutations=100, ncomp=15,
     except KeyError:
         raise Exception('Run `adobo.dr.pca(...)` first.')
     X = item['data']
-    if ncomp > loadings.shape[1]:
+    if not ncomp:
+        ncomp = loadings.shape[1]
+    elif ncomp > loadings.shape[1]:
         raise Exception('"ncomp" is higher than the number of available components \
 computed by adobo.dr.pca(...)')
+    if verbose:
+        print('computing for ncomp=%s' % ncomp)
     try:
         hvg = item['hvg']['genes']
     except KeyError:
@@ -554,4 +563,7 @@ computed by adobo.dr.pca(...)')
             pv = 1
         final['PC%s'%i] = pv
         print(i, pv)
+    end_time = time.time()
+    if verbose:
+        print('Analysis took %.2f minutes' % ((end_time-start_time)/60))
     return res, final
