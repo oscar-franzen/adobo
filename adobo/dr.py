@@ -13,6 +13,7 @@ from random import sample
 import pandas as pd
 import numpy as np
 import scipy.linalg
+from scipy.stats import chi2_contingency
 from sklearn.preprocessing import scale as sklearn_scale
 import sklearn.manifold
 import umap as um
@@ -452,7 +453,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
     obj.set_assay(sys._getframe().f_code.co_name)
 
 def jackstraw(obj, normalization=None, permutations=100, ncomp=15,
-              subset_frac_genes=0.05, verbose=False):
+              subset_frac_genes=0.05, score_thr = 1e-05, verbose=False):
     """Determine the number of relevant PCA components.
     
     Notes
@@ -483,7 +484,13 @@ def jackstraw(obj, normalization=None, permutations=100, ncomp=15,
 
     Returns
     -------
-    Nothing. Modifies the passed object.
+    pandas.DataFrame
+        A genes by principal component data frame containing empirical p-values for the
+        significance of every gene of the PC.
+    dict
+        A dictionary containing a single p-value for every PC generated from a Chi^2 test.
+        The dict can be used to select the number of components to include by examinng 
+        p-values.
     """
     if normalization == None or normalization == '':
         norm = list(obj.norm_data.keys())[-1]
@@ -533,4 +540,17 @@ computed by adobo.dr.pca(...)')
     res = pd.concat(res, axis=1, ignore_index=True)
     n = [q1+q2 for q1, q2 in zip(['PC']*res.shape[1], res.columns.values.astype(str))]
     res.columns = n
-    return res
+    # generate one p-value per component
+    final = {}
+    for i, pc in res.transpose().iterrows():
+        nsign_found = np.sum(pc<score_thr)
+        nsign_expected = np.floor(len(pc)*score_thr) # expecting a uniform distribution
+        ct = [[nsign_found, nsign_expected],
+              [len(pc)-nsign_found, len(pc)-nsign_expected]]
+        try:
+            pv = chi2_contingency(np.array(ct))[1]
+        except ValueError:
+            pv = 1
+        final['PC%s'%i] = pv
+        print(i, pv)
+    return res, final
