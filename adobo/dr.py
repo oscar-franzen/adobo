@@ -20,7 +20,6 @@ import umap as um
 import igraph as ig
 from fa2 import ForceAtlas2
 
-from .dr import svd, irlb
 from . import irlbpy
 from ._log import warning
 
