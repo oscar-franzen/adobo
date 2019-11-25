@@ -807,7 +807,7 @@ def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_s
         Figure size in inches. Default: (10, 10)
     filename : `str`
         Write to a file instead of showing the plot on screen. Default: None
-    
+
     Returns
     -------
     Nothing
@@ -837,15 +837,15 @@ def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_s
     link = linkage(ret, method=method)
     fig, aa = plt.subplots(nrows=1, ncols=1, figsize=figsize)
     r = dendrogram(link, orientation='top',
-               distance_sort='descending',
-               show_leaf_counts=True,
-               ax=aa,
-               leaf_font_size=fontsize,
-               link_color_func=None,
-               leaf_label_func=None,
-               color_threshold=0.01,
-               truncate_mode=None,
-               above_threshold_color='#000000')
+                   distance_sort='descending',
+                   show_leaf_counts=True,
+                   ax=aa,
+                   leaf_font_size=fontsize,
+                   link_color_func=None,
+                   leaf_label_func=None,
+                   color_threshold=0.01,
+                   truncate_mode=None,
+                   above_threshold_color='#000000')
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename)
