@@ -663,8 +663,9 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
         indices. An integer specifies only one cluster index. If None, then shows the
         expression across all clusters. Default: None
     gene : `str`
-        Compare a single gene across all clusters. If this is None, then the top is
-        plotted based on the ranking function specified below. Default: None
+        Compare a single gene across all clusters (can also be a regular expression, but
+        it must match a single gene). If this is None, then the top is plotted based on
+        the ranking function specified below. Default: None
     rank_func : `np.median`
         Ranking function. numpy's median is the default.
     top : `int`
@@ -741,7 +742,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
             raise Exception('Clustering %s not found' % clust_alg)
         cl = cl.values
     else:
-        cl = [0]*X.shape[1]
+        cl = np.array([0]*X.shape[1])
     ret = X.groupby(cl, axis=1).aggregate(rank_func)
     if cluster != None:
         if np.any([i > ret.shape[1] for i in cluster]):
@@ -753,7 +754,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
             d = d.sort_values(ascending=False)
             d = d.head(top)
             X_ss = X[X.index.isin(d.index)]
-            X_ss = X_ss.iloc[:, cl == i]
+            X_ss = X_ss.loc[:, cl == i]
             if violin:
                 p = sns.violinplot(ax=aa[idx], data=X_ss.transpose(), linewidth=linewidth,
                                    order=d.index, scale=scale, **args)
@@ -769,15 +770,17 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
                 p.set_title('across all clusters')
             idx += 1
     else:
-        try:
-            X_ss = X.loc[gene, :]
-        except KeyError:
-            raise Exception('The gene %s was not found.' % gene)
+        if np.sum(X.index.str.match(gene)) == 1:
+            X_ss = X[X.index.str.match(gene)].values[0]
+            g = X.index[X.index.str.match(gene)][0]
+        else:
+            raise Exception('The gene "%s" was not found.' % gene)
         if violin:
-            sns.violinplot(ax=aa[0], y=X_ss, x=cl, linewidth=linewidth, fontsize=fontsize,
+            p = sns.violinplot(ax=aa[0], y=X_ss, x=cl, linewidth=linewidth, fontsize=fontsize,
                            scale=scale, **args)
         else:
-            sns.boxplot(ax=aa[0], y=X_ss, x=cl, linewidth=linewidth, **args)
+            p = sns.boxplot(ax=aa[0], y=X_ss, x=cl, linewidth=linewidth, **args)
+        p.set_title(g)
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename)
