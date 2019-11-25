@@ -18,6 +18,7 @@ import seaborn as sns
 import networkx as nx
 import igraph as ig
 import mplcursors
+from scipy.cluster.hierarchy import dendrogram, linkage
 
 import adobo
 from .dr import svd, irlb
@@ -776,6 +777,75 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
                            scale=scale, **args)
         else:
             sns.boxplot(ax=aa[0], y=X_ss, x=cl, linewidth=linewidth, **args)
+    plt.tight_layout()
+    if filename != None:
+        plt.savefig(filename)
+    else:
+        plt.show()
+
+def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_size=10,
+         fontsize=8, figsize=(10, 5), filename=None):
+    """Generates a dendrogram of cluster relationships
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A data class object
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None
+        then the function will be applied on the last normalization that was applied.
+    clust_alg : `str`
+        Name of the clustering strategy. If empty or None, the last one will be used.
+    method : `'{'complete', 'single', 'average', 'weighted', 'centroid', 'median', 'ward'}'`
+        The linkage algorithm to use. Default: 'complete'
+    min_cluster_size : `int`
+        Can be used to prevent clusters below a certain number of cells to be
+        plotted. Default: 10
+    fontsize : `int`
+        Specifies font size. Default: 6
+    figsize : `tuple`
+        Figure size in inches. Default: (10, 10)
+    filename : `str`
+        Write to a file instead of showing the plot on screen. Default: None
+    
+    Returns
+    -------
+    Nothing
+    """
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
+    if clust_alg == None or clust_alg == '':
+        clust_alg = list(target['clusters'].keys())[-1]
+    # setup plotting grid
+    plt.clf()
+    plt.close(fig='all')
+    cl = target['clusters'][clust_alg]['membership']
+    z = pd.Series(dict(Counter(cl)))
+    X = target['data']
+    if min_cluster_size > 0:
+        remove = z[z < min_cluster_size].index.values
+        X = X.loc[:, np.logical_not(cl.isin(remove))]
+        cl = cl[np.logical_not(cl.isin(remove))]
+    ret = X.groupby(cl.values, axis=1).aggregate(np.mean)
+    ret = ret.transpose()
+    link = linkage(ret, method=method)
+    fig, aa = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+    r = dendrogram(link, orientation='top',
+               distance_sort='descending',
+               show_leaf_counts=True,
+               ax=aa,
+               leaf_font_size=fontsize,
+               link_color_func=None,
+               leaf_label_func=None,
+               color_threshold=0.01,
+               truncate_mode=None,
+               above_threshold_color='#000000')
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename)
