@@ -753,6 +753,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
             d = d.sort_values(ascending=False)
             d = d.head(top)
             X_ss = X[X.index.isin(d.index)]
+            X_ss = X_ss.iloc[:, cl == i]
             if violin:
                 p = sns.violinplot(ax=aa[idx], data=X_ss.transpose(), linewidth=linewidth,
                                    order=d.index, scale=scale, **args)
