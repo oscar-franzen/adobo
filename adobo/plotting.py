@@ -758,8 +758,8 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
                                    order=d.index, scale=scale, **args)
             else:
                 p = sns.boxplot(ax=aa[idx], data=X_ss.transpose(), linewidth=linewidth,
-                                **args)
-            p.set_xticklabels(labels=X_ss.index.values, rotation=90, fontsize=fontsize)
+                                order=d.index, **args)
+            p.set_xticklabels(labels=d.index, rotation=90, fontsize=fontsize)
             p.set_ylabel('expression')
             p.set_xlabel('')
             if cluster != None and len(cluster) > 0:
