@@ -784,7 +784,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
         plt.show()
 
 def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_size=10,
-         fontsize=8, figsize=(10, 5), filename=None):
+         fontsize=8, figsize=(10, 10), filename=None):
     """Generates a dendrogram of cluster relationships
 
     Parameters
