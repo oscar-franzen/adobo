@@ -54,11 +54,11 @@ def reset_filters(obj):
 
 def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None,
                   maxgenes=None, min_exp=0.001, verbose=False):
-    """Removes cells with too few reads and genes with very low expression
+    """Removes cells with too few reads or genes with very low expression
 
     Notes
     -----
-    The cells are filtered first and then genes.
+    Default is to remove cells.
 
     Parameters
     ----------
@@ -91,8 +91,8 @@ def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None
     -------
     >>> import adobo as ad
     >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
-    >>> ad.preproc.simple_filter(exp, minreads=1000, maxreads=15000, minexpgenes=0.01, \
-verbose=True)
+    >>> ad.preproc.simple_filter(exp, what='cells', minreads=1500)
+    >>> ad.preproc.simple_filter(exp, what='genes')
 
     Returns
     -------
