@@ -106,7 +106,7 @@ def brennecke(data_norm, log, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
     `list`
         A list containing highly variable genes.
     """
-    if ercc.shape[0] == 0:
+    if ercc == None:
         ercc = data_norm
     if log:
         data_norm = 2**data_norm-1
@@ -190,8 +190,8 @@ def scran(data_norm, ercc, log, ngenes=1000):
     `list`
         A list containing highly variable genes.
     """
-    if ercc.shape[0] == 0:
-        raise Exception('adobo.hvg.scran requires ercc spikes.')
+    if ercc == None:
+        raise Exception('adobo.hvg.scran requires ERCC spikes.')
     if log:
         data_norm = 2**data_norm-1
         ercc = 2**ercc-1
