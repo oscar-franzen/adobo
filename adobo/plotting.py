@@ -721,7 +721,10 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     except KeyError:
         raise Exception('"%s" not found' % norm)
     if clust_alg == None or clust_alg == '':
-        clust_alg = list(target['clusters'].keys())[-1]
+        try:
+            clust_alg = list(target['clusters'].keys())[-1]
+        except IndexError:
+            pass
     # setup plotting grid
     plt.clf()
     plt.close(fig='all')
