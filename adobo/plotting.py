@@ -573,6 +573,10 @@ has not been called yet.')
         print('fig.subplotpars.wspace: %s' % fig.subplotpars.wspace)
     if margins:
         fig.subplots_adjust(**margins)
+    if dark:
+        # go back to default style
+        plt.style.use('classic')
+        plt.rcParams.update(plt.rcParamsDefault)
     if filename != None:
         plt.savefig(filename, **args)
     else:
