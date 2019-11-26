@@ -193,13 +193,14 @@ def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
     top : `int`
         Specifies the number of top scoring genes to include. Default: 10
     color : `str`
-        Color of the bars. As a string or hex code. Default: "#fcc603"
+        Color of the bars. Default: "#fcc603"
     fontsize : `int`
         Specifies font size. Default: 6
     figsize : `tuple`
         Figure size in inches. Default: (10, 10)
     filename : `str`, optional
-        Write to a file instead of showing the plot on screen.
+        Write to a file instead of showing the plot on screen. File type is determined by
+        the filename extension.
 
     Example
     -------
