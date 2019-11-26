@@ -104,7 +104,7 @@ def irlb(data_norm, scale=True, ncomp=75, var_weigh=True, seed=None):
     The augmented implicitly restarted Lanczos bidiagonalization algorithm (IRLBA) finds
     a few approximate largest singular values and corresponding singular vectors using a
     method of Baglama and Reichel.
-    
+
     Cells should be rows and genes as columns.
 
     Parameters
@@ -454,9 +454,9 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
     obj.set_assay(sys._getframe().f_code.co_name)
 
 def jackstraw(obj, normalization=None, permutations=500, ncomp=None,
-              subset_frac_genes=0.05, score_thr = 1e-03, verbose=False):
+              subset_frac_genes=0.05, score_thr=1e-03, retx=True, verbose=False):
     """Determine the number of relevant PCA components.
-    
+
     Notes
     -----
     Permutes a subset of the data matrix and compares PCA scores with the original. The
@@ -479,6 +479,8 @@ def jackstraw(obj, normalization=None, permutations=500, ncomp=None,
         Proportion genes to use. Default: 0.10
     score_thr : `float`
         Threshold for significance. Default: 1e-05
+    retx : `bool`
+        In addition to also modifying the object, also return results. Default: True
     verbose : `bool`
         Be verbose. Default: False
 
@@ -523,7 +525,7 @@ computed by adobo.dr.pca(...)')
     X_scaled = sklearn_scale(X.transpose(), axis=0, with_mean=True,
                              with_std=True).transpose()
     X_scaled = pd.DataFrame(X_scaled, index=X.index, columns=X.columns)
-    
+
     perm_loadings = []
     for perm in np.arange(0, permutations):
         if verbose:
@@ -545,7 +547,7 @@ computed by adobo.dr.pca(...)')
     res = []
     for i, pc in perm_loadings.iloc[:, 0:ncomp].transpose().iterrows():
         real = loadings[i]
-        emp_p = [np.sum(pc>val)/len(pc) for g, val in real.iteritems()]
+        emp_p = [np.sum(pc > val)/len(pc) for g, val in real.iteritems()]
         res.append(pd.Series(emp_p, name=i))
     res = pd.concat(res, axis=1, ignore_index=True)
     n = [q1+q2 for q1, q2 in zip(['PC']*res.shape[1], res.columns.values.astype(str))]
@@ -553,7 +555,7 @@ computed by adobo.dr.pca(...)')
     # generate one p-value per component
     final = []
     for i, pc in res.transpose().iterrows():
-        nsign_found = np.sum(pc<score_thr)
+        nsign_found = np.sum(pc < score_thr)
         nsign_expected = np.floor(len(pc)*score_thr) # expecting a uniform distribution
         ct = [[nsign_found, nsign_expected],
               [len(pc)-nsign_found, len(pc)-nsign_expected]]
@@ -565,8 +567,11 @@ computed by adobo.dr.pca(...)')
     final = pd.DataFrame(final)
     final['p.adj'] = p_adjust_bh(final[1])
     final.columns = ['PC', 'chi2_p', 'chi2_p_adj']
-    final['significant'] = final.chi2_p_adj<0.05
+    final['significant'] = final.chi2_p_adj < 0.05
     end_time = time.time()
     if verbose:
         print('Analysis took %.2f minutes' % ((end_time-start_time)/60))
-    return res, final
+    obj.norm_data[norm]['dr']['jackstraw'] = {'score_mat' : res,
+                                              'results_by_comp' : final}
+    if retx:
+        return res, final
