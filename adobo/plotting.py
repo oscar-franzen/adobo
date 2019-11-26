@@ -25,7 +25,8 @@ from .dr import svd, irlb
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
-def overall_scatter(obj, color=YLW_CURRY, title=None, filename=None):
+def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red', title=None,
+                    filename=None):
     """Generates a scatter plot showing the total number of reads on one axis
        and the number of detected genes on the other axis
 
@@ -33,8 +34,10 @@ def overall_scatter(obj, color=YLW_CURRY, title=None, filename=None):
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
-    color : `str`
+    color_kept : `str`
         Color of the plot. Default: '#E69F00'
+    color_filtered : `str`
+        Color of the cells that have been filtered out. Default: 'red'
     title : `str`
         Title of the plot. Default: None
     filename : `str`, optional
@@ -53,8 +56,11 @@ def overall_scatter(obj, color=YLW_CURRY, title=None, filename=None):
     ax.get_xaxis().set_major_formatter(ff)
     # summary statistics per cell
     reads = count_data.sum(axis=0)
-    genes = [np.sum(r[1] > 0) for r in count_data.transpose().iterrows()]
-    ax.scatter(x=reads, y=genes, color=color, s=2)
+    genes = pd.Series([np.sum(r[1] > 0) for r in count_data.transpose().iterrows()])
+    ax.scatter(x=reads, y=genes, color=color_kept, s=2)
+    reads_not_ok = reads[obj.meta_cells.status!='OK']
+    genes_not_ok = genes[(obj.meta_cells.status!='OK').values]
+    ax.scatter(x=reads_not_ok, y=genes_not_ok, color=color_filtered, s=2)
     ax.set_ylabel('detected genes')
     ax.set_xlabel('total reads')
     if title:

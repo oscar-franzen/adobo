@@ -52,8 +52,8 @@ def reset_filters(obj):
     obj.meta_cells.status[obj.meta_cells.status != 'OK'] = 'OK'
     obj.meta_genes.status[obj.meta_genes.status != 'OK'] = 'OK'
 
-def simple_filter(obj, minreads=1000, maxreads=None, mingenes=0.001, maxgenes=None,
-                  verbose=False):
+def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None,
+                  maxgenes=None, min_exp=0.001, verbose=False):
     """Removes cells with too few reads and genes with very low expression
 
     Notes
@@ -64,17 +64,26 @@ def simple_filter(obj, minreads=1000, maxreads=None, mingenes=0.001, maxgenes=No
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
+    what : `{'cells', 'genes'}`
+        Determines what should be filtered from the expression matrix. If 'cells', then
+        cells are filtered. If 'genes', then genes are filtered. Default: 'cells'
     minreads : `int`, optional
-        Minimum number of reads per cell required to keep the cell. Default: 1000
+        When filtering cells, defines the minimum number of reads per cell needed to
+        keep the cell. Default: 1000
     maxreads : `int`, optional
-        Set a maximum number of reads allowed. Useful for filtering out suspected doublets.
+        When filtering cells, defines the maximum number of reads allowed to keep the
+        cell. Useful for filtering out suspected doublets. Default: None
     mingenes : `float`, `int`
-        Used to remove lowly expressed genes. If this value is a float, then at least
-        that fraction of cells must express the gene to keep the gene. If integer, then
-        it is the minimum number of cells that must express the gene to keep the gene.
+        When filtering cells, defines the minimum number of genes that must be expressed
+        in a cell to keep it. Default: None
+    maxgenes : `float`, `int`
+        When filtering cells, defines the maximum number of genes that a cell is allowed
+        to express to keep it. Default: None
+    min_exp : `float`, `int`    
+        Used to set a threshold for how to filter out genes. If integer, defines the
+        minimum number of cells that must express a gene to keep the gene. If float,
+        defines the  minimum fraction of cells must express the gene to keep the gene.
         Set to None to ignore this option. Default: 0.001
-    maxgenes : `int`
-        Can be used to remove cells expressing more genes than this. Default: None
     verbose : `bool`, optional
         Be verbose or not. Default: False
     
@@ -88,45 +97,46 @@ verbose=True)
     Returns
     -------
     int
-        Number of cells removed.
-    int
-        Number of genes removed.
+        Number of removed cells or genes.
     """
     count_data = obj.count_data
     # reset
-    obj.meta_cells.status[obj.meta_cells.status != 'OK'] = 'OK'
-    obj.meta_genes.status[obj.meta_genes.status != 'OK'] = 'OK'
-    # filter cells
-    cell_counts = obj.meta_cells.total_reads
-    cells_remove = cell_counts < minreads
-    obj.meta_cells.status[cells_remove] = 'EXCLUDE'
-    if maxreads:
-        cells_remove = cell_counts > maxreads
-        obj.meta_cells.status[cells_remove] = 'EXCLUDE'
-    genes_remove = 0
-    if not mingenes:
-        mingenes = 0
-    if mingenes > 0:
-        if type(mingenes) == int:
+    if what == 'cells':
+        obj.meta_cells.status[obj.meta_cells.status != 'OK'] = 'OK'
+        cell_counts = obj.meta_cells.total_reads
+        dctd_genes = obj.meta_cells.detected_genes
+        if not maxreads:
+            maxreads = np.max(cell_counts)
+        if not minreads:
+            minreads = 0
+        if not mingenes:
+            mingenes = np.min(dctd_genes)
+        if not maxgenes:
+            maxgenes = np.max(dctd_genes)
+        cells_keep = np.logical_and(
+                        np.logical_and(cell_counts >= minreads,
+                                       cell_counts <= maxreads),
+                        np.logical_and(dctd_genes >= mingenes,
+                                       dctd_genes <= maxgenes)
+                                   )
+        obj.meta_cells.status[np.logical_not(cells_keep)] = 'EXCLUDE'
+        remove = np.sum(np.logical_not(cells_keep))
+    elif what == 'genes':
+        obj.meta_genes.status[obj.meta_genes.status != 'OK'] = 'OK'
+        if type(min_exp) == int:
             genes_exp = obj.meta_genes.expressed
-            genes_remove = genes_exp < mingenes
+            genes_remove = genes_exp < min_exp
             obj.meta_genes.status[genes_remove] = 'EXCLUDE'
         else:
             genes_exp = obj.meta_genes.expressed_perc
-            genes_remove = genes_exp < mingenes
+            genes_remove = genes_exp < min_exp
             obj.meta_genes.status[genes_remove] = 'EXCLUDE'
-    if maxgenes:
-        if type(maxgenes) == int:
-            cells_remove = obj.meta_cells.detected_genes > maxgenes
-            obj.meta_cells.status[cells_remove] = 'EXCLUDE'
-        else:
-            raise ValueError('"maxgenes" must be integer.')
-    r = np.sum(obj.meta_cells.status == 'EXCLUDE')
+        remove = np.sum(genes_remove)
     if verbose:
         s = '%s cells and %s genes were removed'
-        print(s % (r, np.sum(genes_remove)))
-    obj.set_assay(sys._getframe().f_code.co_name)
-    return r, np.sum(genes_remove)
+        print(s % (np.sum(obj.meta_cells.status == 'EXCLUDE'),
+                   np.sum(obj.meta_genes.status == 'EXCLUDE')))
+    return remove
 
 def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False):
     """Find mitochondrial genes and adds percent mitochondrial expression of total
