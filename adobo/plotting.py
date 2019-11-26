@@ -645,7 +645,7 @@ def pca_elbow(obj, normalization=None, comp_max=100, all_genes=False, filename=N
         plt.show()
 
 def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
-                 rank_func=np.median, top=10, violin=True, scale='width', fontsize=6,
+                 rank_func=np.median, top=10, violin=True, scale='width', fontsize=10,
                  figsize=(10, 5), linewidth=0.5, filename=None, **args):
     """Plot individual genes using violin plot (or box plot). Can be used to plot the top
     genes in the total dataset or top genes in individual clusters. Specific genes can
