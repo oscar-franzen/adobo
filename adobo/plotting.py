@@ -535,8 +535,9 @@ has not been called yet.')
                 cmap = sns.cubehelix_palette(as_cmap=True)
                 po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
                                         c=m_d.values, cmap=cmap)
-                cbar = fig.colorbar(po, ax=aa[pl_idx])
-                #cbar.set_label('foobar')
+                divider = make_axes_locatable(aa[pl_idx])
+                cax = divider.append_axes("right", size="5%", pad=0.05)
+                cbar = fig.colorbar(po, cax=cax)
             aa[pl_idx].set_title(meta_var, size=font_size)
             aa[pl_idx].set_aspect('equal')
             pl_idx += 1
