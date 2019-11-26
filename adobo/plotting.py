@@ -275,7 +275,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
              genes=(), edges=False, cell_types=False, trajectory=None, filename=None,
              marker_size=0.8, font_size=8, colors='adobo', title=None, legend=True,
              legend_marker_scale=10, legend_position=(1, 1), min_cluster_size=10,
-             figsize=(10, 10), margins=None, verbose=False, **args):
+             figsize=(10, 10), margins=None, dark=False, verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -329,6 +329,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         Can be used to adjust margins. Should be a dict with one or more of the
         keys: 'left', 'bottom', 'right', 'top', 'wspace', 'hspace'. Set
         verbose=True to figure out the present values. Default: None
+    dark : `bool`
+        Make the background color black. Default: False
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -367,6 +369,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
     n_plots = len(clustering) + len(metadata) + len(genes) # per row
     plt.rc('xtick', labelsize=font_size)
     plt.rc('ytick', labelsize=font_size)
+    if dark:
+        plt.style.use('dark_background')
     targets = {}
     if len(normalization) == 0:
         targets = tuple(D.keys())
