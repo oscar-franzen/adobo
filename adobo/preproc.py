@@ -67,9 +67,9 @@ def simple_filter(obj, minreads=1000, maxreads=None, minexpgenes=0.001, verbose=
         Minimum number of reads per cell required to keep the cell. Default: 1000
     maxreads : `int`, optional
         Set a maximum number of reads allowed. Useful for filtering out suspected doublets.
-    minexpgenes : `str`, optional
+    minexpgenes : `float`, `int`
         If this value is a float, then at least that fraction of cells must express the
-        gene. If integer, then it denotes the minimum that number of cells must express
+        gene. If integer, then it is the minimum number of cells that must express
         the gene. Set to None to ignore this option. Default: 0.001
     verbose : `bool`, optional
         Be verbose or not. Default: False
