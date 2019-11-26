@@ -228,7 +228,7 @@ def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
     if clust_alg == None or clust_alg == '':
         try:
             clust_alg = list(target['clusters'].keys())[-1]
-        except KeyError:
+        except IndexError:
             pass
     plt.clf()
     plt.close(fig='all')
