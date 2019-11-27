@@ -50,13 +50,14 @@ class dataset:
     def __init__(self, raw_mat, desc='no desc set', output_file=None, input_file=None,
                  sparse=True, verbose=False):
         # holding info about which assays have been done
+        self.sparse = sparse
         self.hvg = []
         self.hvg_method = ASSAY_NOT_DONE
         self.desc = desc
         self.output_file = output_file
         self.input_file = input_file
         self._assays = {}
-        if sparse:
+        if self.sparse:
             if verbose:
                 print('Using a sparse matrix structure, please wait')
             self.count_data = raw_mat.astype(pd.SparseDtype("int", 0))
