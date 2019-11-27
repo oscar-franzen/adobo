@@ -481,7 +481,6 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                                 ctp[['p-value']].values.flatten()
                                )
                         lab = [str(q[0])+', '+q[1]+', p='+str('{:.2E}'.format(q[2])) for q in z]
-                        print(lab)
                         z = zip(cur_hands, cur_labs, lab, ct)
                         sl = [tup for tup in sorted(z, key=lambda x: x[3])]
                         aa[pl_idx].legend(np.array(sl)[:, 0],
