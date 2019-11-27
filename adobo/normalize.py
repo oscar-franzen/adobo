@@ -440,7 +440,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
         data = data.drop(remove.index, axis=1, errors='ignore')
         # Remove uninformative genes (e.g. lowly expressed)
         remove = obj.meta_genes.status[np.logical_and(obj.meta_genes.status != 'OK',
-                                                      obj.meta_genes.ERCC == False)]
+                                                      obj.meta_genes.ERCC!=True)]
         data = data.drop(remove.index, axis=0, errors='ignore')
     # Remove mitochondrial genes
     if remove_mito:
