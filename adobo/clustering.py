@@ -79,7 +79,7 @@ def snn(nn_idx, k=10, prune_snn=0.067, verbose=False):
     """
     # create sparse matrix from tuples
     melted = pd.DataFrame(nn_idx).melt(id_vars=[0])[[0, 'value']]
-
+    
     rows = np.array(melted[melted.columns[0]])
     cols = np.array(melted[melted.columns[1]])
     d = [1]*len(rows)
@@ -105,6 +105,12 @@ def snn(nn_idx, k=10, prune_snn=0.067, verbose=False):
             node2.append(j)
         else:
             pruned_count += 1
+    # any cells missing?
+    missing = list(set(np.unique(rows)-1).difference(set(np.unique(node1+node2))))
+    for i in missing:
+        node1.append(i)
+        node2.append(i)
+    
     perc_pruned = (pruned_count/len(cx.row))*100
     if verbose:
         print('%.2f%% (n=%s) of links pruned' % (perc_pruned,
