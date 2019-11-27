@@ -265,7 +265,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
     else:
         targets[name] = obj.norm_data[name]
     # remove previous cluster analysis, b/c this changes after running hvg
-    obj.remove_analysis(('clusters', 'dr'))
+    obj.delete(('clusters', 'dr'))
     for k in targets:
         item = targets[k]
         data = item['data']

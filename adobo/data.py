@@ -277,14 +277,14 @@ Commands executed:
         if type_ == 'cat':
             target[key] = target[key].astype('category')
     
-    def remove_analysis(self, what=()):
-        """Remove analysis results
+    def delete(self, what):
+        """Deletes analysis results from the norm_data dictionary 
 
         Parameters
         ----------
-        what : `tuple`
-            A tuple of strings specifying what you want to remove. Each string should be
-            a key in norm_data[n] where n is the normalization.
+        what : `str`, `tuple`
+            A string (or tuple of strings) specifying keys of what you want to delete.
+            Each string should be a key in norm_data.
         
         Example
         -------
@@ -307,7 +307,7 @@ Commands executed:
             V8380     3
             V8381     2
             Length: 8381, dtype: int64}
-        >>> exp.remove_analysis(what=('clusters',))
+        >>> exp.delete(what=('clusters',))
         >>> exp.norm_data['standard']['clusters']['leiden']
             Traceback (most recent call last):
               File "<stdin>", line 1, in <module>
@@ -317,9 +317,13 @@ Commands executed:
         -------
         Nothing.
         """
-        if len(what) == 0:
-            raise Exception('"what" is empty. It should specify a list of keys of what \
-should be removed.')
-        for n in self.norm_data:
-            for k in what:
-                self.norm_data[n][k] = {}
+        try:
+            for n in self.norm_data.keys():
+                if n == what or n in what:
+                    del self.norm_data[n]
+                else:
+                    for k in self.norm_data[n].keys():
+                        if k == what or k in what:
+                            self.norm_data[n][k] = {}
+        except:
+            pass
