@@ -472,7 +472,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
         # Remove ERCC so that they are not included in downstream analyses
         norm = norm[np.logical_not(obj.meta_genes.ERCC)]
     if obj.sparse:
-        norm = norm.astype(pd.SparseDtype("int", 0))
+        norm = norm.astype(pd.SparseDtype("float64", 0))
     obj.norm_data[name] = {'data' : norm,
                            'method' : method,
                            'log' : log,

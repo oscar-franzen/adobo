@@ -796,6 +796,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
         if np.sum(X.index.str.match(gene)) == 1:
             X_ss = X[X.index.str.match(gene)].values[0]
             g = X.index[X.index.str.match(gene)][0]
+            print(g)
         else:
             raise Exception('The gene "%s" was not found.' % gene)
         if violin:
