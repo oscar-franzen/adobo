@@ -656,7 +656,9 @@ def symbol_switch(obj, species):
     Modifies the passed object.
     """
     if not species in ('human', 'mouse'):
-        raise Exception('species can be human or mouse.')
+        raise Exception('"species" can be "human" or "mouse".')
+    if np.any(obj.count_data.index.str.match('^.+_ENS.*[0-9]{3,}$')):
+        raise Exception('Gene symbols already appears to be in the requested format: %s.' % obj.count_data.index)
     v = (os.path.dirname(adobo.IO.__file__), species)
     gs = pd.read_csv('%s/data/%s.gencode_v32.genes.txt' % v, sep='\t', header=None)
     gs.index = gs.loc[:, 0]
