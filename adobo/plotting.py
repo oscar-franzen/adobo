@@ -360,7 +360,10 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
     if type(normalization) == str:
         normalization = (normalization,)
     if len(clustering) == 0:
-        clustering = tuple({'q' : list(D[item]['clusters'].keys()) for item in D}['q'])
+        try:
+            clustering = tuple({'q' : list(D[item]['clusters'].keys()) for item in D}['q'])
+        except KeyError:
+            raise Exception('Run "adobo.clustering.generate(...)" first.')
     if len(clustering) == 0:
         raise Exception('No clusterings found. Run `adobo.clustering.generate` first.')
     # setup colors
@@ -473,8 +476,12 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                         ctp = d[norm_name]['clusters'][cl_algo]['cell_type_prediction']
                         cur_hands, cur_labs = aa[pl_idx].get_legend_handles_labels()
                         ct = ctp[['cell type']].values.flatten()
-                        z = zip(groups, ctp[['cell type']].values.flatten())
-                        lab = [str(q[0])+' '+q[1] for q in z]
+                        z = zip(groups,
+                                ctp[['cell type']].values.flatten(),
+                                ctp[['p-value']].values.flatten()
+                               )
+                        lab = [str(q[0])+', '+q[1]+', p='+str('{:.2E}'.format(q[2])) for q in z]
+                        print(lab)
                         z = zip(cur_hands, cur_labs, lab, ct)
                         sl = [tup for tup in sorted(z, key=lambda x: x[3])]
                         aa[pl_idx].legend(np.array(sl)[:, 0],
