@@ -154,6 +154,12 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False
         Instead of using `mito_pattern`, specify a `list` of genes that are mitochondrial.
     verbose : boolean
         Be verbose or not. Default: False
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.preproc.find_mitochondrial_genes(exp)
 
     Returns
     -------
@@ -663,12 +669,11 @@ def symbol_switch(obj, species):
     gs = pd.read_csv('%s/data/%s.gencode_v32.genes.txt' % v, sep='\t', header=None)
     gs.index = gs.loc[:, 0]
     gs = gs[gs.index.isin(obj.count_data.index)]
-    
     missing = obj.count_data.index[np.logical_not(obj.count_data.index.isin(gs.index))]
     gs = pd.concat([gs, pd.DataFrame({ 0 : missing, 1: ['NA']*len(missing) })])
     gs.index = gs.iloc[:, 0]
     gs = gs.reindex(obj.count_data.index)
-    
     X = obj.count_data
     X.index = (gs[[1]].values+'_'+gs[[0]].values).flatten()
     obj.count_data = X
+    obj.meta_genes.index = obj.count_data.index
