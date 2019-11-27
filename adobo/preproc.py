@@ -99,6 +99,8 @@ def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None
     int
         Number of removed cells or genes.
     """
+    if not what in ('cells', 'genes'):
+        raise ValueError('"what" can only be "cells" or "genes".')
     count_data = obj.count_data
     # reset
     if what == 'cells':
