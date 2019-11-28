@@ -889,7 +889,6 @@ def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=Tr
     >>> ad.normalize.norm(exp, method='standard')
     >>> ad.hvg.find_hvg(exp)
     >>> ad.dr.pca(exp)
-    >>> ad.plotting.pca_contributors(exp, dim=4)
     >>> ad.clustering.generate(exp, clust_alg='leiden')
     >>> ad.plotting.tree(exp)
 
