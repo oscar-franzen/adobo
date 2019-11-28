@@ -14,6 +14,7 @@ import sys
 import numpy as np
 import pandas as pd
 
+from scipy.sparse import csr_matrix
 from sklearn.neighbors import KernelDensity
 import statsmodels.api as sm
 from statsmodels.nonparametric.kernel_regression import KernelReg
@@ -297,9 +298,8 @@ def fqn(data):
 
     Notes
     -----
-    FQN was shown to perform well on single cell data [1] and was a popular
-    normalization scheme for microarray data. The present function does not handle ties
-    well.
+    FQN has been shown to perform well on single cell data and was a popular normalization
+    scheme for microarray data. The present function does not handle ties well.
 
     Parameters
     ----------
@@ -325,25 +325,22 @@ def fqn(data):
         A normalized data matrix with same dimensions as before.
     """
     ncells = data.shape[1]
-    # to hold the ordered indices for each cell
-    O = []
-    # to hold the sorted values for each cell
-    S = []
-
+    O = [] # to hold the ordered indices for each cell
+    S = [] # to hold the sorted values for each cell
+    m = data.to_numpy()
     for cc in np.arange(0, ncells):
-        values = data.iloc[:, cc]
-        ix = values.argsort().values
+        values = m[:, cc]
+        ix = values.argsort()
         x = values[ix]
         O.append(ix)
-        S.append(x.values)
-    S = pd.DataFrame(S).transpose()
-
+        S.append(list(x))
+    S = csr_matrix(np.array(S).transpose())
     # calc average distribution per gene
-    avg = S.mean(axis=1)
+    avg = np.array(S.mean(axis=1).flatten())[0]
     L = []
     for cc in np.arange(0, ncells):
         loc = O[cc]
-        L.append(pd.Series(avg.values, index=loc).sort_index())
+        L.append(list(pd.Series(avg, index=loc).sort_index().values))
     df = pd.DataFrame(L, index=data.columns)
     df.columns = data.index
     df = df.transpose()
