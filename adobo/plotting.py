@@ -879,6 +879,8 @@ def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=Tr
         Figure size in inches. Default: (10, 10)
     filename : `str`
         Write to a file instead of showing the plot on screen. Default: None
+    title : `str`
+        Plot title.
     
     Example
     -------
