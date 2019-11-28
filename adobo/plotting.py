@@ -172,8 +172,8 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
     plt.close()
 
 def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
-                     dim=[0, 1, 2, 3, 4], top=10, color=YLW_CURRY, fontsize=6,
-                     figsize=(10, 5), filename=None, **args):
+                     all_genes=False, dim=[0, 1, 2, 3, 4], top=10, color=YLW_CURRY,
+                     fontsize=6, figsize=(10, 5), filename=None, **args):
     """Examine the top contributing genes to each PCA component. Optionally, one can
     examine the PCA components of a cell cluster instead.
 
@@ -194,6 +194,9 @@ def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
         be used. Default: None
     cluster : `int`
         Name of the cluster.
+    all_genes : `bool`
+        If `cluster` is set, then indicates if PCA should be computed on all genes or only
+        on the highly variable genes. Default: False
     dim : `list` or `int`
         If list, then it specifies indices of components to plot. If integer, then it
         specifies the first components to plot. First component has index zero.
@@ -256,8 +259,9 @@ def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
             raise Exception('"%s" not found, run adobo.clustering.\
 generate(...)' % clust_alg)
         X_ss = X.loc[:, (cl == cluster).to_numpy()]
-        hvg = target['hvg']['genes']
-        X_ss = X_ss[X_ss.index.isin(hvg)]
+        if not all_genes:
+            hvg = target['hvg']['genes']
+            X_ss = X_ss[X_ss.index.isin(hvg)]
         _, contr = irlb(X_ss)
     contr = contr[dim]
     idx = 0
