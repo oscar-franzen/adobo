@@ -302,7 +302,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
     metadata : `tuple`, optional
         Specifies the metadata variables to plot.
     genes : `tuple`, optional
-        Specifies genes to plot.
+        Specifies genes to plot. Can also be a regular expression matching a single
+        gene name.
     highlight : `int` or `str`
         Highlight a cluster or a single cell. Integer if cluster and string if a cell.
     highlight_color : `tuple`
@@ -595,17 +596,20 @@ has not been called yet.')
             pl_idx += 1
         # plot genes
         for gene in genes:
-            if not gene in item['data'].index:
+            if not np.any(item['data'].index.str.match(gene)):
                 m = '"%s" was not found in the gene expression matrix' % gene
                 raise Exception(m)
-            ge = item['data'].loc[gene, :]
+            if np.sum(item['data'].index.str.match(gene)) > 1:
+                raise Exception('Multiple genes found with the name "%s"' % gene)
+            #ge = item['data'].loc[gene, :]
+            ge = item['data'][item['data'].index.str.match(gene)]
             cmap = sns.cubehelix_palette(as_cmap=True)
             po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
-                                    c=ge.values, cmap=cmap)
+                                    c=ge.values[0], cmap=cmap)
             divider = make_axes_locatable(aa[pl_idx])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(po, cax=cax)
-            aa[pl_idx].set_title(gene, size=font_size)
+            aa[pl_idx].set_title(ge.index[0], size=font_size)
             aa[pl_idx].set_aspect('equal')
             pl_idx += 1
         # turn off unused axes
