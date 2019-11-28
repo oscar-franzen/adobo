@@ -853,8 +853,8 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     else:
         plt.show()
 
-def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_size=10,
-         fontsize=8, figsize=(10, 10), filename=None):
+def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=True,
+         min_cluster_size=10, fontsize=8, figsize=(10, 5), filename=None, title=None):
     """Generates a dendrogram of cluster relationships
 
     Parameters
@@ -868,6 +868,8 @@ def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_s
         Name of the clustering strategy. If empty or None, the last one will be used.
     method : `'{'complete', 'single', 'average', 'weighted', 'centroid', 'median', 'ward'}'`
         The linkage algorithm to use. Default: 'complete'
+    cell_types : `bool`
+        Add putative cell type annotations (if available). Default: True
     min_cluster_size : `int`
         Can be used to prevent clusters below a certain number of cells to be
         plotted. Default: 10
@@ -877,6 +879,17 @@ def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_s
         Figure size in inches. Default: (10, 10)
     filename : `str`
         Write to a file instead of showing the plot on screen. Default: None
+    
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='standard')
+    >>> ad.hvg.find_hvg(exp)
+    >>> ad.dr.pca(exp)
+    >>> ad.plotting.pca_contributors(exp, dim=4)
+    >>> ad.clustering.generate(exp, clust_alg='leiden')
+    >>> ad.plotting.tree(exp)
 
     Returns
     -------
@@ -903,12 +916,24 @@ def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_s
         X = X.loc[:, np.logical_not(cl.isin(remove))]
         cl = cl[np.logical_not(cl.isin(remove))]
     ret = X.groupby(cl.values, axis=1).aggregate(np.mean)
+    if cell_types:
+        try:
+            ctp = obj.norm_data[norm]['clusters'][clust_alg]['cell_type_prediction']
+            i = np.intersect1d(ret.columns, ctp.index)
+            ctp = ctp[ctp.index.isin(i)]
+            ret = ret.loc[:,ret.columns.isin(i)]
+            ret.columns = [q[0]+'_'+q[1] for q in zip(list(map(str, ctp.index.values)), ctp.iloc[:,1])]
+        except KeyError:
+            pass
+    
     ret = ret.transpose()
     link = linkage(ret, method=method)
     fig, aa = plt.subplots(nrows=1, ncols=1, figsize=figsize)
     r = dendrogram(link, orientation='top',
                    distance_sort='descending',
                    show_leaf_counts=True,
+                   labels=ret.index,
+                   leaf_rotation=90,
                    ax=aa,
                    leaf_font_size=fontsize,
                    link_color_func=None,
@@ -916,6 +941,9 @@ def tree(obj, normalization='', clust_alg=None, method='complete', min_cluster_s
                    color_threshold=0.01,
                    truncate_mode=None,
                    above_threshold_color='#000000')
+    if not title:
+        title = 'dendrogram of clusters; (%s, %s, %s)' % (norm, clust_alg, method)
+    aa.set_title(title)
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename)
