@@ -478,6 +478,6 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
                            'clusters' : {},
                            'slingshot' : {},
                            'de' : {}}
+    obj.set_assay(sys._getframe().f_code.co_name, norm_method)
     if retx:
         return norm
-    obj.set_assay(sys._getframe().f_code.co_name, norm_method)
