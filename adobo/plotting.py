@@ -291,10 +291,11 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
     reduction : `{'tsne', 'umap', 'pca', 'force_graph'}`
         The dimensional reduction to use. Default: tsne
     normalization : `tuple`
-        A tuple of normalization to use. If it has the length zero, then all
-        available normalizations will be used.
-    clustering : `tuple`, optional
-        Specifies the clustering outcomes to plot.
+        A tuple of normalization to use. If it has the length zero, then the last
+        generated will be used.
+    clustering : `tuple`
+        Specifies the clustering outcomes to plot. If None, then the last generated
+        clustering is plotted.
     metadata : `tuple`, optional
         Specifies the metadata variables to plot.
     genes : `tuple`, optional
@@ -350,7 +351,6 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         raise Exception('`reduction` must be one of %s.' % ', '.join(avail_reductions))
     if marker_size < 0:
         raise Exception('`marker_size` cannot be negative.')
-    # cast to tuple if necessary
     if type(clustering) == str:
         clustering = (clustering,)
     if type(metadata) == str:
@@ -359,13 +359,11 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         genes = (genes,)
     if type(normalization) == str:
         normalization = (normalization,)
-    if len(clustering) == 0:
+    if len(clustering) == 0 and len(metadata) == 0:
         try:
             clustering = tuple({'q' : list(D[item]['clusters'].keys()) for item in D}['q'])
         except KeyError:
-            raise Exception('Run "adobo.clustering.generate(...)" first.')
-    if len(clustering) == 0:
-        raise Exception('No clusterings found. Run `adobo.clustering.generate` first.')
+            raise Exception('No clusterings found. Run `adobo.clustering.generate` first.')
     # setup colors
     if colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
