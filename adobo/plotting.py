@@ -279,7 +279,7 @@ generate(...)' % clust_alg)
         plt.show()
 
 def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
-             genes=(), highlight_cluster=None, highlight_color=('black', 'red'),
+             genes=(), highlight=None, highlight_color=('black', 'red'),
              selection_mode=False, edges=False, cell_types=False, trajectory=None,
              filename=None, marker_size=0.8, font_size=8, colors='adobo', title=None,
              legend=True, legend_marker_scale=10, legend_position=(1, 1),
@@ -303,8 +303,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         Specifies the metadata variables to plot.
     genes : `tuple`, optional
         Specifies genes to plot.
-    highlight_cluster : `int`
-        Highlight this cluster.
+    highlight : `int` or `str`
+        Highlight a cluster or a single cell. Integer if cluster and string if a cell.
     highlight_color : `tuple`
         The colors to use when highlighting a cluster. Should be a tuple of length two.
         First item is the color of all other cluster than the selected, the second item
@@ -443,9 +443,14 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
             for i, k in enumerate(groups):
                 idx = np.array(cl) == k
                 e = E[idx]
-                if highlight_cluster == k:
+                if type(highlight) == int and highlight == k:
                     col = highlight_color[1]
-                elif highlight_cluster:
+                elif type(highlight) == int and highlight != k:
+                    col = highlight_color[0]
+                elif type(highlight) == str and highlight in e.index:
+                    col = np.where(e.index==highlight, highlight_color[1],
+                                   highlight_color[0])
+                elif type(highlight) == str and not highlight in e.index:
                     col = highlight_color[0]
                 else:
                     col = colors[i]
@@ -482,13 +487,11 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 x1, y1 = eclick.xdata, eclick.ydata
                 x2, y2 = erelease.xdata, erelease.ydata
                 E_i = obj.norm_data[_norm_name]['dr'][_red]['embedding']
-                
                 cells_sel = np.logical_and(
                             np.logical_and(E_i.iloc[:, 0] > x1, E_i.iloc[:, 0] < x2),
                             np.logical_and(E_i.iloc[:, 1] > y1, E_i.iloc[:, 1] < y2)
                                           )
-                cell_ids = obj.meta_cells.index[obj.meta_cells.status=='OK']
-                print(cell_ids[E_i[cells_sel].index])
+                print(cells_sel[cells_sel].index)
             if not selection_mode:
                 mplcursors.cursor(aa[pl_idx]).connect('add', _hh)
             else:

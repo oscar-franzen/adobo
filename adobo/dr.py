@@ -363,7 +363,7 @@ adobo.dr.pca()')
                                      verbose=verbose,
                                      **args)
         emb = tsne.fit_transform(X)
-        emb = pd.DataFrame(emb)
+        emb = pd.DataFrame(emb, index=X.index)
         obj.norm_data[k]['dr']['tsne'] = {'embedding' : emb,
                                           'perplexity' : perplexity,
                                           'n_iter' : n_iter}
