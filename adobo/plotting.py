@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.widgets  import RectangleSelector
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 import networkx as nx
@@ -279,10 +280,11 @@ generate(...)' % clust_alg)
 
 def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
              genes=(), highlight_cluster=None, highlight_color=('black', 'red'),
-             edges=False, cell_types=False, trajectory=None, filename=None,
-             marker_size=0.8, font_size=8, colors='adobo', title=None, legend=True,
-             legend_marker_scale=10, legend_position=(1, 1), min_cluster_size=10,
-             figsize=(10, 10), margins=None, dark=False, verbose=False, **args):
+             selection_mode=False, edges=False, cell_types=False, trajectory=None,
+             filename=None, marker_size=0.8, font_size=8, colors='adobo', title=None,
+             legend=True, legend_marker_scale=10, legend_position=(1, 1),
+             min_cluster_size=10, figsize=(10, 10), margins=None, dark=False,
+             verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -307,6 +309,9 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         The colors to use when highlighting a cluster. Should be a tuple of length two.
         First item is the color of all other cluster than the selected, the second item
         is the color of the highlighted cluster.
+    selection_mode : `bool`
+        Enables interactive selection of cells. Prints the IDs of the cells inside the
+        rectangle. Default: False
     edges : `bool`
         Draw edges (only applicable if reduction='force_graph'). Default: False
     cell_types : `bool`
@@ -460,7 +465,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 if cell_types:
                     key = 'cell_type_prediction'
                     ct_i = obj.norm_data[_norm_name]['clusters'][_cl_algo][key]
-                E_i = obj.norm_data[_norm_name]['dr'][reduction]['embedding']
+                E_i = obj.norm_data[_norm_name]['dr'][_red]['embedding']
                 v = np.logical_and(E_i.iloc[:, 0] == sel.target[0],
                                    E_i.iloc[:, 1] == sel.target[1])
                 c_idx = np.arange(0, E_i.shape[0])[v]
@@ -471,7 +476,25 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
                 else:
                     lab = 'cluster %s' % cl_target
                 sel.annotation.set_text(lab)
-            mplcursors.cursor(aa[pl_idx]).connect('add', _hh)
+            def _select_callback(eclick, erelease):
+                foo = eclick.inaxes.get_gid().split('_')
+                _red, _norm_name, _cl_algo = foo
+                x1, y1 = eclick.xdata, eclick.ydata
+                x2, y2 = erelease.xdata, erelease.ydata
+                E_i = obj.norm_data[_norm_name]['dr'][_red]['embedding']
+                
+                cells_sel = np.logical_and(
+                            np.logical_and(E_i.iloc[:, 0] > x1, E_i.iloc[:, 0] < x2),
+                            np.logical_and(E_i.iloc[:, 1] > y1, E_i.iloc[:, 1] < y2)
+                                          )
+                cell_ids = obj.meta_cells.index[obj.meta_cells.status=='OK']
+                print(cell_ids[E_i[cells_sel].index])
+            if not selection_mode:
+                mplcursors.cursor(aa[pl_idx]).connect('add', _hh)
+            else:
+                rs = RectangleSelector(aa[pl_idx], _select_callback, drawtype='box',
+                                       useblit=False, button=[1], minspanx=5, minspany=5,
+                                       spancoords='pixels', interactive=True)
             if pl_idx == 0:
                 aa[pl_idx].set_ylabel('%s 1' % reduction)
                 aa[pl_idx].set_xlabel('%s 2' % reduction)
