@@ -278,7 +278,8 @@ generate(...)' % clust_alg)
         plt.show()
 
 def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
-             genes=(), edges=False, cell_types=False, trajectory=None, filename=None,
+             genes=(), highlight_cluster=None, highlight_color=('black', 'red'),
+             edges=False, cell_types=False, trajectory=None, filename=None,
              marker_size=0.8, font_size=8, colors='adobo', title=None, legend=True,
              legend_marker_scale=10, legend_position=(1, 1), min_cluster_size=10,
              figsize=(10, 10), margins=None, dark=False, verbose=False, **args):
@@ -300,6 +301,12 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
         Specifies the metadata variables to plot.
     genes : `tuple`, optional
         Specifies genes to plot.
+    highlight_cluster : `int`
+        Highlight this cluster.
+    highlight_color : `tuple`
+        The colors to use when highlighting a cluster. Should be a tuple of length two.
+        First item is the color of all other cluster than the selected, the second item
+        is the color of the highlighted cluster.
     edges : `bool`
         Draw edges (only applicable if reduction='force_graph'). Default: False
     cell_types : `bool`
@@ -431,7 +438,12 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
             for i, k in enumerate(groups):
                 idx = np.array(cl) == k
                 e = E[idx]
-                col = colors[i]
+                if highlight_cluster == k:
+                    col = highlight_color[1]
+                elif highlight_cluster:
+                    col = highlight_color[0]
+                else:
+                    col = colors[i]
                 aa[pl_idx].scatter(e.iloc[:, 0], e.iloc[:, 1], s=marker_size,
                                    color=col, label=k) # don't remove label, it is
                                                        # needed for sorting items
