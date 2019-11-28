@@ -531,7 +531,7 @@ has not been called yet.')
         # plot meta data variables
         for meta_var in metadata:
             if not meta_var in obj.meta_cells.columns:
-                raise Exception('Meta data variable "%s" not found.' % k)
+                raise ValueError('Meta data variable "%s" not found.' % meta_var)
             m_d = obj.meta_cells.loc[obj.meta_cells.status == 'OK', meta_var]
             if m_d.dtype.name == 'category':
                 groups = np.unique(m_d)
