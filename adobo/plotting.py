@@ -886,10 +886,12 @@ def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=Tr
     -------
     >>> import adobo as ad
     >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.preproc.symbol_switch(exp, species='human')
     >>> ad.normalize.norm(exp, method='standard')
     >>> ad.hvg.find_hvg(exp)
     >>> ad.dr.pca(exp)
     >>> ad.clustering.generate(exp, clust_alg='leiden')
+    >>> ad.bio.cell_type_predict(exp, verbose=True)
     >>> ad.plotting.tree(exp)
 
     Returns
@@ -923,7 +925,8 @@ def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=Tr
             i = np.intersect1d(ret.columns, ctp.index)
             ctp = ctp[ctp.index.isin(i)]
             ret = ret.loc[:,ret.columns.isin(i)]
-            ret.columns = [q[0]+'_'+q[1] for q in zip(list(map(str, ctp.index.values)), ctp.iloc[:,1])]
+            z = zip(list(map(str, ctp.index.values)), ctp.iloc[:,1])
+            ret.columns = [q[0]+'_'+q[1] for q in z]
         except KeyError:
             pass
     

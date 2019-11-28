@@ -677,3 +677,4 @@ def symbol_switch(obj, species):
     X.index = (gs[[1]].values+'_'+gs[[0]].values).flatten()
     obj.count_data = X
     obj.meta_genes.index = obj.count_data.index
+    obj.set_assay(sys._getframe().f_code.co_name)
