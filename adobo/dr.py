@@ -454,7 +454,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
     obj.set_assay(sys._getframe().f_code.co_name)
 
 def jackstraw(obj, normalization=None, permutations=500, ncomp=None,
-              subset_frac_genes=0.05, score_thr=1e-03, retx=True, verbose=False):
+              subset_frac_genes=0.05, score_thr=1e-03, fdr=0.01, retx=True,
+              verbose=False):
     """Determine the number of relevant PCA components.
 
     Notes
@@ -479,6 +480,8 @@ def jackstraw(obj, normalization=None, permutations=500, ncomp=None,
         Proportion genes to use. Default: 0.10
     score_thr : `float`
         Threshold for significance. Default: 1e-05
+    fdr : `float`
+        Acceptable false discovery rate. Default: 0.01
     retx : `bool`
         In addition to also modifying the object, also return results. Default: True
     verbose : `bool`
@@ -567,7 +570,7 @@ computed by adobo.dr.pca(...)')
     final = pd.DataFrame(final)
     final['p.adj'] = p_adjust_bh(final[1])
     final.columns = ['PC', 'chi2_p', 'chi2_p_adj']
-    final['significant'] = final.chi2_p_adj < 0.05
+    final['significant'] = final.chi2_p_adj < fdr
     end_time = time.time()
     if verbose:
         print('Analysis took %.2f minutes' % ((end_time-start_time)/60))
