@@ -737,7 +737,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     top : `int`
         Specifies the number of top scoring genes to include. Default: 10
     violin : `bool`
-        Draws a violin plot (otherwise box plot). Default: True
+        Draws a violin plot (otherwise a box plot). Default: True
     scale : `{'width', 'area'}`
         If `area`, each violin will have the same area. If ``width``, each violin will
         have the same width. Default: 'width'
@@ -952,6 +952,101 @@ def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=Tr
     if not title:
         title = 'dendrogram of clusters; (%s, %s, %s)' % (norm, clust_alg, method)
     aa.set_title(title)
+    plt.tight_layout()
+    if filename != None:
+        plt.savefig(filename)
+    else:
+        plt.show()
+
+def exp_genes(obj, normalization=None, clust_alg=None, cluster=None, min_cluster_size=10,
+              violin=True, scale='width', fontsize=10, figsize=(10, 5), linewidth=0.5,
+              filename=None, title=None, **args):
+    """Compare number of expressed genes across clusters
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A data class object
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None
+        then the function will be applied on the last normalization that was applied.
+    clust_alg : `str`
+        Name of the clustering strategy. If empty or None, the last one will be used.
+    cluster : `list` or `int`
+        List of cluster identifiers to plot. If a list, then expecting a list of cluster
+        indices. An integer specifies only one cluster index. If None, then shows the
+        expression across all clusters. Default: None
+    min_cluster_size : `int`
+        Can be used to prevent clusters below a certain number of cells to be
+        plotted. Default: 10
+    violin : `bool`
+        Draws a violin plot (otherwise a box plot). Default: True
+    scale : `{'width', 'area'}`
+        If `area`, each violin will have the same area. If ``width``, each violin will
+        have the same width. Default: 'width'
+    fontsize : `int`
+        Specifies font size. Default: 6
+    figsize : `tuple`
+        Figure size in inches. Default: (10, 10)
+    linewidth : `float`
+        Border width. Default: 0.5
+    filename : `str`, optional
+        Write to a file instead of showing the plot on screen.
+    title : `str`
+        Title of the plot. Default: None
+    **args
+        Passed on into seaborn's violinplot and boxplot functions
+
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp, method='standard')
+    >>> ad.hvg.find_hvg(exp)
+    >>> ad.dr.pca(exp)
+    >>> ad.clustering.generate(exp, clust_alg='leiden')
+    >>> ad.plotting.exp_genes(obj)
+
+    Returns
+    -------
+    Nothing
+    """
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
+    if clust_alg == None or clust_alg == '':
+        clust_alg = list(target['clusters'].keys())[-1]
+    # setup plotting grid
+    plt.clf()
+    plt.close(fig='all')
+    cl = target['clusters'][clust_alg]['membership']
+    z = pd.Series(dict(Counter(cl)))
+    X = target['data']
+    if min_cluster_size > 0:
+        remove = z[z < min_cluster_size].index.values
+        X = X.loc[:, np.logical_not(cl.isin(remove))]
+        cl = cl[np.logical_not(cl.isin(remove))]
+    cl_names = []
+    cl_exp_genes = []
+    for cl_id, X_ss in X.groupby(cl.values, axis=1):
+        g_exp = (X_ss>0).sum(axis=0)
+        cl_names = cl_names + [cl_id]*len(g_exp)
+        cl_exp_genes = cl_exp_genes + list(g_exp.values)
+    fig, aa = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+    if violin:
+        p = sns.violinplot(ax=aa, x=cl_names, y=cl_exp_genes, linewidth=linewidth,
+                           scale=scale, **args)
+    else:
+        p = sns.boxplot(ax=aa, x=cl_names, y=cl_exp_genes, linewidth=linewidth, **args)
+    p.set_ylabel('number of expressed genes')
+    p.set_xlabel('cluster')
+    if title:
+        p.set_title(title)
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename)
