@@ -400,7 +400,7 @@ def mm(data_norm, log, fdr=0.1, ngenes=1000):
     return res.head(ngenes)['gene']
 
 def find_hvg(obj, method='seurat', normalization=None, ngenes=1000, fdr=0.1,
-             verbose=False):
+             use_combat=False, verbose=False):
     """Finding highly variable genes
 
     Notes
@@ -425,6 +425,8 @@ def find_hvg(obj, method='seurat', normalization=None, ngenes=1000, fdr=0.1,
         False Discovery Rate threshold for significant genes applied to those methods
         that use it (brennecke, chen2016, mm). Note that the number of returned genes
         might be fewer than specified by `ngenes` because of FDR consideration.
+    use_combat : `bool`
+        Use combat-adjusted data. Default: False
     verbose : `bool`
         Be verbose or not.
 
@@ -459,7 +461,12 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         item = targets[k]
         if verbose:
             print('Running on the %s normalization' % k)
-        data = item['data']
+        if use_combat:
+            if verbose:
+                print('Using data from ComBat.')
+            data = item['combat']
+        else:
+            data = item['data']
         data_ercc = item.get('norm_ercc', None)
         log = item['log']
         if method == 'seurat':

@@ -18,6 +18,7 @@ from scipy.sparse import csr_matrix
 from sklearn.neighbors import KernelDensity
 import statsmodels.api as sm
 from statsmodels.nonparametric.kernel_regression import KernelReg
+import patsy
 
 from ._stats import bw_nrd, row_geometric_mean, theta_ml, is_outlier
 
@@ -477,7 +478,128 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
                            'dr' : {},
                            'clusters' : {},
                            'slingshot' : {},
-                           'de' : {}}
+                           'de' : {},
+                           'combat' : {}}
     obj.set_assay(sys._getframe().f_code.co_name, norm_method)
     if retx:
         return norm
+
+def ComBat(obj, normalization=None, meta_cells_var=None, mean_only=True, par_prior=True,
+           verbose=False):
+    """Adjust for batch effects in datasets where the batch covariate is known
+    
+    Notes
+    -----
+    Follows the ComBat function in the R package SVA.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on all normalizations available.
+    meta_cells_var : `str`
+        Meta data variable. Should be a column name in :py:attr:`data.dataset.meta_cells`.
+    mean_only : `bool`
+        Mean only version of ComBat. Default: True
+    par_prior : `bool`
+        True indicates parametric adjustments will be used, False indicates non-parametric
+        adjustments will be used. Default: True
+    verbose : `bool`
+        Be verbose or not. Default: False
+    
+    References
+    ----------
+    .. [1] Johnson et al. (2007) Biostatistics. Adjusting batch effects in microarray
+           expression data using empirical Bayes methods.
+
+    Returns
+    -------
+    Modifies the passed object.
+    """
+    if not meta_cells_var:
+        raise Exception('"meta_cells_var" cannot be empty.')
+    if not mean_only:
+        raise NotImplementedError('mean_only=False is not implemented.')
+    if not par_prior:
+        raise NotImplementedError('par_prior=False is not implemented.')
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    X = obj.norm_data[norm]['data']
+    batch = obj.meta_cells.loc[:, meta_cells_var]
+    batch = list(batch[batch.index.isin(X.columns)])
+    # full design matrix
+    dm = patsy.dmatrix('~ 0 + batch', pd.DataFrame({'batch' : batch}))
+    if verbose:
+        print('Found %s batches' % dm.shape[1])
+    nbatch = dm.shape[1]
+    mm = np.dot(np.asarray(dm).transpose(), X.to_numpy().transpose())
+    i = np.dot(np.asarray(dm).transpose(), np.asarray(dm))
+    B_hat = np.linalg.solve(i, mm)
+    nbatches = np.asarray(dm).sum(axis=0)
+    grand_mean = np.dot(nbatches/np.sum(nbatches), B_hat)
+    var_pooled = np.dot((X-np.dot(dm, B_hat).transpose())**2,
+                        [1/np.sum(nbatches)]*int(np.sum(nbatches)))
+    stand_mean = np.dot(np.matrix(grand_mean).transpose(),
+                        np.matrix([1]*int(np.sum(nbatches))))
+    tmp = np.array(dm)
+    tmp[:, :] = 0
+    stand_mean = stand_mean + np.dot(tmp, B_hat).transpose()
+    sdata = (X - stand_mean)/np.dot(np.matrix(np.sqrt(var_pooled)).transpose(),
+                                              np.matrix([1]*int(np.sum(nbatches))))
+    gamma_hat = np.linalg.solve(np.dot(np.array(dm).transpose(), np.array(dm)),
+                                np.dot(np.array(dm).transpose(), sdata.transpose()))
+    if mean_only:
+        delta_hat = np.ones(shape=(dm.shape[1], X.shape[0]))
+    else:
+        raise NotImplementedError('mean_only=False is not implemented.')
+    gamma_bar = np.nanmean(gamma_hat,axis=1)
+    t2 = np.nanvar(gamma_hat, axis=1)
+    
+    def aprior(x):
+        m = np.mean(x)
+        s2 = np.var(x)
+        return (2 * s2 + m**2)/s2
+
+    def bprior(x):
+        m = np.mean(x)
+        s2 = np.var(x)
+        return (2 * s2 + m**3)/s2
+    
+    a_prior = np.apply_along_axis(aprior, 1, delta_hat)
+    b_prior = np.apply_along_axis(bprior, 1, delta_hat)
+    
+    def postmean(g_hat, g_bar, n, d_star, t2):
+        return (t2 * n * g_hat + d_star * g_bar)/(t2 * n + d_star)
+    
+    gamma_star = []
+    delta_star = []
+    
+    for i in np.arange(0, nbatch):
+        gamma_star.append(postmean(gamma_hat[i, :], gamma_bar[i], 1, 1, t2[i]))
+        delta_star.append([1]*X.shape[0])
+    
+    gamma_star = np.asarray(gamma_star)
+    delta_star = np.asarray(delta_star)
+    
+    bayesdata = sdata
+    # iterate all cells per batch
+    res = []
+    for i in np.arange(0,np.asarray(dm).shape[1]):
+        X_batch = bayesdata.iloc[:, np.asarray(dm)[:, i]==1]
+        X_batch_dm = np.asarray(dm)[np.asarray(dm)[:, i]==1, :]
+        lp = np.dot(np.matrix(np.sqrt(delta_star[i, ])).transpose(),
+                    np.matrix([1]*X_batch.shape[1]))
+        r = (X_batch - np.dot(X_batch_dm, gamma_star).transpose())/lp
+        res.append(r)
+    res = pd.concat(res, axis=1)
+    res = res.reindex(X.columns, axis=1)
+    bd = res*np.dot(np.matrix(np.sqrt(var_pooled)).transpose(),
+                    np.matrix([1]*X.shape[1]))+stand_mean
+    obj.set_assay(sys._getframe().f_code.co_name)
+    if obj.sparse:
+        bd = bd.astype(pd.SparseDtype("float64", 0))
+    obj.norm_data[norm]['combat'] = bd
