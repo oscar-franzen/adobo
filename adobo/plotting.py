@@ -1052,3 +1052,60 @@ def exp_genes(obj, normalization=None, clust_alg=None, cluster=None, min_cluster
         plt.savefig(filename)
     else:
         plt.show()
+
+def jackstraw_barplot(obj, normalization=None, fontsize=12, figsize=(15, 6),
+                      filename=None, title=None, **args):
+    """Make a barplot of jackstraw p-values for principal components
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A data class object
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None
+        then the function will be applied on the last normalization that was applied.
+    fontsize : `int`
+        Specifies font size. Default: 12
+    figsize : `tuple`
+        Figure size in inches. Default: (10, 10)
+    linewidth : `float`
+        Border width. Default: 0.5
+    filename : `str`, optional
+        Write to a file instead of showing the plot on screen.
+    title : `str`
+        Title of the plot. Default: None
+    **args
+        Passed on into seaborn's violinplot and boxplot functions
+
+    Returns
+    -------
+    Nothing
+    """
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
+    try:
+        js_p = target['dr']['jackstraw']['results_by_comp']
+    except KeyError:
+        raise Exception('Run jackstraw first (adobo.dr.jackstraw).')
+    plt.clf()
+    plt.close(fig='all')
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+    bp = sns.barplot(x=np.arange(1,len(js_p.chi2_p)+1), y=-np.log10(js_p.chi2_p),
+                     color='black')
+    ax.axhline(-np.log10(max(js_p.loc[js_p.significant==True,:].chi2_p)), ls='--',
+                         color='red')
+    bp.set_xlabel("Principal component", fontsize=fontsize)
+    bp.set_ylabel("-log10(p-value)", fontsize=fontsize)
+    if title:
+        p.set_title(title)
+    plt.tight_layout()
+    if filename != None:
+        plt.savefig(filename)
+    else:
+        plt.show()
