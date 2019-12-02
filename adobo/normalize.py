@@ -490,7 +490,10 @@ def ComBat(obj, normalization=None, meta_cells_var=None, mean_only=True, par_pri
     
     Notes
     -----
-    Follows the ComBat function in the R package SVA.
+    ComBat is a classical method for batch correction and it has been shown to perform
+    well on single cell data. The drawback of using ComBat is that all cells in a batch
+    is used for estimating model parameters. This implementation follows the ComBat
+    function in the R package SVA.
 
     Parameters
     ----------
@@ -513,6 +516,8 @@ def ComBat(obj, normalization=None, meta_cells_var=None, mean_only=True, par_pri
     ----------
     .. [1] Johnson et al. (2007) Biostatistics. Adjusting batch effects in microarray
            expression data using empirical Bayes methods.
+    .. [2] Buttner et al. (2019) Nat Met. A test metric for assessing single-cell RNA-seq
+           batch correction
 
     Returns
     -------
