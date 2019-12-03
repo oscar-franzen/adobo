@@ -304,7 +304,7 @@ generate(...)' % clust_alg)
             X_ss = X[X.index.isin(zx.index)]
             X_ss = X_ss.sparse.to_dense().reindex(zx.index)
             X_ss = X_ss.reindex(comp.iloc[:, i].sort_values().index, axis=1)
-            hm = sns.heatmap(X_ss, ax=ax[idx])
+            hm = sns.heatmap(X_ss, ax=ax[idx], yticklabels=X_ss.index.values)
             hm.set_title('comp. %s' % (i+1), fontsize=fontsize)
             hm.set_xlabel('', fontsize=fontsize)
             hm.set_ylabel('', fontsize=fontsize)
