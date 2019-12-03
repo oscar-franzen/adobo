@@ -150,7 +150,7 @@ def irlb(data_norm, scale=True, ncomp=75, var_weigh=True, seed=None):
         comp = np.dot(lanc.U, np.diag(lanc.s))
     else:
         comp = lanc.U
-    comp = pd.DataFrame(comp)
+    comp = pd.DataFrame(comp, index=inp.index)
     # gene loadings
     contr = pd.DataFrame(lanc.V, index=inp.columns)
     return comp, contr

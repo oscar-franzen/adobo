@@ -171,7 +171,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
 
 def pca_contributors(obj, normalization=None, how='heatmap', clust_alg=None, cluster=None,
                      all_genes=False, dim=[0, 1, 2], top=20, color=YLW_CURRY,
-                     fontsize=6, figsize=(10, 5), filename=None, **args):
+                     fontsize=6, figsize=(10, 5), filename=None, verbose=False, **args):
     """Examine the top contributing genes to each PCA component. Optionally, one can
     examine the PCA components of a cell cluster instead.
 
@@ -216,6 +216,8 @@ def pca_contributors(obj, normalization=None, how='heatmap', clust_alg=None, clu
     filename : `str`, optional
         Write to a file instead of showing the plot on screen. File type is determined by
         the filename extension.
+    verbose : `bool`
+        Be verbose or not. Default: False
 
     Example
     -------
@@ -293,7 +295,8 @@ generate(...)' % clust_alg)
     elif how == 'heatmap':
         X = target['data']
         for i, d in contr.iteritems():
-            print(i)
+            if verbose:
+                print(i)
             d = d.sort_values(ascending=False)
             d_top = d.head(top)
             d_bottom = d.tail(top)
