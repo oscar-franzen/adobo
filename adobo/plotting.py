@@ -171,7 +171,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
         plt.show()
     plt.close()
 
-def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
+def pca_contributors(obj, normalization=None, how='barplot', clust_alg=None, cluster=None,
                      all_genes=False, dim=[0, 1, 2, 3, 4], top=10, color=YLW_CURRY,
                      fontsize=6, figsize=(10, 5), filename=None, **args):
     """Examine the top contributing genes to each PCA component. Optionally, one can
@@ -189,6 +189,10 @@ def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
     normalization : `str`
         The name of the normalization to operate on. If empty or None, the last one
         generated is be used. Default: None
+    how : `{'barplot', 'heatmap'}`
+        How to visualize, can be barplot or heatmap. If 'barplot', then shows the PCA
+        scores. If 'heatmap', then visualizes the expression of genes with top PCA scores.
+        Default: 'barplot'
     clust_alg : `str`
         Name of the clustering strategy. If empty or None, the last one generated is
         be used. Default: None
@@ -228,6 +232,8 @@ def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
     -------
     Nothing
     """
+    if not how in ('barplot', 'heatmap'):
+        raise ValueError('"how" can only be "barplot" or "heatmap"')
     if normalization == None or normalization == '':
         norm = list(obj.norm_data.keys())[-1]
     else:
@@ -246,9 +252,12 @@ def pca_contributors(obj, normalization=None, clust_alg=None, cluster=None,
     if not isinstance(dim, list):
         dim = np.arange(0, dim)
     f, ax = plt.subplots(nrows=1, ncols=len(dim), figsize=figsize)
+    if type(ax) != np.ndarray:
+        ax = [ax]
     f.subplots_adjust(wspace=1)
     try:
         contr = target['dr']['pca']['contr']
+        comp = target['dr']['pca']['comp']
     except KeyError:
         raise Exception('PCA decomposition not found.')
     if cluster != None:
@@ -262,20 +271,38 @@ generate(...)' % clust_alg)
         if not all_genes:
             hvg = target['hvg']['genes']
             X_ss = X_ss[X_ss.index.isin(hvg)]
-        _, contr = irlb(X_ss)
-    contr = contr[dim]
+        comp, contr = irlb(X_ss)
+    contr = np.abs(contr[dim])
     idx = 0
-    for i, d in contr.iteritems():
-        d = d.sort_values(ascending=False)
-        d = d.head(top)
-        y_pos = np.arange(len(d))
-        ax[idx].barh(y_pos, d.values, color=YLW_CURRY)
-        ax[idx].set_yticks(y_pos)
-        ax[idx].set_yticklabels(d.index.values, fontsize=fontsize)
-        ax[idx].set_xlabel('abs(PCA score)', fontsize=fontsize)
-        ax[idx].set_title('comp. %s' % (i+1), fontsize=fontsize)
-        ax[idx].invert_yaxis() # labels read top-to-bottom
-        idx += 1
+    if how == 'barplot':
+        for i, d in contr.iteritems():
+            d = d.sort_values(ascending=False)
+            d = d.head(top)
+            y_pos = np.arange(len(d))
+            ax[idx].barh(y_pos, d.values, color=YLW_CURRY)
+            ax[idx].set_yticks(y_pos)
+            ax[idx].set_yticklabels(d.index.values, fontsize=fontsize)
+            ax[idx].set_xlabel('abs(PCA score)', fontsize=fontsize)
+            ax[idx].set_title('comp. %s' % (i+1), fontsize=fontsize)
+            ax[idx].invert_yaxis() # labels read top-to-bottom
+            idx += 1
+    elif how == 'heatmap':
+        X = target['data']
+        for i, d in contr.iteritems():
+            print(i)
+            d = d.sort_values(ascending=False)
+            d = d.head(top)
+            X_ss = X[X.index.isin(d.index)]
+            X_ss = X_ss.sparse.to_dense().reindex(d.index)
+            
+            X_ss = X_ss.reindex(comp.iloc[:, i].sort_values().index, axis=1)
+            
+            hm = sns.heatmap(X_ss, ax=ax[idx])
+            hm.set_title('comp. %s' % (i+1))
+            hm.set_xlabel('')
+            hm.set_ylabel('')
+            hm.set(xticklabels=[], xticks=[])
+            idx += 1
     plt.tight_layout()
     if filename != None:
         plt.savefig(filename, **args)
@@ -381,6 +408,8 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
             clustering = tuple({'q' : list(D[item]['clusters'].keys()) for item in D}['q'])
         except KeyError:
             raise Exception('No clusterings found. Run `adobo.clustering.generate` first.')
+    if len(clustering) == 0:
+        raise Exception('No clusterings found. Run `adobo.clustering.generate` first.')
     # setup colors
     if colors == 'adobo':
         colors = CLUSTER_COLORS_DEFAULT
