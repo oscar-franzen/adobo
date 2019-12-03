@@ -10,19 +10,35 @@ This module contains functions to normalize raw read counts.
 """
 
 import sys
-
+import time
+from multiprocessing import Pool
+import psutil
 import numpy as np
 import pandas as pd
-
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import KernelDensity
 import statsmodels.api as sm
 from statsmodels.nonparametric.kernel_regression import KernelReg
 import patsy
+from tqdm import tqdm
 
 from ._stats import bw_nrd, row_geometric_mean, theta_ml, is_outlier
 
-def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
+def _vsn_model_pars(X, g, data_step1):
+    y = X.loc[g, :]
+    mod = sm.GLM(y, sm.add_constant(data_step1['log_umi']),
+                                    family=sm.families.Poisson())
+    res = mod.fit()
+    s = res.summary()
+    mu = res.fittedvalues
+    theta = theta_ml(y, mu)
+    coef = res.params
+    return{'gene' : g,
+           'theta' : theta,
+           'log_umi' : coef['log_umi'],
+           'const' : coef['const']}
+
+def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000, nworkers='auto', verbose=False):
     """Performs variance stabilizing normalization based on a negative binomial regression
     model with regularized parameters
 
@@ -41,6 +57,12 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
         A small constant to avoid log(0)=-Inf. Default: 1
     n_genes : `int`
         Number of genes to use when estimating parameters. Default: 2000
+    nworkers : `int` or `{'auto'}`
+        If a string, then the only accepted value is 'auto', and the number of worker
+        processes will be the total number of detected physical cores. If an integer
+        then it specifies the number of worker processes. Default: 'auto'
+    verbose : `bool`
+        Be verbose or not. Default: False
 
     References
     ----------
@@ -58,16 +80,21 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     :class:`pandas.DataFrame`
         A data matrix with adjusted counts.
     """
-
+    start_time = time.time()
+    if type(nworkers) == str:
+        if nworkers == 'auto':
+            nworkers = psutil.cpu_count(logical=False)
+        else:
+            raise Exception('Invalid value for parameter "nworkers".')
+    if verbose:
+        print('%s worker processes will be used' % nworkers)
     bw_adjust = 3 # Kernel bandwidth adjustment factor
-
     # numericals functions
     log10 = np.log10
     log = np.log
-    exp = np.exp
+    exp_ = np.exp
     mean = np.mean
     sqrt = np.sqrt
-
     # data summary
     cell_attr = pd.DataFrame({'counts' : data.sum(axis=0),
                               'genes' : (data > 0).sum(axis=0)})
@@ -75,7 +102,7 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     cell_attr['log_gene'] = log10(cell_attr.genes)
     cell_attr['umi_per_gene'] = cell_attr.counts/cell_attr.genes
     cell_attr['log_umi_per_gene'] = log10(cell_attr.umi_per_gene)
-
+    
     genes_cell_count = (data > 0).sum(axis=1)
     genes = genes_cell_count[genes_cell_count >= min_cells].index
     X = data[data.index.isin(genes)]
@@ -91,31 +118,34 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
         kde = KernelDensity(bandwidth=bw, kernel='gaussian')
         ret = kde.fit(genes_log_gmean_step1[:, None])
         # TODO: score_samples is slower than density() in R
-        weights = 1/np.exp(kde.score_samples(genes_log_gmean_step1[:, None]))
-        genes_step1 = np.random.choice(X.index, n_genes, replace=False, p=weights/sum(weights))
+        weights = 1/exp_(kde.score_samples(genes_log_gmean_step1[:, None]))
+        genes_step1 = np.random.choice(X.index, n_genes, replace=False,
+                                       p=weights/sum(weights))
         X = X.loc[X.index.isin(genes_step1), X.columns.isin(cells_step1)]
         X = X.reindex(genes_step1)
         genes_log_gmean_step1 = log10(row_geometric_mean(X, gmean_eps))
-
+    
+    pool = Pool(nworkers)
     model_pars = []
+    pbar = tqdm(total=len(genes_step1))
+    
+    def _update_results(y):
+        model_pars.append(y)
+        pbar.update()
+    
     for g in genes_step1:
-        y = X.loc[g, :]
-        mod = sm.GLM(y, sm.add_constant(data_step1['log_umi']), family=sm.families.Poisson())
-        res = mod.fit()
-        s = res.summary()
-        mu = res.fittedvalues
-        theta = theta_ml(y, mu)
-        coef = res.params
-        model_pars.append({'gene' : g,
-                           'theta' : theta,
-                           'log_umi' : coef['log_umi'],
-                           'const' : coef['const']})
+        args = (X, g, data_step1)
+        x = pool.apply_async(_vsn_model_pars, args=args, callback=_update_results)
+        #print(x.get())
+    
+    pool.close()
+    pool.join()
 
     model_pars = pd.DataFrame(model_pars)
     model_pars.index = model_pars['gene']
     model_pars = model_pars.drop('gene', axis=1)
     model_pars.theta = log10(model_pars.theta)
-
+    
     # remove outliers
     outliers = model_pars.apply(lambda x: is_outlier(x, genes_log_gmean_step1), axis=0)
     outliers = outliers.any(axis=1)
@@ -128,8 +158,10 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     x_points = np.minimum(x_points, max(genes_log_gmean_step1))
 
     model_pars_fit = model_pars.apply(
-        lambda x: KernelReg(x, genes_log_gmean_step1, bw='aic', var_type='c').fit(x_points)[0],
-        axis=0)
+                        lambda x: KernelReg(x,
+                                  genes_log_gmean_step1,
+                                  bw='aic',
+                                  var_type='c').fit(x_points)[0], axis=0)
 
     model_pars_fit.index = x_points.index
     model_pars.theta = 10**model_pars.theta
@@ -140,7 +172,7 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
                                          'log_umi' : cell_attr['log_umi']})
 
     coefs = model_pars_final.loc[:, ('const', 'log_umi')]
-    mu = exp(np.dot(coefs, regressor_data_final.transpose()))
+    mu = exp_(np.dot(coefs, regressor_data_final.transpose()))
     y = data[data.index.isin(model_pars_final.index)]
 
     # pearson residuals
@@ -160,12 +192,16 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000):
     # correct counts
     regressor_data = pd.DataFrame({'const' : [1]*len(cell_attr['log_umi']),
                                    'log_umi' : [med]*len(cell_attr['log_umi'])})
-    mu = exp(np.dot(coefs, regressor_data.transpose()))
+    mu = exp_(np.dot(coefs, regressor_data.transpose()))
     variance = mu+pd.DataFrame(mu**2).div(theta.values, axis=0)
     variance.index = pr.index
     variance.columns = pr.columns
     corrected_data = mu + pr * sqrt(variance)
-    return abs(round(corrected_data))
+    y = abs(round(corrected_data))
+    end_time = time.time()
+    if verbose:
+        print('Analysis took %.2f minutes' % ((end_time-start_time)/60))
+    return y
 
 def clr(data, axis='genes'):
     """Performs centered log ratio normalization similar to Seurat
@@ -349,7 +385,7 @@ def fqn(data):
 
 def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_func=np.log2,
          small_const=1, remove_low_qual=True, remove_mito=True, gene_lengths=None,
-         scaling_factor=10000, axis='genes', retx=False):
+         scaling_factor=10000, axis='genes', n_genes=2000, retx=False, verbose=False):
     r"""Normalizes gene expression data
 
     Notes
@@ -403,8 +439,12 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
     axis : {'genes', 'cells'}
         Only applicable when `method="clr"`, defines the axis to normalize across.
         Default: 'genes'
+    n_genes : `int`
+        For method='vsn', number of genes to use when estimating parameters. Default: 2000
     retx : `bool`
         Return the normalized data as well. Default: False
+    verbose : `bool`
+        Be verbose or not. Default: False
 
     References
     ----------
@@ -457,7 +497,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
         norm = clr(data, axis)
         norm_method = 'clr'
     elif method == 'vsn':
-        norm = vsn(data)
+        norm = vsn(data, n_genes=n_genes, verbose=verbose)
         norm_method = 'vsn'
     else:
         raise Exception('Unknown normalization method.')

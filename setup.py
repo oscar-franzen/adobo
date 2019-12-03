@@ -31,7 +31,8 @@ setup(
         'networkx >= 2.3',
         'patsy >= 0.5.1',
         'mplcursors >= 0.3',
-        'python-louvain >= 0.13' # louvain (module is called community)
+        'python-louvain >= 0.13', # louvain (module is called community)
+        'tqdm >= 4.37.0' # progress bar
     ],
     ext_modules=[Extension('pdf', sources = ['adobo/libs/pdf.c'],
                            extra_compile_args=['-fPIC','-lm'])]
