@@ -26,6 +26,14 @@ from .dr import svd, irlb
 from ._constants import CLUSTER_COLORS_DEFAULT, YLW_CURRY
 from ._colors import unique_colors
 
+def _mpl_finish(filename, block=False, **args):
+    """Only used internally. Used to finish off the plot."""
+    plt.tight_layout()
+    if filename != None:
+        plt.savefig(filename, **args)
+    else:
+        plt.show(block=block)
+
 def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red', title=None,
                     filename=None):
     """Generates a scatter plot showing the total number of reads on one axis
@@ -68,15 +76,10 @@ def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red', title=None,
         ax.set_title(title)
     if np.any(reads > 100000):
         plt.xticks(rotation=90)
-    plt.tight_layout()
-    if filename:
-        plt.savefig(filename, bbox_inches='tight')
-    else:
-        plt.show()
-    plt.close()
+    _mpl_finish(filename, bbox_inches='tight', **args)
 
 def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
-            color=YLW_CURRY, title=None, filename=None):
+            color=YLW_CURRY, title=None, filename=None, **args):
     """Generates a plot of read counts per cell or expressed genes per cell
 
     Parameters
@@ -164,12 +167,7 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
     ax.set_title(title)
     if np.any(summary > 100000):
         plt.xticks(rotation=90)
-    plt.tight_layout()
-    if filename:
-        plt.savefig(filename, bbox_inches='tight')
-    else:
-        plt.show()
-    plt.close()
+    _mpl_finish(filename, bbox_inches='tight', **args)
 
 def pca_contributors(obj, normalization=None, how='barplot', clust_alg=None, cluster=None,
                      all_genes=False, dim=[0, 1, 2, 3, 4], top=10, color=YLW_CURRY,
@@ -294,20 +292,15 @@ generate(...)' % clust_alg)
             d = d.head(top)
             X_ss = X[X.index.isin(d.index)]
             X_ss = X_ss.sparse.to_dense().reindex(d.index)
-            
             X_ss = X_ss.reindex(comp.iloc[:, i].sort_values().index, axis=1)
-            
             hm = sns.heatmap(X_ss, ax=ax[idx])
             hm.set_title('comp. %s' % (i+1))
-            hm.set_xlabel('')
-            hm.set_ylabel('')
+            hm.set_xlabel('', fontsize=fontsize)
+            hm.set_ylabel('', fontsize=fontsize)
+            hm.tick_params(labelsize=fontsize)
             hm.set(xticklabels=[], xticks=[])
             idx += 1
-    plt.tight_layout()
-    if filename != None:
-        plt.savefig(filename, **args)
-    else:
-        plt.show()
+    _mpl_finish(filename, **args)
 
 def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=(),
              genes=(), highlight=None, highlight_color=('black', 'red'),
@@ -662,10 +655,7 @@ has not been called yet.')
         # go back to default style
         plt.style.use('classic')
         plt.rcParams.update(plt.rcParamsDefault)
-    if filename != None:
-        plt.savefig(filename, **args)
-    else:
-        plt.show()
+    _mpl_finish(filename, **args)
 
 def pca_elbow(obj, normalization=None, comp_max=100, all_genes=False, filename=None,
               font_size=8, figsize=(6, 4), color=YLW_CURRY, title='PCA elbow plot',
@@ -732,10 +722,7 @@ def pca_elbow(obj, normalization=None, comp_max=100, all_genes=False, filename=N
     ax.set_ylabel('cumulative variance (percent of total)')
     ax.set_xlabel('components')
     ax.set_title(title)
-    if filename != None:
-        plt.savefig(filename, **args)
-    else:
-        plt.show()
+    _mpl_finish(filename, **args)
 
 def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
                  rank_func=np.median, top=10, violin=True, scale='width', fontsize=10,
@@ -880,11 +867,7 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
         p.set_title(g)
     p.set_ylabel('expression')
     p.set_xlabel('cluster')
-    plt.tight_layout()
-    if filename != None:
-        plt.savefig(filename)
-    else:
-        plt.show()
+    _mpl_finish(filename, **args)
 
 def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=True,
          min_cluster_size=10, fontsize=8, figsize=(10, 5), filename=None, title=None):
@@ -981,11 +964,7 @@ def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=Tr
     if not title:
         title = 'dendrogram of clusters; (%s, %s, %s)' % (norm, clust_alg, method)
     aa.set_title(title)
-    plt.tight_layout()
-    if filename != None:
-        plt.savefig(filename)
-    else:
-        plt.show()
+    _mpl_finish(filename, **args)
 
 def exp_genes(obj, normalization=None, clust_alg=None, cluster=None, min_cluster_size=10,
               violin=True, scale='width', fontsize=10, figsize=(10, 5), linewidth=0.5,
@@ -1076,11 +1055,7 @@ def exp_genes(obj, normalization=None, clust_alg=None, cluster=None, min_cluster
     p.set_xlabel('cluster')
     if title:
         p.set_title(title)
-    plt.tight_layout()
-    if filename != None:
-        plt.savefig(filename)
-    else:
-        plt.show()
+    _mpl_finish(filename, **args)
 
 def jackstraw_barplot(obj, normalization=None, fontsize=12, figsize=(15, 6),
                       filename=None, title=None, **args):
@@ -1133,8 +1108,4 @@ def jackstraw_barplot(obj, normalization=None, fontsize=12, figsize=(15, 6),
     bp.set_ylabel("-log10(p-value)", fontsize=fontsize)
     if title:
         p.set_title(title)
-    plt.tight_layout()
-    if filename != None:
-        plt.savefig(filename)
-    else:
-        plt.show()
+    _mpl_finish(filename, **args)
