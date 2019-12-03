@@ -38,7 +38,7 @@ def _vsn_model_pars(X, g, data_step1):
            'log_umi' : coef['log_umi'],
            'const' : coef['const']}
 
-def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000, nworkers='auto', verbose=False):
+def vsn(data, min_cells=5, gmean_eps=1, ngenes=2000, nworkers='auto', verbose=False):
     """Performs variance stabilizing normalization based on a negative binomial regression
     model with regularized parameters
 
@@ -55,7 +55,7 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000, nworkers='auto', verbose=F
         Minimum number of cells expressing a gene for the gene to be used. Default: 10
     gmean_eps : `float`
         A small constant to avoid log(0)=-Inf. Default: 1
-    n_genes : `int`
+    ngenes : `int`
         Number of genes to use when estimating parameters. Default: 2000
     nworkers : `int` or `{'auto'}`
         If a string, then the only accepted value is 'auto', and the number of worker
@@ -113,13 +113,13 @@ def vsn(data, min_cells=5, gmean_eps=1, n_genes=2000, nworkers='auto', verbose=F
     genes_log_gmean_step1 = genes_log_gmean
     data_step1 = cell_attr
 
-    if n_genes < len(genes_step1):
+    if ngenes < len(genes_step1):
         bw = bw_nrd(genes_log_gmean_step1)
         kde = KernelDensity(bandwidth=bw, kernel='gaussian')
         ret = kde.fit(genes_log_gmean_step1[:, None])
         # TODO: score_samples is slower than density() in R
         weights = 1/exp_(kde.score_samples(genes_log_gmean_step1[:, None]))
-        genes_step1 = np.random.choice(X.index, n_genes, replace=False,
+        genes_step1 = np.random.choice(X.index, ngenes, replace=False,
                                        p=weights/sum(weights))
         X = X.loc[X.index.isin(genes_step1), X.columns.isin(cells_step1)]
         X = X.reindex(genes_step1)
@@ -385,7 +385,8 @@ def fqn(data):
 
 def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_func=np.log2,
          small_const=1, remove_low_qual=True, remove_mito=True, gene_lengths=None,
-         scaling_factor=10000, axis='genes', n_genes=2000, retx=False, verbose=False):
+         scaling_factor=10000, axis='genes', ngenes=2000, nworkers='auto', retx=False,
+         verbose=False):
     r"""Normalizes gene expression data
 
     Notes
@@ -439,8 +440,12 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
     axis : {'genes', 'cells'}
         Only applicable when `method="clr"`, defines the axis to normalize across.
         Default: 'genes'
-    n_genes : `int`
+    ngenes : `int`
         For method='vsn', number of genes to use when estimating parameters. Default: 2000
+    nworkers : `int` or `{'auto'}`
+        For method='vsn'. If a string, then the only accepted value is 'auto', and the
+        number of worker processes will be the total number of detected physical cores.
+        If an integer then it specifies the number of worker processes. Default: 'auto'
     retx : `bool`
         Return the normalized data as well. Default: False
     verbose : `bool`
@@ -497,7 +502,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
         norm = clr(data, axis)
         norm_method = 'clr'
     elif method == 'vsn':
-        norm = vsn(data, n_genes=n_genes, verbose=verbose)
+        norm = vsn(data, ngenes=ngenes, nworkers=nworkers, verbose=verbose)
         norm_method = 'vsn'
     else:
         raise Exception('Unknown normalization method.')
