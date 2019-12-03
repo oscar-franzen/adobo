@@ -169,16 +169,17 @@ def overall(obj, what='reads', how='histogram', bin_size=100, cut_off=None,
         plt.xticks(rotation=90)
     _mpl_finish(filename, bbox_inches='tight', **args)
 
-def pca_contributors(obj, normalization=None, how='barplot', clust_alg=None, cluster=None,
-                     all_genes=False, dim=[0, 1, 2, 3, 4], top=10, color=YLW_CURRY,
+def pca_contributors(obj, normalization=None, how='heatmap', clust_alg=None, cluster=None,
+                     all_genes=False, dim=[0, 1, 2], top=20, color=YLW_CURRY,
                      fontsize=6, figsize=(10, 5), filename=None, **args):
     """Examine the top contributing genes to each PCA component. Optionally, one can
     examine the PCA components of a cell cluster instead.
 
     Note
     ----
-    Genes are sorted by their absolute value. Additional parameters are passed
-    into :py:func:`matplotlib.pyplot.savefig`.
+    The function takes half the genes with top negative scores and the other half
+    from genes with positive scores. Additional parameters are passed into
+    :py:func:`matplotlib.pyplot.savefig`.
 
     Parameters
     ----------
@@ -187,7 +188,7 @@ def pca_contributors(obj, normalization=None, how='barplot', clust_alg=None, clu
     normalization : `str`
         The name of the normalization to operate on. If empty or None, the last one
         generated is be used. Default: None
-    how : `{'barplot', 'heatmap'}`
+    how : `{'heatmap', 'barplot'}`
         How to visualize, can be barplot or heatmap. If 'barplot', then shows the PCA
         scores. If 'heatmap', then visualizes the expression of genes with top PCA scores.
         Default: 'barplot'
@@ -202,8 +203,10 @@ def pca_contributors(obj, normalization=None, how='barplot', clust_alg=None, clu
     dim : `list` or `int`
         If list, then it specifies indices of components to plot. If integer, then it
         specifies the first components to plot. First component has index zero.
+        Default: [0, 1, 2]
     top : `int`
-        Specifies the number of top scoring genes to include. Default: 10
+        Specifies the number of top scoring genes to include (i.e. will use this many
+        positive/negative scoring genes). Default: 20
     color : `str`
         Color of the bars. Default: "#fcc603"
     fontsize : `int`
@@ -248,7 +251,7 @@ def pca_contributors(obj, normalization=None, how='barplot', clust_alg=None, clu
     plt.clf()
     plt.close(fig='all')
     if not isinstance(dim, list):
-        dim = np.arange(0, dim)
+        dim = [dim]
     f, ax = plt.subplots(nrows=1, ncols=len(dim), figsize=figsize)
     if type(ax) != np.ndarray:
         ax = [ax]
@@ -270,17 +273,20 @@ generate(...)' % clust_alg)
             hvg = target['hvg']['genes']
             X_ss = X_ss[X_ss.index.isin(hvg)]
         comp, contr = irlb(X_ss)
-    contr = np.abs(contr[dim])
+    contr = contr[dim]
     idx = 0
     if how == 'barplot':
         for i, d in contr.iteritems():
             d = d.sort_values(ascending=False)
-            d = d.head(top)
-            y_pos = np.arange(len(d))
-            ax[idx].barh(y_pos, d.values, color=YLW_CURRY)
+            d_top = d.head(top)
+            d_bottom = d.tail(top)
+            zx = pd.concat([d_top, d_bottom])
+            y_pos = np.arange(len(zx))
+            ax[idx].barh(y_pos, zx.values, color=YLW_CURRY)
             ax[idx].set_yticks(y_pos)
-            ax[idx].set_yticklabels(d.index.values, fontsize=fontsize)
+            ax[idx].set_yticklabels(zx.index.values, fontsize=fontsize)
             ax[idx].set_xlabel('abs(PCA score)', fontsize=fontsize)
+            ax[idx].tick_params(labelsize=fontsize)
             ax[idx].set_title('comp. %s' % (i+1), fontsize=fontsize)
             ax[idx].invert_yaxis() # labels read top-to-bottom
             idx += 1
@@ -289,16 +295,25 @@ generate(...)' % clust_alg)
         for i, d in contr.iteritems():
             print(i)
             d = d.sort_values(ascending=False)
-            d = d.head(top)
-            X_ss = X[X.index.isin(d.index)]
-            X_ss = X_ss.sparse.to_dense().reindex(d.index)
+            d_top = d.head(top)
+            d_bottom = d.tail(top)
+            zx = pd.concat([d_top, d_bottom])
+            X_ss = X[X.index.isin(zx.index)]
+            X_ss = X_ss.sparse.to_dense().reindex(zx.index)
             X_ss = X_ss.reindex(comp.iloc[:, i].sort_values().index, axis=1)
             hm = sns.heatmap(X_ss, ax=ax[idx])
-            hm.set_title('comp. %s' % (i+1))
+            hm.set_title('comp. %s' % (i+1), fontsize=fontsize)
             hm.set_xlabel('', fontsize=fontsize)
             hm.set_ylabel('', fontsize=fontsize)
             hm.tick_params(labelsize=fontsize)
             hm.set(xticklabels=[], xticks=[])
+            # <BUGFIX>
+            # fix for mpl bug that cuts off top/bottom of seaborn viz
+            b, t = ax[idx].get_ylim() # discover the values for bottom and top
+            b += 0.5 # Add 0.5 to the bottom
+            t -= 0.5 # Subtract 0.5 from the top
+            ax[idx].set_ylim(b, t) # update the ylim(bottom, top) values
+            # </BUGFIX>
             idx += 1
     _mpl_finish(filename, **args)
 
