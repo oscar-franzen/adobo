@@ -590,7 +590,8 @@ computed by adobo.dr.pca(...)')
     if retx:
         return res, final
 
-def genes2scores(obj, normalization=None, genes=[], bins=25, ctrl=100, retx=True):
+def genes2scores(obj, normalization=None, genes=[], bins=25, ctrl=100, retx=True,
+                 metadata=None):
     """Create cell scores from a list of genes
 
     Parameters
@@ -606,6 +607,11 @@ def genes2scores(obj, normalization=None, genes=[], bins=25, ctrl=100, retx=True
         Number of expression bins to be used. Default: 25
     ctrl : `int`
         Number of control genes in each bin. Default: 100
+    retx : `bool`
+        Return scores. Default: True
+    metadata : `str`
+        If this is set to a string, then the scores will be set as a meta data variable
+        with this column name. Default: None
 
     References
     ----------
@@ -641,3 +647,5 @@ def genes2scores(obj, normalization=None, genes=[], bins=25, ctrl=100, retx=True
     scores = (targets-con).mean(axis=0)
     if retx:
         return scores
+    if metadata:
+        obj.add_meta_data('cells', metadata, scores, 'cont')
