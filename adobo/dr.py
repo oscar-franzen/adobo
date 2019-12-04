@@ -213,16 +213,14 @@ def svd(data_norm, scale=True, ncomp=75, only_sdev=False):
     contr = pd.DataFrame(Vh[:, 0:ncomp], index=inp.columns)
     return comp, contr
 
-def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
+def pca(obj, method='irlb', normalization=None, ncomp=75, genes='hvg', scale=True,
         var_weigh=True, verbose=False, seed=42):
-    """Principal Component Analysis
+    """Runs Principal Component Analysis (PCA)
 
     Notes
     -----
-    A wrapper function around the individual normalization functions, which can also be
-    called directly. Scaling of the data is achieved by setting scale=True (default),
-    which will center (subtract the column mean) and scale columns (divide by their
-    standard deviation).
+    Scaling of the data is achieved by setting scale=True (default), which will center
+    (subtract the column mean) and scale columns (divide by their standard deviation).
 
     Parameters
     ----------
@@ -230,13 +228,15 @@ def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
           A dataset class object.
     method : `{'irlb', 'svd'}`
         Method to use for PCA. This does not matter much. Default: irlb
-    name : `str`
+    normalization : `str`
         The name of the normalization to operate on. If this is empty or None then the
         function will be applied on all normalizations available.
     ncomp : `int`
         Number of components to return. Default: 75
-    allgenes : `bool`
-        Use all genes instead of only HVG. Default: False
+    genes : `{'hvg', 'all'}` or `list`
+        If a string, the allowed values are 'hvg' to use only the highly variable genes or
+        'all' to use all genes. If a list, then the list specifies the list of genes
+        to use. Default: 'hvg'
     scale : `bool`
         Scales input data prior to PCA. Default: True
     var_weigh : `bool`
@@ -249,35 +249,46 @@ def pca(obj, method='irlb', name=None, ncomp=75, allgenes=False, scale=True,
     References
     ----------
     .. [1] https://en.wikipedia.org/wiki/Principal_component_analysis
+    .. [2] Baglama et al (2005) Augmented Implicitly Restarted Lanczos Bidiagonalization
+           Methods SIAM Journal on Scientific Computing
+    .. [3] https://github.com/bwlewis/irlbpy
+    .. [4] https://tinyurl.com/yyt6df5x
 
     Returns
     -------
     Nothing. Modifies the passed object. Results are stored in two dictonaries in the
     passed object: `dr` (containing the components) and `dr_gene_contr` (containing
-    gene contributions to each component)
+    gene loadings).
     """
     if not obj.norm_data:
         raise Exception('Run normalization first before running pca. See here: \
 https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
+    if not isinstance(genes, (str, list)):
+        raise ValueError('"genes" can be a string or list, see help pages.')
+    if isinstance(genes, str):
+        if not genes in ('hvg', 'all'):
+            raise ValueError('If "genes" is a string, then allowed values are \
+"hvg" (recommended) or "all".')
     targets = {}
-    if name is None or name == '':
+    if normalization is None or normalization == '':
         targets = obj.norm_data
     else:
-        targets[name] = obj.norm_data[name]
+        targets[normalization] = obj.norm_data[normalization]
     # remove previous cluster analysis, b/c this changes after running hvg
     obj.delete(('clusters', 'dr'))
     for k in targets:
         item = targets[k]
         data = item['data']
-        if not allgenes:
-            if not 'hvg' in item:
+        if isinstance(genes, str) and genes == 'hvg':
+            try:
+                hvg = item['hvg']['genes']
+            except KeyError:
                 raise Exception('Run adobo.dr.find_hvg() first.')
-            hvg = item['hvg']['genes']
             data = data[data.index.isin(hvg)]
-        elif verbose:
-            print('Using all genes')
+        elif isinstance(genes, list):
+            data = data[data.index.isin(genes)]
         if verbose:
-            v = (method, k, data.shape[0], data.shape[1])
+            v = (method, k, '{:,}'.format(data.shape[0]), '{:,}'.format(data.shape[1]))
             print('Running PCA (method=%s) on the %s normalization (dimensions \
 %s genes x %s cells)' % v)
         if method == 'irlb':
