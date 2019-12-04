@@ -419,7 +419,7 @@ def cell_viz(obj, reduction='tsne', normalization=(), clustering=(), metadata=()
             clustering = tuple({'q' : list(D[item]['clusters'].keys()) for item in D}['q'])
         except KeyError:
             raise Exception('No clusterings found. Run `adobo.clustering.generate` first.')
-    if len(clustering) == 0:
+    if len(clustering) == 0 and len(metadata) == 0:
         raise Exception('No clusterings found. Run `adobo.clustering.generate` first.')
     # setup colors
     if colors == 'adobo':
