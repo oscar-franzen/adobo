@@ -589,3 +589,55 @@ computed by adobo.dr.pca(...)')
                                               'results_by_comp' : final}
     if retx:
         return res, final
+
+def genes2scores(obj, normalization=None, genes=[], bins=25, ctrl=100, retx=True):
+    """Create cell scores from a list of genes
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A dataset class object.
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on all normalizations available.
+    genes : `list`
+        A list of genes to compute scores from.
+    bins : `int`
+        Number of expression bins to be used. Default: 25
+    ctrl : `int`
+        Number of control genes in each bin. Default: 100
+
+    References
+    ----------
+    .. [1] Tirosh et al. (2016) Science. Dissecting the multicellular ecosystem of
+           metastatic melanoma by single-cell RNA-seq
+
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    if len(genes) == 0:
+        raise ValueError('Gene list ("genes") is empty.')
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    item = obj.norm_data[norm]
+    X = item['data'].sparse.to_dense()
+    pool = list(X.index)
+    gene_mean = X.mean(axis=1)
+    gene_mean = gene_mean.sort_values()
+    binned = pd.qcut(gene_mean, bins)
+    ret = []
+    for g in genes:
+        ret.append(binned[binned == binned[binned.index == g].values].sample(ctrl).index)
+    con = []
+    for g in ret:
+        con.append(X[X.index.isin(g)].mean(axis=0))
+    con = pd.concat(con, axis=1).transpose()
+    con.index = genes
+    targets = X[X.index.isin(genes)]
+    targets = targets.reindex(genes)
+    scores = (targets-con).mean(axis=0)
+    if retx:
+        return scores
