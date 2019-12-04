@@ -35,7 +35,7 @@ def _mpl_finish(filename, block=False, **args):
         plt.show(block=block)
 
 def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red', title=None,
-                    filename=None):
+                    filename=None, **args):
     """Generates a scatter plot showing the total number of reads on one axis
        and the number of detected genes on the other axis
 
@@ -888,7 +888,8 @@ def genes_violin(obj, normalization='', clust_alg=None, cluster=None, gene=None,
     _mpl_finish(filename, **args)
 
 def tree(obj, normalization='', clust_alg=None, method='complete', cell_types=True,
-         min_cluster_size=10, fontsize=8, figsize=(10, 5), filename=None, title=None):
+         min_cluster_size=10, fontsize=8, figsize=(10, 5), filename=None, title=None,
+         **args):
     """Generates a dendrogram of cluster relationships
 
     Parameters
