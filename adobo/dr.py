@@ -20,6 +20,8 @@ import sklearn.manifold
 import umap as um
 import igraph as ig
 from fa2 import ForceAtlas2
+from tqdm import tqdm
+import patsy
 
 from . import irlbpy
 from ._log import warning
@@ -649,3 +651,62 @@ def genes2scores(obj, normalization=None, genes=[], bins=25, ctrl=100, retx=True
         return scores
     if metadata:
         obj.add_meta_data('cells', metadata, scores, 'cont')
+
+def regress(obj, target_vars=[], normalization=None):
+    """Regress out the effects of certain meta data variables.
+    
+    Notes
+    -----
+    This function can be used to remove known confounding variables such as ambient gene
+    expression modules, cell cycle genes or known experimental batches. It fits a linear
+    model using numpy's least square method (numpy.linalg.lstsq), predicts expression
+    values from the model and then extracts the residuals, which become the new expression
+    values.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+          A dataset class object.
+    target_vars : `list`
+        A list of target meta data variables.
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty or None then the
+        function will be applied on the last normalization used.
+
+    Returns
+    -------
+    Nothing. Modifies the passed object.
+    """
+    if len(target_vars) == 0:
+        raise ValueError('Variable list ("target_vars") is empty.')
+    if type(target_vars) == str:
+        target_vars = [target_vars]
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    item = obj.norm_data[norm]
+    X = item['data'].sparse.to_dense()
+    md = obj.meta_cells[target_vars]
+    md = md[md.index.isin(X.columns)]
+    cor = []
+    pbar = tqdm(total=X.shape[0]) # progress bar
+    for g, x in X.iterrows():
+        dm = md.copy()
+        dm['exp'] = x
+        formula = 'exp ~ ' + '+'.join(md.columns.values) + '+1'
+        outcome, predictors = patsy.dmatrices(formula, dm)
+        # fit a linear regression model with intercept
+        # the fitted model is: expression~covariates
+        # lstsq solves ax=b where 'a' are coefficients and b the responses
+        solution = np.linalg.lstsq(a=predictors, b=outcome)[0].ravel()
+        contrasts = np.array(predictors)
+        # predict the value and get the residual
+        residual = x-contrasts.dot(solution)
+        cor.append(residual)
+        pbar.update()
+    q = pd.concat(cor, axis=1).transpose()
+    if obj.sparse:
+        q = q.astype(pd.SparseDtype("float64", 0))
+    obj.norm_data[norm]['data'] = q
+    obj.set_assay(sys._getframe().f_code.co_name)
