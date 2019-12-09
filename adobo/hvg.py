@@ -71,7 +71,7 @@ def seurat(data, ngenes=1000, num_bins=20):
     ret = np.array(top_hvg.index)
     return ret
 
-def brennecke(data_norm, log, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
+def brennecke(data_norm, log, ercc=None, fdr=0.1, ngenes=1000,
               minBiolDisp=0.5, verbose=False):
     """Implements the method of Brennecke et al. (2013) to identify highly variable genes
 
@@ -106,7 +106,7 @@ def brennecke(data_norm, log, ercc=pd.DataFrame(), fdr=0.1, ngenes=1000,
     `list`
         A list containing highly variable genes.
     """
-    if ercc == None:
+    if type(ercc) != None:
         ercc = data_norm
     if log:
         data_norm = 2**data_norm-1
