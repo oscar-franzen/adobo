@@ -154,7 +154,7 @@ def brennecke(data_norm, log, ercc=None, fdr=0.1, ngenes=1000,
     res = res.sort_values('pvalue')
     return np.array(res.head(ngenes)['gene'])
 
-def scran(data_norm, ercc, log, ngenes=1000):
+def scran(data_norm, log, ngenes=1000, ercc=None):
     """This function implements the approach from the scran R package
 
     Notes
@@ -172,10 +172,10 @@ def scran(data_norm, ercc, log, ngenes=1000):
     ----------
     data_norm : :class:`pandas.DataFrame`
         A pandas data frame containing normalized gene expression data.
-    ercc : :class:`pandas.DataFrame`
-        A pandas data frame containing normalized ercc spikes.
     log : `bool`
         If normalized data were log transformed or not.
+    ercc : :class:`pandas.DataFrame`
+        A pandas data frame containing normalized ercc spikes.
     ngenes : `int`
         Number of top highly variable genes to return.
 
@@ -190,7 +190,7 @@ def scran(data_norm, ercc, log, ngenes=1000):
     `list`
         A list containing highly variable genes.
     """
-    if ercc == None:
+    if type(ercc) == None:
         raise Exception('adobo.hvg.scran requires ERCC spikes.')
     if log:
         data_norm = 2**data_norm-1
@@ -198,7 +198,7 @@ def scran(data_norm, ercc, log, ngenes=1000):
     ercc = ercc.dropna(axis=1, how='all')
     means_tech = ercc.mean(axis=1)
     vars_tech = ercc.var(axis=1)
-    to_fit = np.log(vars_tech)
+    to_fit = np.log(vars_tech+1)
     arr = [list(item) for item in zip(*sorted(zip(means_tech, to_fit)))]
     x = arr[0]
     y = arr[1]
@@ -475,7 +475,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
             hvg = brennecke(data_norm=data, log=log, ercc=data_ercc, fdr=fdr,
                             ngenes=ngenes, minBiolDisp=0.5, verbose=verbose)
         elif method == 'scran':
-            hvg = scran(data, data_ercc, log, ngenes)
+            hvg = scran(data, log, ngenes, data_ercc)
         elif method == 'chen2016':
             hvg = chen2016(data, log, fdr, ngenes)
         elif method == 'mm':
