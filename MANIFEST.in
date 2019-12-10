@@ -1,4 +1,17 @@
-recursive-include adobo/data *
+include adobo/data/Buettner_2015.mat
+include adobo/data/Buettner_2015.mat.lengths
+include adobo/data/GO_0007049.txt
+include adobo/data/GSE95315.tab.gz
+include adobo/data/GSM3687214_countTable_K11_choroidPlexus_wt.txt.gz
+include adobo/data/g2m_genes.txt
+include adobo/data/human.gencode_v32.genes.txt
+include adobo/data/markers.tsv
+include adobo/data/mouse.gencode_v23.genes.txt
+include adobo/data/mouse_gene_symbols.txt
+include adobo/data/pbmc8k.mat.gz
+include adobo/data/rRNA_genes.txt
+include adobo/data/s_genes.txt
 include README.md
 include LICENSE
 include adobo/VERSION
+exclude .gitattributes
