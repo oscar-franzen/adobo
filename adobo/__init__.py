@@ -3,6 +3,7 @@
 # Description: An analysis framework for scRNA-seq data.
 #  How to use: https://oscar-franzen.github.io/adobo/
 #     Contact: Oscar Franzen <p.oscar.franzen@gmail.com>
+
 import sys
 import re
 import os
@@ -24,6 +25,7 @@ from . import bio
 from . import clustering
 from . import traj # ectory
 from . import de
+from . import bulk # for bulk RNA-seq integration
 
 debug = 0
 
