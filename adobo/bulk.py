@@ -9,6 +9,8 @@ Summary
 Functions for bulk RNA-seq integration
 """
 
+from .IO import reader
+
 def music(obj, bulk, normalization=None, clust_alg=None, verbose=False):
     """Generates a set of marker genes for every cluster by combining tests from
     pairwise analyses.
@@ -17,7 +19,9 @@ def music(obj, bulk, normalization=None, clust_alg=None, verbose=False):
     ----------
     obj : :class:`adobo.data.dataset`
         A dataset class object.
-    bulk : `
+    bulk : `str` or `pandas.DataFrame`
+        Either a string, which should be the path to the expression matrix or a pandas
+        data frame containing the bulk gene express. Genes as rows and samples as columns.
     normalization : `str`
         The name of the normalization to operate on. If this is empty or None
         then the function will be applied on the last normalization that was applied.
@@ -40,4 +44,5 @@ def music(obj, bulk, normalization=None, clust_alg=None, verbose=False):
     -------
     Nothing. Modifies the passed object.
     """
-    pass
+    if isinstance(bulk, str):
+        exp_bulk = reader('/home/rand/Temp/GSE50244_bulk.mat')

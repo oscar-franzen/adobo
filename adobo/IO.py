@@ -67,7 +67,7 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
         D = D.transpose()
     D.to_csv(filename, sep=sep, index=index)
 
-def reader(filename, sep, header, **args):
+def reader(filename, sep='\s', header=True, do_round=False, **args):
     """Load a gene expression matrix from a file
 
     Parameters
@@ -80,6 +80,9 @@ def reader(filename, sep, header, **args):
         (i.e. any white space character)
     header : `bool`
         If the data file has a header or not. Default: True
+    do_round : `bool`
+        In case of read count fractions, round to integers. Can be a useful remedy if
+        read counts have been imputed or similar. Default: False
 
     Returns
     -------
@@ -122,7 +125,12 @@ def reader(filename, sep, header, **args):
             print('%s duplicated genes detected and removed.' % np.sum(dups))
     t = count_data.dtypes.unique()[0]
     if t != np.int32 and t != np.int64:
-        raise Exception('Non-count values detected in data matrix.')
+        if do_round:
+            count_data = count_data.astype(int)
+        else:
+            raise Exception('Non-count values detected in data matrix, consider setting \
+do_round=True, but first of all make sure your input data are raw read counts and not \
+normalized counts.')
     rem = count_data.index.str.contains('^ArrayControl-[0-9]+', regex=True, case=False)
     count_data = count_data[np.logical_not(rem)]
     count_data.index = count_data.index.str.replace('"', '')
@@ -130,7 +138,7 @@ def reader(filename, sep, header, **args):
     return count_data
 
 def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_file=None,
-                   sparse=True, bundled=False, verbose=False, **args):
+                   sparse=True, bundled=False, do_round=False, verbose=False, **args):
     r"""Load a gene expression matrix consisting of raw read counts
     
     Notes
@@ -158,6 +166,9 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_f
         of time. Default: True
     bundled : `bool`
         Use data installed by adobo. Default: False
+    do_round : `bool`
+        In case of read count fractions, round to integers. Can be a useful remedy if
+        read counts have been imputed or similar. Default: False
     verbose : `bool`
         To be verbose or not. Default: False
 
@@ -174,7 +185,7 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set', output_f
         raise Exception('%s not found' % filename)
     stime = time.time()
     #count_data = pd.read_csv(filename, delimiter=sep, header=header, **args)
-    count_data = reader(filename, sep, header, **args)
+    count_data = reader(filename, sep, header, do_round, **args)
     obj = dataset(count_data, desc, output_file=output_file, input_file=filename,
                   sparse=sparse, verbose=verbose)
     if verbose:
