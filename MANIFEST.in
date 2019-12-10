@@ -1,5 +1,3 @@
-include adobo/data/Buettner_2015.mat
-include adobo/data/Buettner_2015.mat.lengths
 include adobo/data/GO_0007049.txt
 include adobo/data/GSE95315.tab.gz
 include adobo/data/GSM3687214_countTable_K11_choroidPlexus_wt.txt.gz
