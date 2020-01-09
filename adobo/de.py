@@ -22,11 +22,12 @@ import numpy as np
 
 from ._stats import p_adjust_bh
 
+
 def combine_tests(obj, normalization=None, clust_alg=None, method='fisher',
                   min_cluster_size=10, mtc='BH', retx=True, verbose=False):
-    """Generates a set of marker genes for every cluster by combining tests from
-    pairwise analyses.
-    
+    """Generates a set of marker genes for every cluster by combining
+    tests from pairwise analyses.
+
     Notes
     -----
     Run `adobo.de.linear_model` before running this function.
@@ -36,24 +37,26 @@ def combine_tests(obj, normalization=None, clust_alg=None, method='fisher',
     obj : :class:`adobo.data.dataset`
         A dataset class object.
     normalization : `str`
-        The name of the normalization to operate on. If this is empty or None
-        then the function will be applied on the last normalization that was applied.
+        The name of the normalization to operate on. If this is empty
+        or None then the function will be applied on the last
+        normalization that was applied.
     clust_alg : `str`
-        Name of the clustering strategy. If empty or None, the last one will be used.
+        Name of the clustering strategy. If empty or None, the last
+        one will be used.
     method : `{'fisher', 'simes', 'stouffer'}`
         Method for combining p-values. Default: fisher
     min_cluster_size : `int`
-        Minimum number of cells per cluster (clusters smaller than this are ignored).
-        Default: 10
+        Minimum number of cells per cluster (clusters smaller than
+        this are ignored).  Default: 10
     mtc : `{'BH', 'bonferroni'}`
-        Method to use for multiple testing correction. BH is Benjamini-Hochberg's
-        procedure. Default: 'BH'
+        Method to use for multiple testing correction. BH is
+        Benjamini-Hochberg's procedure. Default: 'BH'
     retx : `bool`
-        Returns a data frame with results (only modifying the object if False).
-        Default: True
+        Returns a data frame with results (only modifying the object
+        if False).  Default: True
     verbose : `bool`
         Be verbose or not. Default: False
-    
+
     Example
     -------
     >>> import adobo as ad
@@ -67,8 +70,8 @@ def combine_tests(obj, normalization=None, clust_alg=None, method='fisher',
 
     References
     ----------
-    .. [1] Simes, R. J. (1986). An improved Bonferroni procedure for multiple tests of
-           significance. Biometrika, 73(3):751-754.
+    .. [1] Simes, R. J. (1986). An improved Bonferroni procedure for
+           multiple tests of significance. Biometrika, 73(3):751-754.
     .. [2] https://tinyurl.com/yxy3dy4v
     .. [3] https://en.wikipedia.org/wiki/Fisher%27s_method
 
@@ -78,8 +81,8 @@ def combine_tests(obj, normalization=None, clust_alg=None, method='fisher',
         Differential expression results.
     """
     if not method in ('simes', 'fisher', 'stouffer'):
-        raise Exception('Unsupported method for combining p-values. Methods available: \
-simes, fisher, and stouffer')
+        raise Exception('Unsupported method for combining p-values. Methods \
+available: simes, fisher, and stouffer')
     if normalization == None or normalization == '':
         norm = list(obj.norm_data.keys())[-1]
     else:
@@ -101,8 +104,9 @@ adobo.de.linear_model or adobo.de.wilcox(...)')
     res = []
     for cc in q[q >= min_cluster_size].index:
         if verbose:
-            print('Working on cluster %s/%s' % (cc, len(q[q >= min_cluster_size])-1))
-        idx = pval_mat.columns.str.match('^%s_vs'%cc)
+            print('Working on cluster %s/%s' %
+                  (cc, len(q[q >= min_cluster_size])-1))
+        idx = pval_mat.columns.str.match('^%s_vs' % cc)
         subset_mat = pval_mat.iloc[:, idx]
         if method == 'simes':
             r = subset_mat.rank(axis=1)
@@ -112,12 +116,12 @@ adobo.de.linear_model or adobo.de.wilcox(...)')
             T = []
             for gene, r in subset_mat.iterrows():
                 if method == 'stouffer':
-                    r[r == 0] = min(r[r > 0]) # a p=0 results in NaN
+                    r[r == 0] = min(r[r > 0])  # a p=0 results in NaN
                 r = r[r.notna()]
                 T.append(scipy_combine_pvalues(r, method=method)[1])
             T = pd.Series(T, index=subset_mat.index)
-        df = pd.DataFrame({'cluster' : [cc]*len(T),
-                           'gene' : T.index, 'combined_pvalue' : T})
+        df = pd.DataFrame({'cluster': [cc]*len(T),
+                           'gene': T.index, 'combined_pvalue': T})
         res.append(df)
     res = pd.concat(res)
     if mtc == 'BH':
@@ -130,6 +134,7 @@ adobo.de.linear_model or adobo.de.wilcox(...)')
     if retx:
         return res
 
+
 def _choose_leftright_pvalues(left, right, direction):
     """Internal helper function."""
     if direction == 'up':
@@ -140,38 +145,42 @@ def _choose_leftright_pvalues(left, right, direction):
         pv = np.minimum(left, right)*2
     return pv
 
+
 def linear_model(obj, normalization=(), clustering=(), direction='up',
                  min_cluster_size=10, verbose=False):
-    """Performs differential expression analysis between clusters using a linear model
-    and t-statistics
+    """Performs differential expression analysis between clusters
+    using a linear model and t-statistics
 
     Notes
     -----
-    Finds differentially expressed (DE) genes between clusters by fitting a linear model
-    (LM) to gene expression (response variables) and clusters (explanatory variables) and
-    performs pairwise t-tests for significance. Model coefficients are estimated via the
-    ordinary least squares method and p-values are calculated using t-statistics. One
-    benefit of using LM for DE is that computations are vectorized and therefore very fast.
+    Finds differentially expressed (DE) genes between clusters by
+    fitting a linear model (LM) to gene expression (response
+    variables) and clusters (explanatory variables) and performs
+    pairwise t-tests for significance. Model coefficients are
+    estimated via the ordinary least squares method and p-values are
+    calculated using t-statistics. One benefit of using LM for DE is
+    that computations are vectorized and therefore very fast.
 
-    The ideas behind using LM to explore DE have been extensively covered in the
-    limma R package.
+    The ideas behind using LM to explore DE have been extensively
+    covered in the limma R package.
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A dataset class object.
     normalization : `tuple`
-        A tuple of normalization to use. If it has the length zero, then all available
-        normalizations will be used.
+        A tuple of normalization to use. If it has the length zero,
+        then all available normalizations will be used.
     clustering : `tuple`, optional
         Specifies the clustering outcomes to work on.
     direction : `{'up', 'down', 'any'}`
-        Can be 'any' for any direction 'up' for up-regulated and 'down' for
-        down-regulated. Normally we want to find genes being upregulated in cluster A
-        compared with cluster B. Default: up
+        Can be 'any' for any direction 'up' for up-regulated and
+        'down' for down-regulated. Normally we want to find genes
+        being upregulated in cluster A compared with cluster
+        B. Default: up
     min_cluster_size : `int`
-        Minimum number of cells per cluster (clusters smaller than this are ignored).
-        Default: 10
+        Minimum number of cells per cluster (clusters smaller than
+        this are ignored).  Default: 10
     verbose : `bool`
         Be verbose or not. Default: False
 
@@ -191,8 +200,8 @@ def linear_model(obj, normalization=(), clustering=(), direction='up',
         targets[name] = obj.norm_data[name]
     for _, k in enumerate(targets):
         if verbose:
-            print('Running differential expression analysis on prediction on the %s \
-normalization' % k)
+            print('Running differential expression analysis on prediction on \
+the %s normalization' % k)
         item = targets[k]
         X = item['data'].transpose()
         clusters = item['clusters']
@@ -206,14 +215,15 @@ normalization' % k)
                 cl = cl[np.logical_not(cl.isin(cl_remove))]
 
                 # full design matrix
-                dm_full = patsy.dmatrix('~ 0 + C(cl)', pd.DataFrame({'cl' : cl}))
+                dm_full = patsy.dmatrix(
+                    '~ 0 + C(cl)', pd.DataFrame({'cl': cl}))
                 resid_df = dm_full.shape[0] - dm_full.shape[1]
 
                 # gene expression should be the response
-                lm = sm.regression.linear_model.OLS(endog=X_f, # response
+                lm = sm.regression.linear_model.OLS(endog=X_f,  # response
                                                     exog=dm_full)
                 res = lm.fit()
-                coef = res.params # coefficients
+                coef = res.params  # coefficients
 
                 # computing standard errors
                 # https://stats.stackexchange.com/questions/44838/how-are-the-standard-errors-of-coefficients-calculated-in-a-regression
@@ -221,11 +231,13 @@ normalization' % k)
                 # residual variance for each gene
                 dm_nrow = dm_full.shape[0]
                 dm_ncol = dm_full.shape[1]
-                sigma2 = ((X_f-dm_full.dot(coef))**2).sum(axis=0)/(dm_nrow-dm_ncol)
+                sigma2 = ((X_f-dm_full.dot(coef))**2).sum(axis=0) / \
+                    (dm_nrow-dm_ncol)
 
                 q = dm_full.transpose().dot(dm_full)
                 chol = np.linalg.cholesky(q)
-                chol2inv = scipy.linalg.cho_solve((chol, False), np.eye(chol.shape[0]))
+                chol2inv = scipy.linalg.cho_solve(
+                    (chol, False), np.eye(chol.shape[0]))
                 std_dev = np.sqrt(np.diag(chol2inv))
                 clusts = np.unique(cl)
 
@@ -246,7 +258,7 @@ normalization' % k)
                     # https://genomicsclass.github.io/book/pages/interactions_and_contrasts.html
                     con = np.zeros((coef.shape[0], kk))
                     np.fill_diagonal(con, -1)
-                    con[kk,] = 1
+                    con[kk, ] = 1
                     std_new = np.sqrt((std_dev**2).dot(con**2))
 
                     for ii in np.arange(kk):
@@ -263,8 +275,10 @@ normalization' % k)
                         pv1 = _choose_leftright_pvalues(left, right, direction)
                         pv2 = _choose_leftright_pvalues(right, left, direction)
 
-                        comparisons.append('%s_vs_%s' % (clusts[kk], clusts[ii]))
-                        comparisons.append('%s_vs_%s' % (clusts[ii], clusts[kk]))
+                        comparisons.append('%s_vs_%s' %
+                                           (clusts[kk], clusts[ii]))
+                        comparisons.append('%s_vs_%s' %
+                                           (clusts[ii], clusts[kk]))
 
                         out_pv.append(pd.Series(pv1))
                         out_pv.append(pd.Series(pv2))
@@ -292,62 +306,68 @@ normalization' % k)
                     lab1.append(pd.Series([q]*X_f.columns.shape[0]))
                     lab2.append(pd.Series(X_f.columns))
 
-                ll = pd.DataFrame({'comparison_A_vs_B' : pd.concat(lab1,
-                                                                   ignore_index=True),
-                                   'gene' : pd.concat(lab2, ignore_index=True),
-                                   'p_val' : pval,
-                                   'FDR' : p_adjust_bh(pval),
-                                   't_stat' : pd.concat(out_t_stats, ignore_index=True),
-                                   'logFC' : pd.concat(out_lfc, ignore_index=True),
-                                   'mean.A' : pd.concat(out_mge_g1, ignore_index=True),
-                                   'mean.B' : pd.concat(out_mge_g2, ignore_index=True)})
-                obj.norm_data[k]['de'][algo] = {'long_format' : ll,
-                                                'mat_format' : out_merged}
+                ll = pd.DataFrame({'comparison_A_vs_B': pd.concat(lab1,
+                                                                  ignore_index=True),
+                                   'gene': pd.concat(lab2, ignore_index=True),
+                                   'p_val': pval,
+                                   'FDR': p_adjust_bh(pval),
+                                   't_stat': pd.concat(out_t_stats, ignore_index=True),
+                                   'logFC': pd.concat(out_lfc, ignore_index=True),
+                                   'mean.A': pd.concat(out_mge_g1, ignore_index=True),
+                                   'mean.B': pd.concat(out_mge_g2, ignore_index=True)})
+                obj.norm_data[k]['de'][algo] = {'long_format': ll,
+                                                'mat_format': out_merged}
+
 
 def _wilcox_worker(cc1, cc2, cl, X, verbose):
-    """Used internally in wilcox. This function must be outside of wilcox() for
-    apply_async to work."""
+    """Used internally in wilcox. This function must be outside of
+    wilcox() for apply_async to work."""
     if verbose:
         print('Working on cluster %s vs %s' % (cc1, cc2))
-    X_ss1 = X.iloc[:, (cl==cc1).values]
-    X_ss2 = X.iloc[:, (cl==cc2).values]
+    X_ss1 = X.iloc[:, (cl == cc1).values]
+    X_ss2 = X.iloc[:, (cl == cc2).values]
     z = zip(X_ss1.iterrows(), X_ss2.iterrows())
     pvs = []
     for d in z:
         try:
             pv = mannwhitneyu(d[0][1], d[1][1])
         except ValueError:
-            # reaches here if all zeros in both groups, then assume p-value is 1
-            # (no difference at all)
+            # reaches here if all zeros in both groups, then assume
+            # p-value is 1 (no difference at all)
             pv = np.nan, 1
         pvs.append(pv[1])
     pvs = pd.Series(pvs, index=X_ss1.index, name='%s_vs_%s' % (cc1, cc2))
     return pvs
 
-def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, nworkers='auto',
-           retx=False, verbose=True):
-    """Performs differential expression analysis between clusters using the Wilcoxon
-    rank-sum test (Mann–Whitney U test)
+
+def wilcox(obj, normalization=None, clust_alg=None,
+           min_cluster_size=10, nworkers='auto', retx=False,
+           verbose=True):
+    """Performs differential expression analysis between clusters
+    using the Wilcoxon rank-sum test (Mann–Whitney U test)
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A dataset class object.
     normalization : `str`
-        The name of the normalization to operate on. If this is empty or None
-        then the function will be applied on the last normalization that was applied.
+        The name of the normalization to operate on. If this is empty
+        or None then the function will be applied on the last
+        normalization that was applied.
     clust_alg : `str`
-        Name of the clustering strategy. If empty or None, the last one will be used.
+        Name of the clustering strategy. If empty or None, the last
+        one will be used.
     min_cluster_size : `int`
-        Minimum number of cells per cluster (clusters smaller than this are ignored).
-        Default: 10
+        Minimum number of cells per cluster (clusters smaller than
+        this are ignored).  Default: 10
     nworkers : `int` or `{'auto'}`
-        If a string, then the only accepted value is 'auto', and the number of worker
-        processes will be the total number of detected physical cores. If an integer
-        then it specifies the number of worker processes. Default: 'auto'
+        If a string, then the only accepted value is 'auto', and the
+        number of worker processes will be the total number of
+        detected physical cores. If an integer then it specifies the
+        number of worker processes. Default: 'auto'
     retx : `bool`
-        Returns a data frame with results (only modifying the object if False).
-        Default: False
+        Returns a data frame with results (only modifying the object
+        if False).  Default: False
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -391,14 +411,16 @@ def wilcox(obj, normalization=None, clust_alg=None, min_cluster_size=10, nworker
         res.append(y)
 
     for cc1 in q:
-        for cc2 in np.arange(cc1+1,len(q)):
+        for cc2 in np.arange(cc1+1, len(q)):
             args = (cc1, cc2, cl, X, verbose)
-            pool.apply_async(_wilcox_worker, args=args, callback=_update_results)
+            pool.apply_async(_wilcox_worker, args=args,
+                             callback=_update_results)
 
     pool.close()
     pool.join()
     res = pd.concat(res, axis=1)
-    obj.norm_data[norm]['de'][clust_alg] = {'long_format' : None, 'mat_format' : res}
+    obj.norm_data[norm]['de'][clust_alg] = {
+        'long_format': None, 'mat_format': res}
     end_time = time.time()
     if verbose:
         print('Analysis took %.2f minutes' % ((end_time-start_time)/60))

@@ -383,11 +383,31 @@ def fqn(data):
     df = df.transpose()
     return df
 
+def clean_matrix(data, obj, remove_low_qual=True, remove_mito=True, meta=False):
+    if remove_low_qual:
+        # Remove low quality cells
+        remove = obj.meta_cells.status[obj.meta_cells.status != 'OK']
+        data = data.drop(remove.index, axis=1, errors='ignore')
+        # Remove uninformative genes (e.g. lowly expressed)
+        remove = obj.meta_genes.status[np.logical_and(obj.meta_genes.status != 'OK',
+                                                      obj.meta_genes.ERCC!=True)]
+        data = data.drop(remove.index, axis=0, errors='ignore')
+    # Remove mitochondrial genes
+    if remove_mito:
+        remove = obj.meta_genes[obj.meta_genes.mitochondrial==True]
+        data = data.drop(remove.index, axis=0, errors='ignore')
+    if meta:
+        md = obj.meta_cells.copy()
+        md = md.loc[md.index.isin(data.columns), :]
+        md = md.reindex(data.columns)
+        return data, md
+    return data
+
 def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_func=np.log2,
          small_const=1, remove_low_qual=True, remove_mito=True, gene_lengths=None,
          scaling_factor=10000, axis='genes', ngenes=2000, nworkers='auto', retx=False,
          verbose=False):
-    r"""Normalizes gene expression data
+    """Normalizes gene expression data
 
     Notes
     -----
@@ -437,7 +457,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
     scaling_factor : `int`
         Scaling factor used to multiply the scaled counts with. Only used for
         `method="depth"`. Default: 10000
-    axis : {'genes', 'cells'}
+    axis : `{'genes', 'cells'}`
         Only applicable when `method="clr"`, defines the axis to normalize across.
         Default: 'genes'
     ngenes : `int`
@@ -454,7 +474,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
     References
     ----------
     .. [1] Cole et al. (2019) Cell Systems
-            https://www.biorxiv.org/content/10.1101/235382v2
+           https://www.biorxiv.org/content/10.1101/235382v2
 
     Example
     -------
@@ -477,18 +497,7 @@ def norm(obj, method='standard', name=None, use_imputed=False, log=True, log_fun
             data = obj.imp_count_data
     else:
         data = obj.count_data
-    if remove_low_qual:
-        # Remove low quality cells
-        remove = obj.meta_cells.status[obj.meta_cells.status != 'OK']
-        data = data.drop(remove.index, axis=1, errors='ignore')
-        # Remove uninformative genes (e.g. lowly expressed)
-        remove = obj.meta_genes.status[np.logical_and(obj.meta_genes.status != 'OK',
-                                                      obj.meta_genes.ERCC!=True)]
-        data = data.drop(remove.index, axis=0, errors='ignore')
-    # Remove mitochondrial genes
-    if remove_mito:
-        remove = obj.meta_genes[obj.meta_genes.mitochondrial==True]
-        data = data.drop(remove.index, axis=0, errors='ignore')
+    data = clean_matrix(data, obj)
     if method == 'standard':
         norm = standard(data, scaling_factor)
         norm_method = 'standard'
