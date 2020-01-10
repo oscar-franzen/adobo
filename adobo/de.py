@@ -23,8 +23,92 @@ import numpy as np
 from ._stats import p_adjust_bh
 
 
+def filter(obj, normalization=None, clust_alg=None, thres=0.01, frac=0.5,
+           retx=False):
+    """Filters combined tests according to percent of cells expressing
+    a gene
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A dataset class object.
+    normalization : `str`
+        The name of the normalization to operate on. If this is empty
+        or None then the function will be applied on the last
+        normalization that was applied.
+    clust_alg : `str`
+        Name of the clustering strategy. If empty or None, the last
+        one will be used.
+    thres : `float`
+        Significance threshold for multiple testing
+        correction. Default: 0.01
+    frac : `float`
+        Fraction of cells of the cluster that must express a
+        gene. Default: 0.5
+    retx : `bool`
+        Returns a data frame with results (only modifying the object
+        if False).  Default: True
+
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp)
+    >>> ad.hvg.find_hvg(exp)
+    >>> ad.dr.pca(exp)
+    >>> ad.clustering.generate(exp)
+    >>> ad.de.linear_model(exp)
+    >>> ad.de.combine_tests(exp)
+    >>> ad.de.filter(exp)
+
+    Returns
+    -------
+    pandas.DataFrame or None (depending on `retx`)
+        Differential expression results.
+    """
+    if normalization == None or normalization == '':
+        norm = list(obj.norm_data.keys())[-1]
+    else:
+        norm = normalization
+    try:
+        target = obj.norm_data[norm]
+    except KeyError:
+        raise Exception('"%s" not found' % norm)
+    if clust_alg == None or clust_alg == '':
+        clust_alg = list(target['clusters'].keys())[-1]
+    try:
+        ct = target['de'][clust_alg]['combined'].copy()
+    except KeyError:
+        raise Exception('Run adobo.de.combine_tests(...) first.')
+    ct = ct[np.logical_not(ct.mtc_p.isna())]
+    ct = ct[ct.mtc_p < thres]
+    cl = target['clusters'][clust_alg]['membership']
+    X = target['data']
+    res = []
+
+    for c in np.unique(ct.cluster):
+        X_ss = X.loc[:, cl == c]
+        X_ss = X_ss.loc[ct[ct.cluster == c].gene, :]
+        r = (X_ss > 0).sum(axis=1)
+        g = r[r > X_ss.shape[1]*frac]
+        z = ct[np.logical_and(ct.cluster == c, ct.gene.isin(g.index))]
+        z['perc_cells'] = np.round((g.values/X_ss.shape[1])*100,2)
+        res.append(z)
+    res = pd.concat(res)
+    res = res.sort_values(['cluster', 'combined_pvalue'],
+                          ascending=[True, True])
+    df = [[i, len(qwe.cluster), ' '.join(qwe.cluster.astype(str))] for i, qwe in res.groupby(by='gene')]
+    df = pd.DataFrame(df)
+    df.columns = ['gene', 'nclusters', 'clusters']
+    df = df.sort_values(['nclusters'], ascending=[True])
+    obj.norm_data[norm]['de'][clust_alg]['filtered'] = res
+    obj.norm_data[norm]['de'][clust_alg]['summary'] = df
+    if retx:
+        return res
+
+
 def combine_tests(obj, normalization=None, clust_alg=None, method='fisher',
-                  min_cluster_size=10, mtc='BH', retx=True, verbose=False):
+                  min_cluster_size=10, mtc='BH', retx=False, verbose=False):
     """Generates a set of marker genes for every cluster by combining
     tests from pairwise analyses.
 
@@ -53,7 +137,7 @@ def combine_tests(obj, normalization=None, clust_alg=None, method='fisher',
         Benjamini-Hochberg's procedure. Default: 'BH'
     retx : `bool`
         Returns a data frame with results (only modifying the object
-        if False).  Default: True
+        if False).  Default: False
     verbose : `bool`
         Be verbose or not. Default: False
 
