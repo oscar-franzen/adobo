@@ -21,7 +21,7 @@ import adobo._log
 from .data import dataset
 
 def export_data(obj, filename, norm='standard', clust='leiden', what='normalized',
-                transpose=False, sep='\t'):
+                transpose=False, sep='\t', row_names=True):
     """Exports data to a text file, convenient for loading into other programs
 
     Parameters
@@ -40,6 +40,8 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
         Transpose the data before writing it. Default: False
     sep : `str`
         A character or regular expression used to separate fields. Default: "\t"
+    row_names : `bool`
+        Write row names or not. Default: True
 
     Returns
     -------
@@ -49,23 +51,18 @@ def export_data(obj, filename, norm='standard', clust='leiden', what='normalized
         raise Exception('"what" can be "normalized", "pca", "clusters", "tsne" or "umap".')
     if what == 'normalized':
         D = obj.norm_data[norm]['data']
-        index=True
     elif what == 'pca':
         D = obj.norm_data[norm]['dr']['pca']['comp']
-        index=True
     elif what == 'clusters':
         D = pd.DataFrame(obj.norm_data[norm]['clusters'][clust]['membership'])
         D.columns = [clust]
-        index=True
     elif what == 'tsne':
         D = obj.norm_data[norm]['dr']['tsne']['embedding']
-        index=False
     elif what == 'umap':
         D = obj.norm_data[norm]['dr']['umap']['embedding']
-        index=True
     if transpose:
         D = D.transpose()
-    D.to_csv(filename, sep=sep, index=index)
+    D.to_csv(filename, sep=sep, index=row_names)
 
 def reader(filename, sep='\s', header=True, do_round=False, **args):
     """Load a gene expression matrix from a file
