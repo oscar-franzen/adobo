@@ -33,9 +33,14 @@ from .dr import irlb
 from ._log import warning
 
 # Suppress warnings from sklearn
+
+
 def _warn(*args, **kwargs):
     pass
+
+
 warnings.warn = _warn
+
 
 def reset_filters(obj):
     """Resets cell and gene filters
@@ -52,9 +57,12 @@ def reset_filters(obj):
     obj.meta_cells.status[obj.meta_cells.status != 'OK'] = 'OK'
     obj.meta_genes.status[obj.meta_genes.status != 'OK'] = 'OK'
 
-def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None,
-                  maxgenes=None, min_exp=0.001, verbose=False):
-    """Removes cells with too few reads or genes with very low expression
+
+def simple_filter(obj, what='cells', minreads=1000, maxreads=None,
+                  mingenes=None, maxgenes=None, min_exp=0.001,
+                  verbose=False):
+    """Removes cells with too few reads or genes with very low
+    expression
 
     Notes
     -----
@@ -65,28 +73,31 @@ def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None
     obj : :class:`adobo.data.dataset`
         A data class object.
     what : `{'cells', 'genes'}`
-        Determines what should be filtered from the expression matrix. If 'cells', then
-        cells are filtered. If 'genes', then genes are filtered. Default: 'cells'
+        Determines what should be filtered from the expression
+        matrix. If 'cells', then cells are filtered. If 'genes', then
+        genes are filtered. Default: 'cells'
     minreads : `int`, optional
-        When filtering cells, defines the minimum number of reads per cell needed to
-        keep the cell. Default: 1000
+        When filtering cells, defines the minimum number of reads per
+        cell needed to keep the cell. Default: 1000
     maxreads : `int`, optional
-        When filtering cells, defines the maximum number of reads allowed to keep the
-        cell. Useful for filtering out suspected doublets. Default: None
+        When filtering cells, defines the maximum number of reads
+        allowed to keep the cell. Useful for filtering out suspected
+        doublets. Default: None
     mingenes : `float`, `int`
-        When filtering cells, defines the minimum number of genes that must be expressed
-        in a cell to keep it. Default: None
+        When filtering cells, defines the minimum number of genes that
+        must be expressed in a cell to keep it. Default: None
     maxgenes : `float`, `int`
-        When filtering cells, defines the maximum number of genes that a cell is allowed
-        to express to keep it. Default: None
+        When filtering cells, defines the maximum number of genes that
+        a cell is allowed to express to keep it. Default: None
     min_exp : `float`, `int`    
-        Used to set a threshold for how to filter out genes. If integer, defines the
-        minimum number of cells that must express a gene to keep the gene. If float,
-        defines the  minimum fraction of cells must express the gene to keep the gene.
-        Set to None to ignore this option. Default: 0.001
+        Used to set a threshold for how to filter out genes. If
+        integer, defines the minimum number of cells that must express
+        a gene to keep the gene. If float, defines the minimum
+        fraction of cells must express the gene to keep the gene.  Set
+        to None to ignore this option. Default: 0.001
     verbose : `bool`, optional
         Be verbose or not. Default: False
-    
+
     Example
     -------
     >>> import adobo as ad
@@ -98,6 +109,7 @@ def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None
     -------
     int
         Number of removed cells or genes.
+
     """
     if not what in ('cells', 'genes'):
         raise ValueError('"what" can only be "cells" or "genes".')
@@ -116,11 +128,11 @@ def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None
         if not maxgenes:
             maxgenes = np.max(dctd_genes)
         cells_keep = np.logical_and(
-                        np.logical_and(cell_counts >= minreads,
-                                       cell_counts <= maxreads),
-                        np.logical_and(dctd_genes >= mingenes,
-                                       dctd_genes <= maxgenes)
-                                   )
+            np.logical_and(cell_counts >= minreads,
+                           cell_counts <= maxreads),
+            np.logical_and(dctd_genes >= mingenes,
+                           dctd_genes <= maxgenes)
+        )
         obj.meta_cells.status[np.logical_not(cells_keep)] = 'EXCLUDE'
         remove = np.sum(np.logical_not(cells_keep))
     elif what == 'genes':
@@ -140,21 +152,25 @@ def simple_filter(obj, what='cells', minreads=1000, maxreads=None, mingenes=None
                    np.sum(obj.meta_genes.status == 'EXCLUDE')))
     return remove
 
-def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False):
-    """Find mitochondrial genes and adds percent mitochondrial expression of total
-    expression to the cellular meta data
+
+def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None,
+verbose=False):
+    """Find mitochondrial genes and adds percent mitochondrial
+    expression of total expression to the cellular meta data
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
     mito_pattern : `str`
-        A regular expression matching mitochondrial gene symbols. Default: "^mt-"
+        A regular expression matching mitochondrial gene
+        symbols. Default: "^mt-"
     genes : `list`, optional
-        Instead of using `mito_pattern`, specify a `list` of genes that are mitochondrial.
+        Instead of using `mito_pattern`, specify a `list` of genes
+        that are mitochondrial.
     verbose : boolean
         Be verbose or not. Default: False
-    
+
     Example
     -------
     >>> import adobo as ad
@@ -168,7 +184,8 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False
     """
     count_data = obj.count_data
     if genes is None:
-        mito = count_data.index.str.contains(mito_pattern, regex=True, case=False)
+        mito = count_data.index.str.contains(
+            mito_pattern, regex=True, case=False)
         obj.meta_genes['mitochondrial'] = mito
     else:
         mito = obj.count_data.index.isin(genes)
@@ -179,11 +196,13 @@ def find_mitochondrial_genes(obj, mito_pattern='^mt-', genes=None, verbose=False
         mt_counts = obj.count_data.loc[mt, :]
         mt_counts = mt_counts.sum(axis=0)
         mito_perc = mt_counts / obj.meta_cells.total_reads*100
-        obj.add_meta_data(axis='cells', key='mito_perc', data=mito_perc, type_='cont')
+        obj.add_meta_data(axis='cells', key='mito_perc',
+                          data=mito_perc, type_='cont')
     if verbose:
         print('%s mitochondrial genes detected' % no_found)
     obj.set_assay(sys._getframe().f_code.co_name)
     return no_found
+
 
 def find_ercc(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     """Flag ERCC spikes
@@ -193,7 +212,8 @@ def find_ercc(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
     obj : :class:`adobo.data.dataset`
         A data class object.
     ercc_pattern : `str`, optional
-        A regular expression matching ercc gene symbols. Default: "ercc[_-]\S+$"
+        A regular expression matching ercc gene symbols. Default:
+        "ercc[_-]\S+$"
     verbose : `bool`, optional
         Be verbose or not. Default: False
 
@@ -213,20 +233,25 @@ def find_ercc(obj, ercc_pattern='^ERCC[_-]\S+$', verbose=False):
         ercc_counts = obj.count_data.loc[ercc, :]
         ercc_counts = ercc_counts.sum(axis=0)
         ercc_perc = ercc_counts / obj.meta_cells.total_reads*100
-        obj.add_meta_data(axis='cells', key='ercc_perc', data=ercc_perc, type_='cont')
+        obj.add_meta_data(axis='cells', key='ercc_perc',
+                          data=ercc_perc, type_='cont')
     if verbose:
         print('%s ercc spikes detected' % no_found)
     obj.set_assay(sys._getframe().f_code.co_name)
     return no_found
 
-def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
-    """Statistical detection of low quality cells using Mahalanobis distances
+
+def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42,
+verbose=False):
+    """Statistical detection of low quality cells using Mahalanobis
+    distances
 
     Notes
-    ----------------
-    Mahalanobis distances are computed from five quality metrics. A robust estimate of
-    covariance is used in the Mahalanobis function. Cells with Mahalanobis distances of
-    three standard deviations from the mean are by default considered outliers.
+    -----
+    Mahalanobis distances are computed from five quality metrics. A
+    robust estimate of covariance is used in the Mahalanobis
+    function. Cells with Mahalanobis distances of three standard
+    deviations from the mean are by default considered outliers.
     The five metrics are:
 
         1. log-transformed number of molecules detected
@@ -240,11 +265,12 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     obj : :class:`adobo.data.dataset`
         A data class object.
     rRNA_genes : `list` or `str`
-        Either a list of rRNA genes or a string containing the path to a file containing
-        the rRNA genes (one gene per line).
+        Either a list of rRNA genes or a string containing the path to
+        a file containing the rRNA genes (one gene per line).
     sd_thres : `float`
-        Number of standard deviations to consider significant, i.e. cells are low quality
-        if this. Set to higher to remove fewer cells. Default: 3
+        Number of standard deviations to consider significant,
+        i.e. cells are low quality if this. Set to higher to remove
+        fewer cells. Default: 3
     seed : `float`
         For the random number generator. Default: 42
     verbose : `bool`
@@ -253,17 +279,20 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     Returns
     -------
     list
-        A list of low quality cells that were identified, and also modifies the passed
-        object.
+        A list of low quality cells that were identified, and also
+        modifies the passed object.
     """
 
     if np.sum(obj.meta_genes.mitochondrial) == 0:
-        raise Exception('No mitochondrial genes found. Run detect_mito() first.')
+        raise Exception(
+            'No mitochondrial genes found. Run detect_mito() first.')
     if np.sum(obj.meta_genes.ERCC) == 0:
-        raise Exception('No ERCC spike-ins found. Run detect_ercc_spikes() first.')
+        raise Exception(
+            'No ERCC spike-ins found. Run detect_ercc_spikes() first.')
     if type(rRNA_genes) == str:
         rRNA_genes = pd.read_csv(rRNA_genes, header=None)
-        obj.meta_genes['rRNA'] = obj.meta_genes.index.isin(rRNA_genes.iloc[:, 0])
+        obj.meta_genes['rRNA'] = obj.meta_genes.index.isin(
+            rRNA_genes.iloc[:, 0])
     if not 'mito' in obj.meta_cells.columns:
         mt_genes = obj.meta_genes.mitochondrial[obj.meta_genes.mitochondrial]
         mito_mat = obj.count_data[obj.count_data.index.isin(mt_genes.index)]
@@ -286,11 +315,11 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
     inp_mt = obj.meta_cells.mito/inp_total_reads
     inp_ercc = obj.meta_cells.ERCC/inp_total_reads
 
-    qc_mat = pd.DataFrame({'reads_per_cell' : np.log(inp_total_reads),
-                           'no_genes_det' : inp_detected_genes,
-                           'perc_rRNA' : inp_rrna,
-                           'perc_mt' : inp_mt,
-                           'perc_ercc' : inp_ercc})
+    qc_mat = pd.DataFrame({'reads_per_cell': np.log(inp_total_reads),
+                           'no_genes_det': inp_detected_genes,
+                           'perc_rRNA': inp_rrna,
+                           'perc_mt': inp_mt,
+                           'perc_ercc': inp_ercc})
     robust_cov = MinCovDet(random_state=seed).fit(qc_mat)
     mahal_dists = robust_cov.mahalanobis(qc_mat)
     MD_mean = np.mean(mahal_dists)
@@ -307,10 +336,12 @@ def find_low_quality_cells(obj, rRNA_genes, sd_thres=3, seed=42, verbose=False):
         print('%s low quality cell(s) identified' % len(low_quality_cells))
     return low_quality_cells
 
+
 def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbose,
                        batch):
-    """A helper function for impute(...)'s multiprocessing. Don't use this function
-    directly. Don't move this function below because it must be Picklable for async'ed
+    """A helper function for impute(...)'s multiprocessing. Don't use
+    this function directly. Don't move this function below because it
+    must be Picklable for async'ed
     usage."""
     res = []
     idx = 1
@@ -348,35 +379,40 @@ def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbo
         idx += 1
     return [cellids, res]
 
-def impute(obj, filtered=True, res=0.5, drop_thre=0.5, nworkers='auto', verbose=True):
-    """Impute dropouts using the method described in Li (2018) Nature Communications
+
+def impute(obj, filtered=True, res=0.5, drop_thre=0.5,
+           nworkers='auto', verbose=True):
+    """Impute dropouts using the method described in Li (2018) Nature
+    Communications
 
     Notes
     -----
-    Dropouts are artifacts in scRNA-seq data. One method to alleviate the problem with
-    dropouts is to perform imputation (i.e. replacing missing data points with predicted
-    values).
+    Dropouts are artifacts in scRNA-seq data. One method to alleviate
+    the problem with dropouts is to perform imputation (i.e. replacing
+    missing data points with predicted values).
 
-    The present method uses a different procedure for subpopulation identification
-    as compared with the original paper.
+    The present method uses a different procedure for subpopulation
+    identification as compared with the original paper.
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
     filtered : `bool`
-        If data have been filtered using :func:`adobo.preproc.simple_filter`, run
-        imputation on filtered data; otherwise runs on the entire raw read count matrix.
-        Default: True
+        If data have been filtered using
+        :func:`adobo.preproc.simple_filter`, run imputation on
+        filtered data; otherwise runs on the entire raw read count
+        matrix.  Default: True
     res : `float`
-        Resolution parameter for the Leiden clustering, change to modify cluster
-        resolution. Default: 0.5
+        Resolution parameter for the Leiden clustering, change to
+        modify cluster resolution. Default: 0.5
     drop_thre : `float`
         Drop threshold. Default: 0.5
     nworkers : `int` or `{'auto'}`
-        If a string, then the only accepted value is 'auto', and the number of worker
-        processes will be the total number of detected physical cores. If an integer
-        then it specifies the number of worker processes. Default: 'auto'
+        If a string, then the only accepted value is 'auto', and the
+        number of worker processes will be the total number of
+        detected physical cores. If an integer then it specifies the
+        number of worker processes. Default: 'auto'
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -436,10 +472,11 @@ physical cores on this machine (n=%s).' % ncores)
     lnorm = np.log10(raw+1.01)
     lnorm_imp = lnorm
     # estimate subpopulations
-    hvg = seurat(lnorm, ngenes=1000) # get hvg
+    hvg = seurat(lnorm, ngenes=1000)  # get hvg
     lnorm_hvg = lnorm[lnorm.index.isin(hvg)]
     d_scaled = sklearn_scale(lnorm_hvg.transpose(),  # cells as rows and genes as columns
-                             axis=0,                 # over genes, i.e. features (columns)
+                             # over genes, i.e. features (columns)
+                             axis=0,
                              with_mean=True,         # subtracting the column means
                              with_std=True)          # scale the data to unit variance
     d_scaled = pd.DataFrame(d_scaled.transpose(), index=lnorm_hvg.index)
@@ -475,11 +512,13 @@ physical cores on this machine (n=%s).' % ncores)
         if tp_v <= 0:
             alpha = 20
         else:
-            alpha0 = (3 - tp_v + np.sqrt((tp_v - 3)**2 + 24 * tp_v)) / 12 / tp_v
+            alpha0 = (3 - tp_v + np.sqrt((tp_v - 3)
+                                         ** 2 + 24 * tp_v)) / 12 / tp_v
             if alpha0 >= 20:
                 alpha = 20
             else:
-                alpha = root(lambda x: np.log(x) - digamma(x) - tp_v, 0.9*alpha0).x[0]
+                alpha = root(lambda x: np.log(x) -
+                             digamma(x) - tp_v, 0.9*alpha0).x[0]
         beta = tp_s / tp_t * alpha
         return alpha, beta
 
@@ -489,7 +528,7 @@ physical cores on this machine (n=%s).' % ncores)
         n_out = np.zeros(len(inp))
         ext.dgamma(np.array(inp), len(inp), pars[1], 1/pars[2], g_out)
         #dg = dgamma(a=pars[1], scale=1/pars[2], loc=0)
-        #dg.pdf(x)
+        # dg.pdf(x)
         #dn = norm(pars[3], pars[4])
         # dn.pdf(x)
         ext.dnorm(np.array(inp), len(inp), pars[3], pars[4], n_out)
@@ -519,13 +558,14 @@ physical cores on this machine (n=%s).' % ncores)
         return params
 
     def get_par(mat, verbose):
-        null_genes = np.abs(mat.sum(axis=1)-np.log10(1.01)*mat.shape[1]) < 1e-10
+        null_genes = np.abs(mat.sum(axis=1)-np.log10(1.01)
+                            * mat.shape[1]) < 1e-10
         null_genes = null_genes[null_genes].index
         paramlist = []
         i = 0
         for g, k in mat.iterrows():
             if verbose:
-                if (i%100) == 0:
+                if (i % 100) == 0:
                     v = ('{:,}'.format(i), '{:,}'.format(mat.shape[0]))
                     s = 'estimating model parameters. finished with %s/%s genes' % v
                     print(s, end='\r')
@@ -541,14 +581,15 @@ physical cores on this machine (n=%s).' % ncores)
     def find_va_genes(mat, parlist):
         point = np.log10(1.01)
         is_na = [not np.any(i) for i in np.isnan(np.array(parlist))]
-        valid_genes = np.logical_and(mat.sum(axis=1) > point*mat.shape[1], is_na)
+        valid_genes = np.logical_and(
+            mat.sum(axis=1) > point*mat.shape[1], is_na)
         return valid_genes
         #mu = parlist[:, 3]
         #sgene1 = valid_genes.index[mu<=np.log10(1+1.01)]
         #dcheck1 = dgamma.pdf(mu+1, a=parlist[:,1], scale=1/parlist[:,2], loc=0)
         #dcheck2 = norm.pdf(mu+1, parlist[:, 3], parlist[:, 4])
         #sgene3 = valid_genes.index[np.logical_and(dcheck1 >= dcheck2, mu <= 1)]
-        #return valid_genes[np.logical_not(np.logical_or(sgene1,sgene3))].index
+        # return valid_genes[np.logical_not(np.logical_or(sgene1,sgene3))].index
 
     for cc in np.arange(0, nclust):
         if verbose:
@@ -596,7 +637,8 @@ physical cores on this machine (n=%s).' % ncores)
         batch = 1
         while len(ids) > 0:
             ids_b = ids[0:batch_size]
-            args = (ids_b, subcount, droprate, cc, Ic, Jc, drop_thre, verbose, batch)
+            args = (ids_b, subcount, droprate, cc,
+                    Ic, Jc, drop_thre, verbose, batch)
             r = pool.apply_async(_imputation_worker,
                                  args=args,
                                  callback=update_result)
@@ -606,7 +648,8 @@ physical cores on this machine (n=%s).' % ncores)
         pool.join()
         if len(imputed) == 0:
             continue
-        # sorting b/c cells are not returned from subprocesses in the original order
+        # sorting b/c cells are not returned from subprocesses in the
+        # original order
         cellids = []
         d = []
         for item in imputed:
@@ -636,13 +679,14 @@ physical cores on this machine (n=%s).' % ncores)
 "imp_count_data" attribute.' % t)
     obj.set_assay(sys._getframe().f_code.co_name)
 
+
 def symbol_switch(obj, species):
     """Changes gene symbol format
 
     Notes
     -----
-    If gene symbols are in the format ENS[0-9]+, this function changes gene identifiers
-    to symbol_ENS[0-9]+.
+    If gene symbols are in the format ENS[0-9]+, this function changes
+    gene identifiers to symbol_ENS[0-9]+.
 
     Parameters
     ----------
@@ -650,7 +694,7 @@ def symbol_switch(obj, species):
         A data class object.
     species : '{'human', 'mouse'}'
         Species. Default: 'human'
-    
+
     Example
     -------
     >>> import adobo as ad
@@ -667,11 +711,13 @@ def symbol_switch(obj, species):
         raise Exception('Gene symbols already appears to be in the requested format: \
 %s.' % obj.count_data.index)
     v = (os.path.dirname(adobo.IO.__file__), species)
-    gs = pd.read_csv('%s/data/%s.gencode_v32.genes.txt' % v, sep='\t', header=None)
+    gs = pd.read_csv('%s/data/%s.gencode_v32.genes.txt' %
+                     v, sep='\t', header=None)
     gs.index = gs.loc[:, 0]
     gs = gs[gs.index.isin(obj.count_data.index)]
-    missing = obj.count_data.index[np.logical_not(obj.count_data.index.isin(gs.index))]
-    gs = pd.concat([gs, pd.DataFrame({ 0 : missing, 1: ['NA']*len(missing) })])
+    missing = obj.count_data.index[np.logical_not(
+        obj.count_data.index.isin(gs.index))]
+    gs = pd.concat([gs, pd.DataFrame({0: missing, 1: ['NA']*len(missing)})])
     gs.index = gs.iloc[:, 0]
     gs = gs.reindex(obj.count_data.index)
     X = obj.count_data
