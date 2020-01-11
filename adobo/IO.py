@@ -61,7 +61,11 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         raise Exception(
             '"what" must be one of: %s' % ', '.join(choices))
     if what == 'normalized':
-        D = obj.norm_data[norm]['data']
+        if obj.sparse:
+            # or else to_csv takes tpp long time
+            D = obj.norm_data[norm]['data'].sparse.to_dense()
+        else:
+            D = obj.norm_data[norm]['data']
     elif what == 'pca':
         D = obj.norm_data[norm]['dr']['pca']['comp']
     elif what == 'clusters':
@@ -84,7 +88,6 @@ def export_data(obj, filename, norm='standard', clust='leiden',
     if transpose:
         D = D.transpose()
     D.to_csv(filename, sep=sep, index=row_names)
-
 
 def reader(filename, sep='\s', header=True, do_round=False, **args):
     """Load a gene expression matrix from a file
