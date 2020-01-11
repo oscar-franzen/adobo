@@ -23,7 +23,7 @@ from .data import dataset
 
 def export_data(obj, filename, norm='standard', clust='leiden',
                 what='normalized', transpose=False, sep='\t',
-                row_names=True):
+                row_names=True, min_cluster_size=10):
     """Exports data to a text file, convenient for loading into other
     programs
 
@@ -38,7 +38,7 @@ def export_data(obj, filename, norm='standard', clust='leiden',
     clust : `str`
         Name of the clustering. For example: 'leiden̈́'.
     what : `{'normalized', 'clusters', 'pca', 'tsne', 'umap', 'cell_type_pred',
-             'median_exp'}`
+             'median_expr'}`
         What to export.
     transpose : `bool`
         Transpose the data before writing it. Default: False
@@ -47,13 +47,16 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         fields. Default: "\t"
     row_names : `bool`
         Write row names or not. Default: True
+    min_cluster_size : `int`
+        Minimum number of cells per cluster; clusters smaller than
+        this are ignored.  Default: 10
 
     Returns
     -------
     Nothing.
     """
     choices = ('normalized', 'clusters', 'pca',
-               'tsne', 'umap', 'cell_type_pred')
+               'tsne', 'umap', 'cell_type_pred', 'median_expr')
     if not what in choices:
         raise Exception(
             '"what" must be one of: %s' % ', '.join(choices))
@@ -70,8 +73,14 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         D = obj.norm_data[norm]['dr']['umap']['embedding']
     elif what == 'cell_type_pred':
         D = obj.norm_data[norm]['clusters'][clust]['cell_type_prediction']
-    elif what == 'median_exp':
-        D = obj.norm_data[norm]['clusters'][clust]['median_expr']
+    elif what == 'median_expr':
+        cl = obj.norm_data[norm]['clusters'][clust]['membership']
+        D = obj.norm_data[norm]['data']
+        ret = D.groupby(cl.values, axis=1).aggregate(np.median)
+        q = pd.Series(cl).value_counts()
+        cl_remove = q[q < min_cluster_size].index
+        ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
+        D = ret
     if transpose:
         D = D.transpose()
     D.to_csv(filename, sep=sep, index=row_names)

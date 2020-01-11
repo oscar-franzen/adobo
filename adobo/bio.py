@@ -26,26 +26,28 @@ import adobo.preproc
 import adobo.dr
 from ._stats import p_adjust_bh
 
+
 def cell_cycle_train(verbose=False):
-    """Trains a cell cycle classifier using Stochastic Gradient Descent with data from
-    Buettner et al.
-    
+    """Trains a cell cycle classifier using Stochastic Gradient
+    Descent with data from Buettner et al.
+
     Notes
     -----
     Genes are selected from GO:0007049
-    
-    Does only need to be trained once; the second time it is serialized from disk.
+
+    Does only need to be trained once; the second time it is
+    serialized from disk.
 
     Parameters
     ----------
     verbose : `bool`
         Be verbose or not. Default: False
-    
+
     References
     ----------
-    .. [1] Buettner et al. (2015) Computational analysis of cell-to-cell heterogeneity in
-           single-cell RNA-sequencing data reveals hidden subpopulations of cells. Nat
-           Biotech.
+    .. [1] Buettner et al. (2015) Computational analysis of
+           cell-to-cell heterogeneity in single-cell RNA-sequencing
+           data reveals hidden subpopulations of cells. Nat Biotech.
 
     Returns
     -------
@@ -57,7 +59,7 @@ def cell_cycle_train(verbose=False):
     path_pkg = re.sub('/_log.py', '', adobo._log.__file__)
     path_data = path_pkg + '/data/Buettner_2015.mat'
     path_gene_lengths = path_pkg + '/data/Buettner_2015.mat.lengths'
-    path_cc_genes = path_pkg + '/data/GO_0007049.txt' # cell cycle genes
+    path_cc_genes = path_pkg + '/data/GO_0007049.txt'  # cell cycle genes
     path_clf = path_pkg + '/data/cc_classifier.joblib'
     if os.path.exists(path_clf):
         clf, features = joblib.load(path_clf)
@@ -69,15 +71,16 @@ def cell_cycle_train(verbose=False):
         adobo.preproc.detect_ercc_spikes(B, ercc_pattern='NA_ERCC-[0-9]+')
         adobo.normalize.norm(B, method='rpkm', gene_lengths=path_gene_lengths)
         cc_genes = pd.read_csv(path_cc_genes, sep='\t', header=None)
-        symb = pd.Series([ i[0] for i in B.norm.index.str.split('_') ])
+        symb = pd.Series([i[0] for i in B.norm.index.str.split('_')])
         norm_cc_mat = B.norm[symb.isin(cc_genes[1]).values]
-        X = norm_cc_mat.transpose() # cells as rows and genes as columns
+        X = norm_cc_mat.transpose()  # cells as rows and genes as columns
         X = sklearn_scale(X,
-                          axis=0,            # over genes, i.e. features (columns)
+                          # over genes, i.e. features (columns)
+                          axis=0,
                           with_mean=True,    # subtracting the column means
-                          with_std=True)     # scale the data to unit variance    
-        Y = [ i[0] for i in norm_cc_mat.columns.str.split('_') ]
-        
+                          with_std=True)     # scale the data to unit variance
+        Y = [i[0] for i in norm_cc_mat.columns.str.split('_')]
+
         clf = SGDClassifier(loss='hinge', penalty='l2', max_iter=5, shuffle=True,
                             verbose=verbose)
         clf.fit(X, Y)
@@ -85,17 +88,19 @@ def cell_cycle_train(verbose=False):
         joblib.dump([clf, features], path_clf)
     # np.sum(clf.predict(X) != Y)
     return clf, features
-    
+
+
 def cell_cycle_predict(obj, clf, tr_features, name=(), verbose=False):
     """Predicts cell cycle phase
-    
+
     Notes
     -----
-    The classifier is trained on mouse data, so it should _only_ be used on mouse data
-    unless it is trained on something else. Gene identifiers must use ensembl identifiers
-    (prefixed with 'ENSMUSG'); pure gene symbols are not enough. Results are returned as
-    a column in the data frame `meta_cells` of the passed object. Does not return
-    probability scores.
+    The classifier is trained on mouse data, so it should _only_ be
+    used on mouse data unless it is trained on something else. Gene
+    identifiers must use ensembl identifiers (prefixed with
+    'ENSMUSG'); pure gene symbols are not enough. Results are returned
+    as a column in the data frame `meta_cells` of the passed
+    object. Does not return probability scores.
 
     Parameters
     ----------
@@ -106,11 +111,11 @@ def cell_cycle_predict(obj, clf, tr_features, name=(), verbose=False):
     tr_features : `list`
         Training features.
     name : `tuple`
-        A tuple of normalization to use. If it has the length zero, then all available
-        normalizations will be used.
+        A tuple of normalization to use. If it has the length zero,
+        then all available normalizations will be used.
     verbose : `bool`
         Be verbose. Default: False
-    
+
     Returns
     -------
     Modifies the passed object.
@@ -127,8 +132,8 @@ def cell_cycle_predict(obj, clf, tr_features, name=(), verbose=False):
         X = item['data']
         cols = X.columns
         if X.index[0].rfind('ENSMUSG') < 0:
-            raise Exception('Gene identifiers must use ENSMUSG format. Are you sure this \
-is mouse data?')
+            raise Exception('Gene identifiers must use ENSMUSG format. Are \
+you sure this is mouse data?')
         X_g = X.index
         if re.search('ENSMUSG\d+\.\d+', X_g[0]):
             X_g = X_g.str.extract('^(.*)\.[0-9]+$', expand=False)
@@ -143,7 +148,7 @@ is mouse data?')
         if len(X_found) == 0:
             raise Exception('No genes found.')
         X_found.index = X_g
-        symb = [ i[1] for i in tr_features.str.split('_') ]
+        symb = [i[1] for i in tr_features.str.split('_')]
         symb = pd.Series(symb)
         missing = symb[np.logical_not(symb.isin(X_g))]
         X_empty = pd.DataFrame(np.zeros((len(missing), X_found.shape[1])))
@@ -152,18 +157,22 @@ is mouse data?')
         X = pd.concat([X_found, X_empty])
         X = X.reindex(symb)
         # scale
-        X = X.transpose() # cells as rows and genes as columns
+        X = X.transpose()  # cells as rows and genes as columns
         X = sklearn_scale(X,
-                          axis=0,            # over genes, i.e. features (columns)
+                          # over genes, i.e. features (columns)
+                          axis=0,
                           with_mean=True,    # subtracting the column means
                           with_std=True)     # scale the data to unit variance
         pred = clf.predict(X)
         srs = pd.Series(pred, dtype='category', index=cols)
-        obj.add_meta_data(axis='cells', key='cell_cycle', data=srs, type_='cat')
+        obj.add_meta_data(axis='cells', key='cell_cycle',
+                          data=srs, type_='cat')
 
-def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=False):
+
+def cell_type_predict(obj, name=(), clustering=(),
+                      min_cluster_size=10, verbose=False):
     """Predicts cell types using the expression of marker genes
-    
+
     Notes
     -----
     Gene identifiers should be in symbol form, not ensembl identifiers, etc.
@@ -173,16 +182,16 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
     obj : :class:`adobo.data.dataset`
         A data class object.
     name : `tuple`
-        A tuple of normalization to use. If it has the length zero, then all available
-        normalizations will be used.
+        A tuple of normalization to use. If it has the length zero,
+        then all available normalizations will be used.
     clustering : `tuple`, optional
         Specifies the clustering outcomes to work on.
     min_cluster_size : `int`
-        Minimum number of cells per cluster; clusters smaller than this are ignored.
-        Default: 10
+        Minimum number of cells per cluster; clusters smaller than
+        this are ignored.  Default: 10
     verbose : `bool`
         Be verbose or not. Default: False
-    
+
     Returns
     -------
     Modifies the passed object.
@@ -192,7 +201,8 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
         targets = obj.norm_data
     else:
         targets[name] = obj.norm_data[name]
-    ma = pd.read_csv('%s/data/markers.tsv' % os.path.dirname(adobo.IO.__file__), sep='\t')
+    ma = pd.read_csv('%s/data/markers.tsv' %
+                     os.path.dirname(adobo.IO.__file__), sep='\t')
     # restrict to mouse
     ma = ma[ma.species.str.match('Mm')]
     markers = ma
@@ -213,7 +223,8 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
     # Tarca AL, Draghici S, Bhatti G, Romero R; BMC Bioinformatics 2012 13:136
     s = mgs.unique()
     s_freqs = marker_freq[marker_freq.index.isin(s)]
-    weights = 1+np.sqrt(((max(marker_freq)-s_freqs)/(max(marker_freq)-min(marker_freq))))
+    weights = 1+np.sqrt(((max(marker_freq)-s_freqs) /
+                         (max(marker_freq)-min(marker_freq))))
 
     def _guess_cell_type(x):
         rr = median_expr.loc[:, median_expr.columns == x.name].values.flatten()
@@ -225,14 +236,15 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
         for ct in dd:
             s = dd[ct]
             x_ss = x[x.index.isin(s)]
-            if len(x_ss) == 0: continue
+            if len(x_ss) == 0:
+                continue
             gene_weights = weights[weights.index.isin(x_ss.index)]
             gene_weights = pd.Series(gene_weights, x_ss.index)
             activity_score = sum(x_ss * gene_weights)/len(x_ss)**0.3
             # how many expressed genesets are found in the geneset?
-            ct_exp = len(genes_exp&s)
+            ct_exp = len(genes_exp & s)
             # how many _non_ expressed genes are found in the geneset?
-            ct_non_exp = len(genes_not_exp&s)
+            ct_non_exp = len(genes_not_exp & s)
             # how many expressed genes are NOT found in the geneset?
             ct_exp_not_found = len(genes_exp-s)
             # how many _non_ expressed genes are NOT found in the geneset?
@@ -240,16 +252,18 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
             # one sided fisher
             contigency_tbl = [[ct_exp, ct_non_exp],
                               [ct_exp_not_found, not_exp_not_found_in_geneset]]
-            odds_ratio, pval = fisher_exact(contigency_tbl, alternative='greater')
-            markers_found = ','.join(list(genes_exp&s))
-            if markers_found == '': markers_found = 'NA'
-            res.append({'activity_score' : activity_score,
-                        'ct' : ct,
-                        'pvalue' : pval,
-                        'markers' : markers_found})
+            odds_ratio, pval = fisher_exact(
+                contigency_tbl, alternative='greater')
+            markers_found = ','.join(list(genes_exp & s))
+            if markers_found == '':
+                markers_found = 'NA'
+            res.append({'activity_score': activity_score,
+                        'ct': ct,
+                        'pvalue': pval,
+                        'markers': markers_found})
         res = sorted(res, key=lambda k: k['activity_score'], reverse=True)
         return res
-    
+
     for i, k in enumerate(targets):
         if verbose:
             print('Running cell type prediction on %s' % k)
@@ -257,7 +271,8 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
         X = item['data']
         clusters = item['clusters']
         if len(clusters) == 0:
-            raise Exception('No clusters found, run adobo.clustering.generate(...) first.')
+            raise Exception(
+                'No clusters found, run adobo.clustering.generate(...) first.')
         for algo in clusters:
             if len(clustering) == 0 or algo in clustering:
                 if verbose:
@@ -271,7 +286,8 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
                 obj.norm_data[k]['clusters'][algo]['median_expr'] = median_expr
                 median_expr.index = median_expr.index.str.upper()
                 if median_expr.shape[0] == np.sum(median_expr.index.str.match('^(.+)_.+')):
-                    input_symbols = median_expr.index.str.extract('^(.+)_.+')[0]
+                    input_symbols = median_expr.index.str.extract(
+                        '^(.+)_.+')[0]
                     input_symbols = input_symbols.str.upper()
                     median_expr.index = input_symbols
                 # (1) centering is done by subtracting the column means
@@ -292,8 +308,8 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
                     bucket.append(_df)
                 final_tbl = pd.concat(bucket)
                 if final_tbl.shape[0] == 0:
-                    raise Exception('Final table is empty. Check gene symbols of input \
-data.')
+                    raise Exception('Final table is empty. Check gene symbols \
+of input data.')
                 padj = p_adjust_bh(final_tbl['pvalue'])
                 final_tbl['padj_BH'] = padj
                 final_tbl.columns = ['cluster',
