@@ -268,6 +268,7 @@ def cell_type_predict(obj, name=(), clustering=(), min_cluster_size=10, verbose=
                 cl_remove = q[q < min_cluster_size].index
                 ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
                 median_expr = ret
+                obj.norm_data[k]['clusters'][algo]['median_expr'] = median_expr
                 median_expr.index = median_expr.index.str.upper()
                 if median_expr.shape[0] == np.sum(median_expr.index.str.match('^(.+)_.+')):
                     input_symbols = median_expr.index.str.extract('^(.+)_.+')[0]

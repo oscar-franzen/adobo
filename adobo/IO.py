@@ -37,7 +37,8 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         Name of the normalisation. For example 'standard'.
     clust : `str`
         Name of the clustering. For example: 'leiden̈́'.
-    what : `{'normalized', 'clusters', 'pca', 'tsne', 'umap', 'cell_type_pred'}`
+    what : `{'normalized', 'clusters', 'pca', 'tsne', 'umap', 'cell_type_pred',
+             'median_exp'}`
         What to export.
     transpose : `bool`
         Transpose the data before writing it. Default: False
@@ -69,6 +70,8 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         D = obj.norm_data[norm]['dr']['umap']['embedding']
     elif what == 'cell_type_pred':
         D = obj.norm_data[norm]['clusters'][clust]['cell_type_prediction']
+    elif what == 'median_exp':
+        D = obj.norm_data[norm]['clusters'][clust]['median_expr']
     if transpose:
         D = D.transpose()
     D.to_csv(filename, sep=sep, index=row_names)
