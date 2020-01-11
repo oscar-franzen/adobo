@@ -23,7 +23,8 @@ from .data import dataset
 
 def export_data(obj, filename, norm='standard', clust='leiden',
                 what='normalized', transpose=False, sep='\t',
-                row_names=True, min_cluster_size=10):
+                row_names=True, min_cluster_size=10,
+                genes_uppercase=False):
     """Exports data to a text file, convenient for loading into other
     programs
 
@@ -50,6 +51,8 @@ def export_data(obj, filename, norm='standard', clust='leiden',
     min_cluster_size : `int`
         Minimum number of cells per cluster; clusters smaller than
         this are ignored.  Default: 10
+    genes_uppercase : `bool`
+        Transform gene symbols to uppercase. Default: False
 
     Returns
     -------
@@ -85,6 +88,8 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         cl_remove = q[q < min_cluster_size].index
         ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
         D = ret
+    if genes_uppercase:
+            D.index = D.index.str.upper()
     if transpose:
         D = D.transpose()
     D.to_csv(filename, sep=sep, index=row_names)
