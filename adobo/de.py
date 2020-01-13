@@ -44,7 +44,7 @@ def filter(obj, normalization=None, clust_alg=None, thres=0.01, frac=0.8,
         correction. Default: 0.01
     frac : `float`
         Fraction of cells of the cluster that must express a
-        gene. Default: 0.5
+        gene. Default: 0.8
     retx : `bool`
         Returns a data frame with results (only modifying the object
         if False).  Default: True
