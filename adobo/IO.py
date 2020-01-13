@@ -89,7 +89,7 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
         D = ret
     if genes_uppercase:
-            D.index = D.index.str.upper()
+        D.index = D.index.str.upper()
     if transpose:
         D = D.transpose()
     D.to_csv(filename, sep=sep, index=row_names)

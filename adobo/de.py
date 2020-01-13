@@ -23,7 +23,7 @@ import numpy as np
 from ._stats import p_adjust_bh
 
 
-def filter(obj, normalization=None, clust_alg=None, thres=0.01, frac=0.5,
+def filter(obj, normalization=None, clust_alg=None, thres=0.01, frac=0.8,
            retx=False):
     """Filters combined tests according to percent of cells expressing
     a gene
