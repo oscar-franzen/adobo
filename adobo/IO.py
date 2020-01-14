@@ -129,7 +129,7 @@ def reader(filename, sep='\s', header=True, do_round=False, **args):
         if re.search('.gz$', filename):
             tool = 'zcat'
         elif re.search('.zip$', filename):
-            tool = 'unzip -c'
+            tool = 'unzip -p'
         elif re.search('.bz2$', filename):
             tool = 'bzcat'
         elif re.search('.xz$', filename):
