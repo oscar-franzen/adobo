@@ -60,6 +60,9 @@ def export_data(obj, filename, norm='standard', clust='leiden',
     do_round : `bool`
         Round normalized gene expression values to two
         decimals. Default: True
+    compression : `bool`
+        Compress output with gzip. Will append '.gz' to the
+        filename. Default: False
 
     Returns
     -------
