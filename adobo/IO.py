@@ -27,7 +27,7 @@ from .data import dataset
 def export_data(obj, filename, norm='standard', clust='leiden',
                 what='normalized', transpose=False, sep='\t',
                 row_names=True, min_cluster_size=10,
-                genes_uppercase=False):
+                genes_uppercase=False, do_round=True):
     """Exports data to a text file, convenient for loading into other
     programs
 
@@ -56,6 +56,9 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         this are ignored.  Default: 10
     genes_uppercase : `bool`
         Transform gene symbols to uppercase. Default: False
+    do_round : `bool`
+        Round normalized gene expression values to two
+        decimals. Default: True
 
     Returns
     -------
@@ -72,6 +75,8 @@ def export_data(obj, filename, norm='standard', clust='leiden',
             D = obj.norm_data[norm]['data'].sparse.to_dense()
         else:
             D = obj.norm_data[norm]['data']
+        if do_round:
+            D = round(D, 2)
     elif what == 'pca':
         D = obj.norm_data[norm]['dr']['pca']['comp']
     elif what == 'clusters':
