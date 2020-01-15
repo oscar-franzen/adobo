@@ -27,7 +27,8 @@ from .data import dataset
 def export_data(obj, filename, norm='standard', clust='leiden',
                 what='normalized', transpose=False, sep='\t',
                 row_names=True, min_cluster_size=10,
-                genes_uppercase=False, do_round=True):
+                genes_uppercase=False, do_round=True,
+                compression=False):
     """Exports data to a text file, convenient for loading into other
     programs
 
@@ -100,7 +101,10 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         D.index = D.index.str.upper()
     if transpose:
         D = D.transpose()
-    D.to_csv(filename, sep=sep, index=row_names)
+    D.to_csv(filename + '.gz' if compression else filename,
+             sep=sep,
+             index=row_names,
+             compression='gzip' if compression else None)
 
 def reader(filename, sep='\s', header=True, do_round=False, **args):
     """Load a gene expression matrix from a file
