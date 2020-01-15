@@ -173,7 +173,7 @@ counts and not normalized counts.')
     return count_data
 
 def load_matrix_market(filename):
-    r"""Loads data matrix market format
+    """Loads data in the matrix market format
 
     Parameters
     ----------
