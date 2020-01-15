@@ -10,12 +10,15 @@ Functions for reading and writing scRNA-seq data.
 """
 import re
 import os
+import gzip
 import time
 import subprocess
 
 import datatable as dt
 import pandas as pd
 import numpy as np
+
+from scipy.io import mmread
 
 import adobo._log
 from .data import dataset
@@ -169,7 +172,53 @@ counts and not normalized counts.')
     count_data.columns = count_data.columns.str.replace('"', '')
     return count_data
 
+def load_matrix_market(filename):
+    r"""Loads data matrix market format
 
+    Parameters
+    ----------
+    filename : `str`
+        Path to the file containing input data. See notes in
+        :py:func:`adobo.IO.load_from_file`.
+
+    References
+    ----------
+    .. [1] https://math.nist.gov/MatrixMarket/formats.html#MMformat
+
+    Returns
+    -------
+    :class:`pandas.DataFrame`
+        A gene expression data frame
+    """
+    if not os.path.exists(filename):
+        raise Exception('%s not found' % filename)
+    cmd = 'tar -C /tmp/ -zxvf %s' % filename
+    h = subprocess.check_output(cmd, shell=True).decode('ascii').rstrip('\n')
+    files = h.split('\n')
+    err = 'Input file %s should contain exactly there files with the following \
+file names: barcodes.tsv.gz, genes.tsv.gz, matrix.mtx.gz'
+    if len(files) != 3:
+        raise Exception(err)
+    if not 'barcodes.tsv.gz' in files or \
+       not 'genes.tsv.gz' in files or \
+       not 'matrix.mtx.gz' in files:
+       raise Exception(err)
+
+    mtx_file = gzip.open('/tmp/matrix.mtx.gz', 'r')
+    cell_mat = mmread(mtx_file)
+    cell_mat = cell_mat.todense()
+
+    name_file = gzip.open('/tmp/barcodes.tsv.gz', 'rt')
+    cell_names = name_file.read().splitlines()
+    cell_names = [name for name in cell_names]
+
+    g_file = gzip.open('/tmp/genes.tsv.gz', 'rt')
+    genes = g_file.read().splitlines()
+    symb = [(g.split('\t')[1] if (len(g.split('\t')) > 1) else g) for g in genes]
+    m = pd.DataFrame(cell_mat, symb, cell_names)
+    os.system('rm /tmp/barcodes.tsv.gz /tmp/genes.tsv.gz /tmp/matrix.mtx.gz')
+    return m
+    
 def load_from_file(filename, sep='\s', header=True, desc='no desc set',
                    output_file=None, sparse=True, bundled=False,
                    do_round=False, verbose=False, **args):
@@ -181,11 +230,21 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set',
     normalized. This function calls :func:`~datatable.fread` to read
     the data matrix file. Any additional arguments are passed into it.
 
+    Matrix market format: MM is a common data format in NCBI's Gene
+    Expression Omnibus. If the input file ends with "tar.gz", then it
+    is assumed to be a gzip-compressed tar archive, containing data in
+    the matrix market format. When extracting this file there should
+    be exactly *three* files with exactly these file names: (i)
+    matrix.mtx.gz, (ii) barcodes.tsv.gz, and (iii) genes.tsv.gz. See
+    reference for more information about this format.
+
     Parameters
     ----------
     filename : `str`
         Path to the file containing input data. Should be a matrix
-        where columns are cells and rows are genes.
+        where columns are cells and rows are genes. The input file can
+        be compressed (gzip, bzip, zip, and xz are supported). The
+        matrix market format is also supported (see notes).
     sep : `str`
         A character or regular expression used to separate
         fields. Default: "\\s" (i.e. any white space character)
@@ -208,6 +267,10 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set',
     verbose : `bool`
         To be verbose or not. Default: False
 
+    References
+    ----------
+    .. [1] https://math.nist.gov/MatrixMarket/formats.html#MMformat
+
     Returns
     -------
     :class:`adobo.data.dataset`
@@ -222,8 +285,13 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set',
     if not os.path.exists(filename):
         raise Exception('%s not found' % filename)
     stime = time.time()
-    #count_data = pd.read_csv(filename, delimiter=sep, header=header, **args)
-    count_data = reader(filename, sep, header, do_round, **args)
+    if re.search('\.tar\.gz$', filename):
+        if verbose:
+            print('Input file name ends with "tar.gz", assuming matrix market\
+ data.')
+        count_data = load_matrix_market(filename)
+    else:
+            count_data = reader(filename, sep, header, do_round, **args)
     obj = dataset(count_data, desc, output_file=output_file,
                   input_file=filename, sparse=sparse, verbose=verbose)
     if verbose:
