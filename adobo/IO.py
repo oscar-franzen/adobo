@@ -195,7 +195,7 @@ def load_matrix_market(filename):
     cmd = 'tar -C /tmp/ -zxvf %s' % filename
     h = subprocess.check_output(cmd, shell=True).decode('ascii').rstrip('\n')
     files = h.split('\n')
-    err = 'Input file %s should contain exactly there files with the following \
+    err = 'Input file %s should contain exactly three files with the following \
 file names: barcodes.tsv.gz, genes.tsv.gz, matrix.mtx.gz'
     if len(files) != 3:
         raise Exception(err)
