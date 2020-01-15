@@ -145,16 +145,20 @@ def reader(filename, sep='\s', header=True, do_round=False, **args):
         cmd = '%s %s | head -n1' % (tool, filename)
         h = subprocess.check_output(cmd, shell=True).decode(
             'ascii').replace('\n', '')
+        print(sep)
         if sep == '\s':
-            hs = re.split('[\s,]', h)
-            if len(hs) > 1:
-                if len(hs) == count_data.shape[1]:
-                    count_data.columns = hs
-                else:
-                    count_data.columns = hs[1:len(hs)]
+            pat = '[\s,]'
+        else:
+            pat = sep
+        hs = re.split(pat, h)
+        if len(hs) > 1:
+            if len(hs) == count_data.shape[1]:
+                count_data.columns = hs
             else:
-                if verbose:
-                    print('Skipping to set columns (mismatch in \
+                count_data.columns = hs[1:len(hs)]
+        else:
+            if verbose:
+                print('Skipping to set columns (mismatch in \
 length for header).')
     # remove duplicate genes
     dups = count_data.index.duplicated(False)
