@@ -17,9 +17,10 @@ import adobo
 
 from ._constants import ASSAY_NOT_DONE
 
+
 class dataset:
-    """
-    Storage container for raw, imputed and normalized data as well as analysis results.
+    """Storage container for raw, imputed and normalized data as well as
+    analysis results.
 
     Attributes
     ----------
@@ -30,7 +31,8 @@ class dataset:
     imp_count_data : :class:`pandas.DataFrame`
         Raw data after imputing dropouts.
     _low_quality_cells : `list`
-        Low quality cells identified with :py:meth:`adobo.preproc.find_low_quality_cells`.
+        Low quality cells identified with
+        :py:meth:`adobo.preproc.find_low_quality_cells`.
     _norm_data : `dict`
         Stores all analysis results. A nested dictionary.
     meta_cells : `pandas.DataFrame`
@@ -40,15 +42,17 @@ class dataset:
     desc : `str`
         A string describing the dataset.
     sparse : `bool`
-        Represent the data in a sparse data structure. Will save memory at the expense
+        Represent the data in a sparse data structure. Will save
+        memory at the expense
         of time. Default: True
     output_file : `str`, optional
         A filename that will be used when calling save().
     version : `str`
         The adobo package version used to create this data object.
     """
-    def __init__(self, raw_mat, desc='no desc set', output_file=None, input_file=None,
-                 sparse=True, verbose=False):
+
+    def __init__(self, raw_mat, desc='no desc set', output_file=None,
+                 input_file=None, sparse=True, verbose=False):
         # holding info about which assays have been done
         self.sparse = sparse
         self.hvg = []
@@ -76,13 +80,16 @@ class dataset:
         self.meta_genes = pd.DataFrame(index=raw_mat.index)
         if verbose:
             print('Generating cell summary statistics...')
-        self.meta_genes['expressed'] = [np.sum(x>0) for _, x in raw_mat.iterrows()]
-        self.meta_genes['expressed_perc'] = self.meta_genes.expressed/raw_mat.shape[1]*100
+        self.meta_genes['expressed'] = [
+            np.sum(x > 0) for _, x in raw_mat.iterrows()]
+        self.meta_genes['expressed_perc'] = self.meta_genes.expressed / \
+            raw_mat.shape[1]*100
         self.meta_genes['status'] = ['OK']*raw_mat.shape[0]
         self.meta_genes['mitochondrial'] = [None]*raw_mat.shape[0]
         self.meta_genes['ERCC'] = [None]*raw_mat.shape[0]
         if verbose:
-            print('Memory usage of loaded data: %s MB' % self.df_mem_usage('count_data'))
+            print('Memory usage of loaded data: %s MB' %
+                  self.df_mem_usage('count_data'))
         self.version = adobo.__version__
 
     def df_mem_usage(self, var):
@@ -111,9 +118,10 @@ class dataset:
 
         Notes
         -----
-        This is a method so that it is not needed to memorize the filename, instead the
-        filename was already specified when the object was created with the
-        `output_file` parameter. Load the object data with `joblib.load`.
+        This is a method so that it is not needed to memorize the
+        filename, instead the filename was already specified when the
+        object was created with the `output_file` parameter. Load the
+        object data with `joblib.load`.
 
         Parameters
         ----------
@@ -148,12 +156,12 @@ class dataset:
     def set_assay(self, name, key=1):
         """ Set the assay that was applied. """
         self._assays[name] = key
-    
+
     def print_dict(self):
         q = []
         self._print_dict(self.norm_data, q)
         return '\n'.join(q)
-        
+
     def _print_dict(self, d, q, indent=0):
         """Recursive function for printing content of norm_data """
         for key, value in d.items():
@@ -182,8 +190,8 @@ class dataset:
         """ Helper function for __repr__. """
         genes_pre_filter = '{:,}'.format(self.count_data.shape[0])
         cells_pre_filter = '{:,}'.format(self.count_data.shape[1])
-        genes_post_filter = (self.meta_genes.status=='OK').sum()
-        cells_post_filter = (self.meta_cells.status=='OK').sum()
+        genes_post_filter = (self.meta_genes.status == 'OK').sum()
+        cells_post_filter = (self.meta_cells.status == 'OK').sum()
         genes_post_filter = '{:,}'.format(genes_post_filter)
         cells_post_filter = '{:,}'.format(cells_post_filter)
         s = """Filename (input): %s
@@ -191,8 +199,8 @@ Description: %s
 Raw count matrix: %s genes and %s cells (filtered: %sx%s)
 
 Commands executed:
-""" % (self.input_file, self.desc, genes_pre_filter, cells_pre_filter, genes_post_filter,
-       cells_post_filter)
+""" % (self.input_file, self.desc, genes_pre_filter, cells_pre_filter,
+       genes_post_filter, cells_post_filter)
 
         for key in self._assays:
             if self._assays[key] != 1:
@@ -206,21 +214,23 @@ Commands executed:
         return s
 
     def assays(self):
-        """
-        Displays a basic summary of the dataset and what analyses have been performed on
-        it.
+        """Displays a basic summary of the dataset and what analyses
+        have been performed on it.
         """
         if self.get_assay('find_mitochondrial_genes'):
             s = np.sum(self.meta_genes['mitochondrial'])
             print('Number of mitochondrial genes found: %s' % s)
         if self.get_assay('detect_ercc_spikes'):
-            print('Number of ERCC spikes found: %s ' % np.sum(self.meta_genes['ERCC']))
+            print('Number of ERCC spikes found: %s ' %
+                  np.sum(self.meta_genes['ERCC']))
         if self.get_assay('find_low_quality_cells'):
-            print('Number of low quality cells found: %s ' % self.low_quality_cells.shape[0])
-        #if self.get_assay('norm'):
+            print('Number of low quality cells found: %s ' %
+                  self.low_quality_cells.shape[0])
+        # if self.get_assay('norm'):
         #    print('Normalization method: %s ' % self.norm_method)
         #    print('Log2 transformed? %s' % (self.norm_log2))
-        s = 'Has HVG discovery been performed? %s' % self.get_assay('find_hvg', lang=True)
+        s = 'Has HVG discovery been performed? %s' % self.get_assay(
+            'find_hvg', lang=True)
         print(s)
         if self.get_assay('pca'):
             print('pca has been performed')
@@ -247,24 +257,28 @@ Commands executed:
         -----
         Meta data can be added to cells or genes.
 
-        The parameter name 'type_' has an underscore to avoid conflict with Python's
-        internal type keyword.
+        The parameter name 'type_' has an underscore to avoid conflict
+        with Python's internal type keyword.
 
         Parameters
         ----------
         axis : `{'cells', 'genes'}`
             Are the data for cells or genes?
         key : `str`
-            The variable name for your data. No whitespaces and special characters.
+            The variable name for your data. No whitespaces and
+            special characters.
         data : `numpy.ndarray`, `list` or `pandas.Series`
-            Data to add. Can be a basic Python `list`, a numpy array or a Pandas Series
-            with an index. If the data type is numpy array or list, then the length must
-            match the length of cells or genes. If the data type is a Pandas series, then
-            the length does not need to match as long as the index is there. Data can be
-            continuous or categorical and this must be specified with `type_`.
+            Data to add. Can be a basic Python `list`, a numpy array
+            or a Pandas Series with an index. If the data type is
+            numpy array or list, then the length must match the length
+            of cells or genes. If the data type is a Pandas series,
+            then the length does not need to match as long as the
+            index is there. Data can be continuous or categorical and
+            this must be specified with `type_`.
         type_ : `{'cat', 'cont'}`
-            Specify if data are categorical or continuous. `cat` means categorical data
-            and `cont` means continuous data. Default: 'cat'
+            Specify if data are categorical or continuous. `cat` means
+            categorical data and `cont` means continuous
+            data. Default: 'cat'
 
         Returns
         -------
@@ -283,16 +297,16 @@ Commands executed:
         target[key] = data
         if type_ == 'cat':
             target[key] = target[key].astype('category')
-    
+
     def delete(self, what):
         """Deletes analysis results from the norm_data dictionary 
 
         Parameters
         ----------
         what : `str`, `tuple`
-            A string (or tuple of strings) specifying keys of what you want to delete.
-            Each string should be a key in norm_data.
-        
+            A string (or tuple of strings) specifying keys of what you
+            want to delete.  Each string should be a key in norm_data.
+
         Example
         -------
         >>> import adobo as ad
