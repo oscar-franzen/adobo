@@ -145,7 +145,6 @@ def reader(filename, sep='\s', header=True, do_round=False, **args):
         cmd = '%s %s | head -n1' % (tool, filename)
         h = subprocess.check_output(cmd, shell=True).decode(
             'ascii').replace('\n', '')
-        print(sep)
         if sep == '\s':
             pat = '[\s,]'
         else:
