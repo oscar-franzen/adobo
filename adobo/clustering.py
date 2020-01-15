@@ -21,10 +21,11 @@ import networkx as nx
 
 from ._log import warning
 
+
 def knn(comp, k=10, distance='euclidean'):
-    """
-    Nearest Neighbour Search. Finds the k number of near neighbours for each cell.
-    
+    """Nearest Neighbour Search. Finds the k number of near neighbours
+    for each cell.
+
     Parameters
     ----------
     comp : :py:class:`pandas.DataFrame`
@@ -32,30 +33,33 @@ def knn(comp, k=10, distance='euclidean'):
     k : `int`
         Number of nearest neighbors. Default: 10
     target : `{'irlb', 'svd'}`
-        The dimensionality reduction result to run the NN search on. Default: irlb
+        The dimensionality reduction result to run the NN search
+        on. Default: irlb
     distance : `str`
-        Distance metric to use. See here for valid choices: https://tinyurl.com/y4bckf7w
-        
+        Distance metric to use. See here for valid choices:
+        https://tinyurl.com/y4bckf7w
+
     Returns
     -------
     numpy.ndarray
         Array containing indices.
     """
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree', metric=distance)
+    nbrs = NearestNeighbors(
+        n_neighbors=k, algorithm='ball_tree', metric=distance)
     nbrs.fit(comp)
     indices = nbrs.kneighbors(comp)[1]
     nn_idx = indices+1
     return nn_idx
 
+
 def snn(nn_idx, k=10, prune_snn=0.067, verbose=False):
-    """
-    Computes a Shared Nearest Neighbor (SNN) graph
-    
+    """Computes a Shared Nearest Neighbor (SNN) graph
+
     Notes
     -----
-    Link weights are number of shared nearest neighbors. The sum of SNN similarities over
-    all KNNs is retrieved with linear algebra.
-    
+    Link weights are number of shared nearest neighbors. The sum of
+    SNN similarities over all KNNs is retrieved with linear algebra.
+
     Parameters
     ----------
     nn_idx : :py:class:`numpy.ndarray`
@@ -63,23 +67,24 @@ def snn(nn_idx, k=10, prune_snn=0.067, verbose=False):
     k : `int`
         Number of nearest neighbors. Default: 10
     prune_snn : `float`        
-        Threshold for pruning the SNN graph, i.e. the edges  with lower value (Jaccard
-        index) than this will be removed. Set to 0 to disable pruning. Increasing this
-        value will result in fewer edges in the graph. Default: 0.067
+        Threshold for pruning the SNN graph, i.e. the edges with lower
+        value (Jaccard index) than this will be removed. Set to 0 to
+        disable pruning. Increasing this value will result in fewer
+        edges in the graph. Default: 0.067
     verbose : `bool`
         Be verbose or not.
-    
+
     References
     ----------
     .. [1] http://mlwiki.org/index.php/SNN_Clustering
-        
+
     Returns
     -------
     Nothing. Modifies the passed object.
     """
     # create sparse matrix from tuples
     melted = pd.DataFrame(nn_idx).melt(id_vars=[0])[[0, 'value']]
-    
+
     rows = np.array(melted[melted.columns[0]])
     cols = np.array(melted[melted.columns[1]])
     d = [1]*len(rows)
@@ -93,7 +98,7 @@ def snn(nn_idx, k=10, prune_snn=0.067, verbose=False):
                             shape=(nn_idx.shape[0], nn_idx.shape[0]))
     snn_sparse = knn_sparse*knn_sparse.transpose()
     cx = coo_matrix(snn_sparse)
-    
+
     node1 = []
     node2 = []
     pruned_count = 0
@@ -106,39 +111,42 @@ def snn(nn_idx, k=10, prune_snn=0.067, verbose=False):
         else:
             pruned_count += 1
     # any cells missing?
-    missing = list(set(np.unique(rows)-1).difference(set(np.unique(node1+node2))))
+    missing = list(
+        set(np.unique(rows)-1).difference(set(np.unique(node1+node2))))
     for i in missing:
         node1.append(i)
         node2.append(i)
-    
+
     perc_pruned = (pruned_count/len(cx.row))*100
     if verbose:
         print('%.2f%% (n=%s) of links pruned' % (perc_pruned,
                                                  '{:,}'.format(pruned_count)))
     if verbose and perc_pruned > 80:
         warning('More than 80% of the edges were pruned')
-    df = pd.DataFrame({'source_node' : node1, 'target_node' : node2})
+    df = pd.DataFrame({'source_node': node1, 'target_node': node2})
     snn_graph = df
     return snn_graph
+
 
 def leiden(snn_graph, res=0.8, seed=42):
     """
     Runs the Leiden algorithm
-    
+
     Parameters
     ----------
     snn_graph : :py:class:`pandas.DataFrame`
         Source and target nodes.
     res : `float`
-        Resolution parameter, change to modify cluster resolution. Default: 0.8
+        Resolution parameter, change to modify cluster
+        resolution. Default: 0.8
     seed : `int`
         For reproducibility.
-    
+
     References
     ----------
     .. [1] https://github.com/vtraag/leidenalg
     .. [2] Traag et al. (2018) https://arxiv.org/abs/1810.08473
-    
+
     Returns
     -------
     Nothing. Modifies the passed object.
@@ -152,32 +160,35 @@ def leiden(snn_graph, res=0.8, seed=42):
     for i in snn_graph.itertuples(index=False):
         ll.append(tuple(i))
     g.add_edges(ll)
-    #if self.params == 'ModularityVertexPartition':
+    # if self.params == 'ModularityVertexPartition':
     #    part = leidenalg.ModularityVertexPartition
-    #else:
+    # else:
     part = la.RBERVertexPartition
-    cl = la.find_partition(g, part, n_iterations=10, resolution_parameter=res, seed=seed)
+    cl = la.find_partition(g, part, n_iterations=10,
+                           resolution_parameter=res, seed=seed)
     return cl.membership
+
 
 def igraph(snn_graph, clust_alg):
     """
     Runs clustering functions within igraph
-    
+
     Parameters
     ----------
     snn_graph : :py:class:`pandas.DataFrame`
         Source and target nodes.
-    clust_alg : `{'walktrap', 'spinglass', 'multilevel', 'infomap', 'label_prop',
-                  'leading_eigenvector'}`
+    clust_alg : `{'walktrap', 'spinglass', 'multilevel', 'infomap',
+                 'label_prop', 'leading_eigenvector'}`
         Specifies the community detection algorithm.
-    
+
     References
     ----------
-    .. [1] Pons & Latapy (2006) Computing Communities in Large NetworksUsing Random Walks,
-           Journal of Graph Algorithms and Applications
-    .. [2] Reichardt & Bornholdt (2006) Statistical mechanics of community detection,
-           Physical Review E
-    
+    .. [1] Pons & Latapy (2006) Computing Communities in Large
+           NetworksUsing Random Walks, Journal of Graph Algorithms and
+           Applications
+    .. [2] Reichardt & Bornholdt (2006) Statistical mechanics of
+           community detection, Physical Review E
+
     Returns
     -------
     Nothing. Modifies the passed object.
@@ -214,25 +225,28 @@ def igraph(snn_graph, clust_alg):
         raise Exception('Unsupported community detection algorithm specified.')
     return cl
 
+
 def louvain(snn_graph, res=0.8, seed=42):
     """Runs the Louvain algorithm
-    
+
     Parameters
     ----------
     snn_graph : :py:class:`pandas.DataFrame`
         Source and target nodes.
     res : `float`
-        Resolution parameter, change to modify cluster resolution. Default: 0.8
+        Resolution parameter, change to modify cluster
+        resolution. Default: 0.8
     seed : `int`
         For reproducibility.
-    
+
     References
     ----------
     .. [1] https://github.com/taynaud/python-louvain
     .. [2] https://perso.uclouvain.be/vincent.blondel/research/louvain.html
-    .. [3] Blondel et al., Fast unfolding of communities in large networks (2008),
-           Journal of Statistical Mechanics: Theory and Experiment
-    
+    .. [3] Blondel et al., Fast unfolding of communities in large
+           networks (2008), Journal of Statistical Mechanics: Theory
+           and Experiment
+
     Returns
     -------
     Nothing. Modifies the passed object.
@@ -248,15 +262,17 @@ def louvain(snn_graph, res=0.8, seed=42):
     g.add_edges(ll)
     A = g.get_edgelist()
     GG = nx.Graph(A)
-    partition = community_louvain.best_partition(GG, resolution=res, random_state=seed)
+    partition = community_louvain.best_partition(
+        GG, resolution=res, random_state=seed)
     return [partition[i] for i in sorted(partition)]
 
-def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg='leiden',
-             prune_snn=0.067, res=0.8, save_graph=True, seed=42, verbose=False):
-    """
-    A wrapper function for generating single cell clusters from a shared nearest neighbor
-    graph with the Leiden algorithm
-    
+
+def generate(obj, k=10, name=None, distance='euclidean', graph='snn',
+             clust_alg='leiden', prune_snn=0.067, res=0.8,
+             save_graph=True, seed=42, verbose=False):
+    """A wrapper function for generating single cell clusters from a
+    shared nearest neighbor graph with the Leiden algorithm
+
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
@@ -264,47 +280,52 @@ def generate(obj, k=10, name=None, distance='euclidean', graph='snn', clust_alg=
     k : `int`
         Number of nearest neighbors. Default: 10
     name : `str`
-        The name of the normalization to operate on. If this is empty or None then the
-        function will be applied on all normalizations available.
+        The name of the normalization to operate on. If this is empty
+        or None then the function will be applied on all
+        normalizations available.
     distance : `str`
-        Distance metric to use. See here for valid choices: https://tinyurl.com/y4bckf7w
-        Default: 'euclidean'
+        Distance metric to use. See here for valid choices:
+        https://tinyurl.com/y4bckf7w Default: 'euclidean'
     target : `{'irlb', 'svd'}`
         The dimensionality reduction result to run on. Default: irlb
     graph : `{'snn'}`
-        Type of graph to generate. Only shared nearest neighbor (snn) supported at the
-        moment.
-    clust_alg : `{'leiden', 'louvain', 'walktrap', 'spinglass', 'multilevel', 'infomap',
-                  'label_prop', 'leading_eigenvector'}`
+        Type of graph to generate. Only shared nearest neighbor (snn)
+        supported at the moment.
+    clust_alg : `{'leiden', 'louvain', 'walktrap', 'spinglass', 'multilevel',
+                  'infomap', 'label_prop', 'leading_eigenvector'}`
         Clustering algorithm to be used.
     prune_snn : `float`
-        Threshold for pruning the SNN graph, i.e. the edges  with lower value (Jaccard
-        index) than this will be removed. Set to 0 to disable pruning. Increasing this
-        value will result in fewer edges in the graph. Default: 0.067
+        Threshold for pruning the SNN graph, i.e. the edges with lower
+        value (Jaccard index) than this will be removed. Set to 0 to
+        disable pruning. Increasing this value will result in fewer
+        edges in the graph. Default: 0.067
     res : `float`
-        Resolution parameter for the Leiden algorithm _only_; change to modify cluster
-        resolution. Default: 0.8
+        Resolution parameter for the Leiden algorithm _only_; change
+        to modify cluster resolution. Default: 0.8
     save_graph : `bool`
         To save the graph or not. Default: True
     seed : `int`
         For reproducibility.
     verbose : `bool`
         Be verbose or not.
-    
+
     References
     ----------
-    .. [1] Yang et al. (2016) A Comparative Analysis of Community Detection Algorithms on
-           Artificial Networks. Scientific Reports
-    
+    .. [1] Yang et al. (2016) A Comparative Analysis of Community
+           Detection Algorithms on Artificial Networks. Scientific
+           Reports
+
     Returns
     -------
     `dict`
-        A dict containing cluster sizes (number of cells), only retx is set to True.
+        A dict containing cluster sizes (number of cells), only retx
+        is set to True.
     """
     m = ('leiden', 'louvain', 'walktrap', 'spinglass', 'multilevel', 'infomap',
          'label_prop', 'leading_eigenvector')
     if not clust_alg in m:
-        raise Exception('Supported community detection algorithms are: %s' % ', '.join(m))
+        raise Exception(
+            'Supported community detection algorithms are: %s' % ', '.join(m))
     if not obj.norm_data:
         raise Exception('Run normalization first before running umap. See here: \
 https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
@@ -320,7 +341,8 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         try:
             comp = item['dr']['pca']['comp']
         except KeyError:
-            raise Exception('Compute principal components first using adobo.dr.pca(...)')
+            raise Exception(
+                'Compute principal components first using adobo.dr.pca(...)')
         nn_idx = knn(comp, k, distance)
         snn_graph = snn(nn_idx, k, prune_snn, verbose)
         if clust_alg == 'leiden':
@@ -332,7 +354,7 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
         mem = pd.Series(cl, index=comp.index)
         if save_graph:
             obj.norm_data[l]['graph'] = snn_graph
-        obj.norm_data[l]['clusters'][clust_alg] = {'membership' : mem}
+        obj.norm_data[l]['clusters'][clust_alg] = {'membership': mem}
         obj.set_assay('clustering')
         if verbose:
             cd = dict(Counter(cl))
