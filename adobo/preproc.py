@@ -365,8 +365,8 @@ def _imputation_worker(cellids, subcount, droprate, cc, Ic, Jc, drop_thre, verbo
                 new_thre = round((2*xx.shape[0]/3))
             else:
                 new_thre = num_thre
-        regr = ElasticNet(random_state=0, max_iter=3000, positive=True, l1_ratio=0,
-                          fit_intercept=False)
+        regr = ElasticNet(random_state=0, max_iter=3000, positive=True,
+                          l1_ratio=0, fit_intercept=False)
         ret = regr.fit(X=xx, y=yy.values)
         ynew = regr.predict(ximpute)
         yimpute = np.array(yimpute).astype(float)
@@ -435,8 +435,8 @@ def impute(obj, filtered=True, res=0.5, drop_thre=0.5,
             raise Exception('Invalid value for parameter "nworkers".')
     elif type(nworkers) == int:
         if nworkers > ncores:
-            warning('"nworkers" is set to a number higher than the available number of \
-physical cores on this machine (n=%s).' % ncores)
+            warning('"nworkers" is set to a number higher than the available \
+number of physical cores on this machine (n=%s).' % ncores)
     if verbose:
         print('%s worker processes will be used' % nworkers)
     # contains normal and gamma probability density functions implemented in C (a bit
@@ -675,8 +675,8 @@ physical cores on this machine (n=%s).' % ncores)
     time_end = time.time()
     if verbose:
         t = (time_end - time_start)/60
-        print('imputation finished in %.2f minutes. imputed data are present in the \
-"imp_count_data" attribute.' % t)
+        print('imputation finished in %.2f minutes. imputed data are present \
+in the "imp_count_data" attribute.' % t)
     obj.set_assay(sys._getframe().f_code.co_name)
 
 
@@ -708,8 +708,8 @@ def symbol_switch(obj, species):
     if not species in ('human', 'mouse'):
         raise Exception('"species" can be "human" or "mouse".')
     if np.any(obj.count_data.index.str.match('^.+_ENS.*[0-9]{3,}$')):
-        raise Exception('Gene symbols already appears to be in the requested format: \
-%s.' % obj.count_data.index)
+        raise Exception('Gene symbols already appears to be in the requested \
+format: %s.' % obj.count_data.index)
     v = (os.path.dirname(adobo.IO.__file__), species)
     if species == 'human':
         fn = '%s/data/%s.gencode_v32.genes.txt' % v
