@@ -711,8 +711,11 @@ def symbol_switch(obj, species):
         raise Exception('Gene symbols already appears to be in the requested format: \
 %s.' % obj.count_data.index)
     v = (os.path.dirname(adobo.IO.__file__), species)
-    gs = pd.read_csv('%s/data/%s.gencode_v32.genes.txt' %
-                     v, sep='\t', header=None)
+    if species == 'human':
+        fn = '%s/data/%s.gencode_v32.genes.txt' % v
+    elif species == 'mouse':
+        fn = '%s/data/%s.gencode_v23.genes.txt' % v
+    gs = pd.read_csv(fn, sep='\t', header=None)
     gs.index = gs.loc[:, 0]
     gs = gs[gs.index.isin(obj.count_data.index)]
     missing = obj.count_data.index[np.logical_not(
