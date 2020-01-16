@@ -225,12 +225,29 @@ file names: barcodes.tsv.gz, genes.tsv.gz, matrix.mtx.gz'
 
     name_file = gzip.open('/tmp/barcodes.tsv.gz', 'rt')
     cell_names = name_file.read().splitlines()
-    cell_names = [name for name in cell_names]
+    cells = []
+    
+    for z in cell_names:
+        z = z.replace('"', '').split('\t')
+        if len(z) > 1:
+            if z[0] != '':
+                cells.append(z[1])
+        else:
+            cells.append(z[0])
 
     g_file = gzip.open('/tmp/genes.tsv.gz', 'rt')
     genes = g_file.read().splitlines()
-    symb = [(g.split('\t')[1] if (len(g.split('\t')) > 1) else g) for g in genes]
-    m = pd.DataFrame(cell_mat, symb, cell_names)
+    symb = []
+
+    for g in genes:
+        g = g.replace('"', '').split('\t')
+        if len(g) > 1:
+            if g[0] != '':
+                symb.append(g[1])
+        else:
+            symb.append(g[0])
+    
+    m = pd.DataFrame(cell_mat, symb, cells)
     os.system('rm /tmp/barcodes.tsv.gz /tmp/genes.tsv.gz /tmp/matrix.mtx.gz')
     return m
     
