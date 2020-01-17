@@ -149,7 +149,7 @@ def reader(filename, sep='\s', header=True, do_round=False, **args):
             tool = 'bzcat'
         elif re.search('.xz$', filename):
             tool = 'xzcat'
-        cmd = '%s %s | head -n1' % (tool, filename)
+        cmd = '%s "%s" | head -n1' % (tool, filename)
         h = subprocess.check_output(cmd, shell=True).decode(
             'ascii').replace('\n', '')
         if sep == '\s':
