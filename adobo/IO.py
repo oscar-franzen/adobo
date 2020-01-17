@@ -109,7 +109,8 @@ def export_data(obj, filename, norm='standard', clust='leiden',
              index=row_names,
              compression='gzip' if compression else None)
 
-def reader(filename, sep='\s', header=True, do_round=False, **args):
+def reader(filename, sep='\s', header=True, do_round=False,
+           verbose=False, **args):
     """Load a gene expression matrix from a file
 
     Parameters
@@ -126,6 +127,8 @@ def reader(filename, sep='\s', header=True, do_round=False, **args):
         In case of read count fractions, round to integers. Can be a
         useful remedy if read counts have been imputed or
         similar. Default: False
+    verbose : `bool`
+        Be verbose or not. Default: False
 
     Returns
     -------
@@ -323,7 +326,8 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set',
  data.')
         count_data = load_matrix_market(filename)
     else:
-            count_data = reader(filename, sep, header, do_round, **args)
+            count_data = reader(filename, sep, header, do_round,
+                                verbose, **args)
     obj = dataset(count_data, desc, output_file=output_file,
                   input_file=filename, sparse=sparse, verbose=verbose)
     if verbose:
