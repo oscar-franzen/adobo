@@ -142,6 +142,8 @@ def reader(filename, sep='\s', header=True, do_round=False,
         filename, skip_to_line=skip_to_line, **args).to_pandas()
     count_data.index = count_data.iloc[:, 0]
     count_data = count_data.drop(count_data.columns[0], axis=1)
+    if np.any(count_data.dtypes == bool):
+        count_data = count_data.astype('int32')
     if header:
         tool = 'cat'
         if re.search('.gz$', filename):
@@ -256,7 +258,7 @@ file names: barcodes.tsv.gz, genes.tsv.gz, matrix.mtx.gz'
     
 def load_from_file(filename, sep='\s', header=True, desc='no desc set',
                    output_file=None, sparse=True, bundled=False,
-                   do_round=False, verbose=False, **args):
+                   do_round=False, flip_axes=False, verbose=False, **args):
     r"""Load a gene expression matrix consisting of raw read counts
 
     Notes
@@ -299,6 +301,9 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set',
         In case of read count fractions, round to integers. Can be a
         useful remedy if read counts have been imputed or
         similar. Default: False
+    flip_axes : `bool`
+        Rotate the data after loading it. Use if in the input data the
+        genes are columns and cells are rows. Default: False
     verbose : `bool`
         To be verbose or not. Default: False
 
@@ -328,6 +333,8 @@ def load_from_file(filename, sep='\s', header=True, desc='no desc set',
     else:
             count_data = reader(filename, sep, header, do_round,
                                 verbose, **args)
+    if flip_axes:
+        count_data = count_data.T
     obj = dataset(count_data, desc, output_file=output_file,
                   input_file=filename, sparse=sparse, verbose=verbose)
     if verbose:
