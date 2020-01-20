@@ -215,6 +215,7 @@ def cell_type_predict(obj, name=(), clustering=(),
     if isinstance(cell_type_markers, pd.DataFrame):
         # custom cell type markers were provided
         ma_ss = cell_type_markers
+        ma_ss.columns = ['official gene symbol', 'cell type']
     else:
         ma = pd.read_csv('%s/data/markers.tsv' %
                          os.path.dirname(adobo.IO.__file__), sep='\t')
