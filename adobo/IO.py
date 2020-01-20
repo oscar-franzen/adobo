@@ -138,8 +138,9 @@ def reader(filename, sep='\s', header=True, do_round=False,
     skip_to_line = 1
     if header:
         skip_to_line = 2
-    count_data = dt.fread(
-        filename, skip_to_line=skip_to_line, **args).to_pandas()
+    count_data = dt.fread(filename,
+                          skip_to_line=skip_to_line,
+                          **args).to_pandas()
     count_data.index = count_data.iloc[:, 0]
     count_data = count_data.drop(count_data.columns[0], axis=1)
     if np.any(count_data.dtypes == bool):
@@ -166,7 +167,11 @@ def reader(filename, sep='\s', header=True, do_round=False,
             if len(hs) == count_data.shape[1]:
                 count_data.columns = hs
             else:
-                count_data.columns = hs[1:len(hs)]
+                hs = hs[1:len(hs)]
+                if hs[-1] == '':
+                    hs = hs[0:len(hs)-1]
+            if len(hs) == count_data.shape[1]:
+                count_data.columns = hs
         else:
             if verbose:
                 print('Skipping to set columns (mismatch in \
@@ -177,16 +182,16 @@ length for header).')
         count_data = count_data.iloc[np.logical_not(dups)]
         if verbose:
             print('%s duplicated genes detected and removed.' % np.sum(dups))
-    t = count_data.dtypes.unique()[0]
-    if t != np.int32 and t != np.int64:
-        if do_round:
-            count_data = count_data.astype(int)
-        else:
-            raise Exception('Non-count values detected in data matrix, consider \
-setting do_round=True, but first of all make sure your input data are raw read \
-counts and not normalized counts.')
-    rem = count_data.index.str.contains(
-        '^ArrayControl-[0-9]+', regex=True, case=False)
+    if do_round:
+        count_data = count_data.astype(int)
+    for gene, r in count_data.iterrows():
+        if np.any(r.apply(lambda x: not x.is_integer())):
+            raise Exception('Non-count values detected in data matrix \
+(in gene "%s"), consider setting do_round=True, but first of all make \
+sure your input data are raw read counts and not normalized counts.' % gene)
+    rem = count_data.index.str.contains('^ArrayControl-[0-9]+',
+                                        regex=True,
+                                        case=False)
     count_data = count_data[np.logical_not(rem)]
     count_data.index = count_data.index.str.replace('"', '')
     count_data.columns = count_data.columns.str.replace('"', '')
