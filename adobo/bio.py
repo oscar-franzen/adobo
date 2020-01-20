@@ -170,12 +170,14 @@ you sure this is mouse data?')
 
 
 def cell_type_predict(obj, name=(), clustering=(),
-                      min_cluster_size=10, verbose=False):
+                      min_cluster_size=10, cell_type_markers=None,
+                      verbose=False):
     """Predicts cell types using the expression of marker genes
 
     Notes
     -----
-    Gene identifiers should be in symbol form, not ensembl identifiers, etc.
+    Gene identifiers should be in symbol form, not ensembl
+    identifiers, etc.
 
     Parameters
     ----------
@@ -189,6 +191,14 @@ def cell_type_predict(obj, name=(), clustering=(),
     min_cluster_size : `int`
         Minimum number of cells per cluster; clusters smaller than
         this are ignored.  Default: 10
+    cell_type_markers : `pandas.DataFrame`
+        Source of gene markers used to define cell types. This is set
+        to None as default, indicating that PanglaoDB markers will be
+        used. To use custom markers, set this to a pandas data frame
+        where the first column is a gene and the second column is the
+        name of the cell type (every cell type will have multiple
+        rows). Default: None
+    Default: None
     verbose : `bool`
         Be verbose or not. Default: False
 
@@ -201,14 +211,21 @@ def cell_type_predict(obj, name=(), clustering=(),
         targets = obj.norm_data
     else:
         targets[name] = obj.norm_data[name]
-    ma = pd.read_csv('%s/data/markers.tsv' %
-                     os.path.dirname(adobo.IO.__file__), sep='\t')
-    # restrict to mouse
-    ma = ma[ma.species.str.match('Mm')]
-    markers = ma
-    ui = ma.iloc[:, ma.columns == 'ubiquitousness index']
-    ma = ma[np.array(ui).flatten() < 0.05]
-    ma_ss = ma.iloc[:, ma.columns.isin(['official gene symbol', 'cell type'])]
+        
+    if isinstance(cell_type_markers, pd.DataFrame):
+        # custom cell type markers were provided
+        ma_ss = cell_type_markers
+    else:
+        ma = pd.read_csv('%s/data/markers.tsv' %
+                         os.path.dirname(adobo.IO.__file__), sep='\t')
+        # restrict to mouse
+        ma = ma[ma.species.str.match('Mm')]
+        markers = ma
+        ui = ma.iloc[:, ma.columns == 'ubiquitousness index']
+        ma = ma[np.array(ui).flatten() < 0.05]
+        ma_ss = ma.iloc[:, ma.columns.isin(['official gene symbol',
+                                            'cell type'])]
+        
     marker_freq = ma_ss[ma_ss.columns[0]].value_counts()
     markers = ma_ss
     # reference symbols
