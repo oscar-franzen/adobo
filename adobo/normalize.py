@@ -41,7 +41,7 @@ def _vsn_model_pars(X, g, data_step1):
 
 
 def vsn(data, min_cells=5, gmean_eps=1, ngenes=2000, nworkers='auto',
-verbose=False):
+        verbose=False):
     """Performs variance stabilizing normalization based on a negative
     binomial regression model with regularized parameters
 
