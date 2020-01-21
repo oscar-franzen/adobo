@@ -593,6 +593,13 @@ def ComBat(obj, normalization=None, meta_cells_var=None,
     parameters. This implementation follows the ComBat function in the
     R package SVA.
 
+    Commands should run in this order:
+    >>> ad.normalize.norm(exp)
+    >>> exp.add_meta_data(axis='cells', key='batch', data=batch_vector)
+    >>> ad.normalize.ComBat(exp, meta_cells_var='batch', verbose=True)
+    >>> ad.hvg.find_hvg(exp, use_combat=True)
+    >>> ad.dr.pca(exp, use_combat=True, verbose=True)
+
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`

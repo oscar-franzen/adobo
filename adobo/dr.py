@@ -234,7 +234,7 @@ def svd(data_norm, scale=True, ncomp=75, only_sdev=False):
 
 
 def pca(obj, method='irlb', normalization=None, ncomp=75, genes='hvg',
-        scale=True, var_weigh=True, verbose=False, seed=42):
+        scale=True, var_weigh=True, use_combat=False, verbose=False, seed=42):
     """Runs Principal Component Analysis (PCA)
 
     Notes
@@ -304,6 +304,11 @@ https://oscar-franzen.github.io/adobo/adobo.html#adobo.normalize.norm')
     for k in targets:
         item = targets[k]
         data = item['data']
+        if use_combat:
+            if verbose:
+                print('Using data from ComBat.')
+            data = item['combat']
+        
         if isinstance(genes, str) and genes == 'hvg':
             try:
                 hvg = item['hvg']['genes']
