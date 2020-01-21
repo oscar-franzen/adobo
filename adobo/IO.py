@@ -157,7 +157,7 @@ def reader(filename, sep='\s', header=True, do_round=False,
             tool = 'xzcat'
         cmd = '%s "%s" | head -n1' % (tool, filename)
         h = subprocess.check_output(cmd, shell=True).decode(
-            'ascii').replace('\n', '')
+            'ascii').replace('\n', '').replace('"', '')
         if sep == '\s':
             pat = '[\s,]'
         else:
@@ -185,8 +185,9 @@ length for header).')
     if do_round:
         count_data = count_data.astype(int)
     for gene, r in count_data.iterrows():
-        if np.any(r.apply(lambda x: not x.is_integer())):
-            raise Exception('Non-count values detected in data matrix \
+        if not r.dtype in [np.int32, np.int64]:
+            if np.any(r.apply(lambda x: not x.is_integer())):
+                raise Exception('Non-count values detected in data matrix \
 (in gene "%s"), consider setting do_round=True, but first of all make \
 sure your input data are raw read counts and not normalized counts.' % gene)
     rem = count_data.index.str.contains('^ArrayControl-[0-9]+',
