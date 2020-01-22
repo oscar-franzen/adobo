@@ -715,14 +715,18 @@ format: %s.' % obj.count_data.index)
         fn = '%s/data/%s.gencode_v32.genes.txt' % v
     elif species == 'mouse':
         fn = '%s/data/%s.gencode_v23.genes.txt' % v
+        
+    i = obj.count_data.index
+    if (np.sum(i.str.match('^ENS.*[0-9]{3,}\.[0-9]+$'))/len(i)) > 0.99:
+        i = pd.Series(np.array(i.str.split('\.', expand=True).to_list())[:, 0])
+    
     gs = pd.read_csv(fn, sep='\t', header=None)
     gs.index = gs.loc[:, 0]
-    gs = gs[gs.index.isin(obj.count_data.index)]
-    missing = obj.count_data.index[np.logical_not(
-        obj.count_data.index.isin(gs.index))]
+    gs = gs[gs.index.isin(i)]
+    missing = i[np.logical_not(i.isin(gs.index))]
     gs = pd.concat([gs, pd.DataFrame({0: missing, 1: ['NA']*len(missing)})])
     gs.index = gs.iloc[:, 0]
-    gs = gs.reindex(obj.count_data.index)
+    gs = gs.reindex(i)
     X = obj.count_data
     X.index = (gs[[1]].values+'_'+gs[[0]].values).flatten()
     obj.count_data = X
