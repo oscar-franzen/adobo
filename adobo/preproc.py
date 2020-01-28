@@ -25,6 +25,7 @@ from sklearn.preprocessing import scale as sklearn_scale
 from sklearn.linear_model import ElasticNet
 from scipy.optimize import root
 from scipy.special import digamma
+from scipy.stats import median_absolute_deviation as mad
 
 import adobo.IO
 from .clustering import knn, snn, leiden
@@ -732,3 +733,54 @@ format: %s.' % obj.count_data.index)
     obj.count_data = X
     obj.meta_genes.index = obj.count_data.index
     obj.set_assay(sys._getframe().f_code.co_name)
+
+def mad_outlier(obj, nmads=3, verbose=False):
+    """Outlier detection based on median absolute deviation
+
+    Notes
+    -----
+    Removes cells with a number of median absolute deviations below
+    the median of either of two quality metrics. The quality metrics
+    are the log of the library size and the log of number of detected
+    genes. The principle is similar to Lun et al. Three mads is the
+    default.
+
+    Parameters
+    ----------
+    obj : :class:`adobo.data.dataset`
+        A data class object.
+    nmads : `int`
+        Number of median absolute deviations below the median for the
+        cell to be considered an outlier. Default: 3
+    verbose : `bool`
+        Be verbose or not. Default: False
+
+    References
+    ----------
+    .. [1] Lun et al. (2016) F1000Res, A step-by-step workflow for
+           low-level analysis of single-cell RNA-seq data with Bioconductor,
+           https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5112579/
+
+    Returns
+    -------
+    Modifies the passed object.
+    """
+    # reset
+    obj.meta_cells.status[obj.meta_cells.status != 'OK'] = 'OK'
+    # lib size
+    ls = obj.meta_cells.total_reads
+    # detected genes
+    dg = obj.meta_cells.detected_genes
+    
+    ls_log = np.log2(ls+1)
+    dg_log = np.log2(dg+1)
+    # only check below
+    lower_ls = np.median(ls_log)-mad(ls_log)*nmads
+    lower_dg = np.median(dg_log)-mad(dg_log)*nmads
+    remove = np.logical_or(ls_log<lower_ls, dg_log<lower_dg)
+
+    r = obj.meta_cells.index.isin(remove[remove].index)
+    obj.meta_cells.status[r] = 'EXCLUDE'
+
+    if verbose:
+        print('Removed %s cells' % np.sum(r))
