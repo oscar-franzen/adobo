@@ -262,6 +262,8 @@ def pca(obj, method='irlb', normalization=None, ncomp=75, genes='hvg',
         'hvg'
     scale : `bool`
         Scales input data prior to PCA. Default: True
+    use_combat : `bool`
+        Use ComBat corrected data or not. Default: False
     var_weigh : `bool`
         Weigh by the variance of each component. Default: True
     verbose : `bool`
