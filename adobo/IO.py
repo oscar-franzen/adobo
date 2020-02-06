@@ -69,7 +69,7 @@ def export_data(obj, filename, norm='standard', clust='leiden',
     Nothing.
     """
     choices = ('normalized', 'clusters', 'pca',
-               'tsne', 'umap', 'cell_type_pred', 'cell_type_prediction_full',
+               'tsne', 'umap', 'cell_type_pred', 'cell_type_pred_full',
                'median_expr')
     if not what in choices:
         raise Exception(
