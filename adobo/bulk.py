@@ -100,27 +100,30 @@ def deconv(obj, bulk, cell_type_var, sample_var=None, target_ct=None,
     Notes
     -----
     Finds two non-negative matrices
-        1) a basis matrix, B, dimensions N x K (N genes and K cell types)
-        2) a proportion matrix, P, dimensions K x M (K cell types and M samples)
+        1) a basis matrix, B, dimensions N x K (N genes and K cell
+           types)
+        2) a proportion matrix, P, dimensions K x M (K cell types and
+           M samples)
     satisfying:
         Y = B x P
-    where Y is a bulk gene expression matrix with dimensions N x M (N genes and
-    M samples)
+    where Y is a bulk gene expression matrix with dimensions N x M
+    (N genes and M samples)
 
     Parameters
     ----------
     obj : :class:`adobo.data.dataset`
         A dataset class object.
     bulk : `pandas.DataFrame`
-        A pandas data frame containing the bulk gene expression. Genes as rows and
-        samples as columns.
+        A pandas data frame containing the bulk gene expression. Genes
+        as rows and samples as columns.
     cell_type_var : `str`
-        A string (column name) of the meta data variable that contains the cell
-        types. Can be set to None or empty to instead use clusters.
+        A string (column name) of the meta data variable that contains
+        the cell types. Can be set to None or empty to instead use
+        clusters.
     sample_var : `str`
-        A string (column name) of the meta data variable that contains sample
-        names. If this is None or empty, then it is assumed all cells come from
-        the same sample.
+        A string (column name) of the meta data variable that contains
+        sample names. If this is None or empty, then it is assumed all
+        cells come from the same sample.
     target_ct : `list`
         A list of cell types to use. Default: None
     verbose : `bool`
@@ -146,8 +149,11 @@ def deconv(obj, bulk, cell_type_var, sample_var=None, target_ct=None,
     counts_sc = obj.count_data.copy()
     if obj.sparse:
         counts_sc = counts_sc.sparse.to_dense()
-    counts_sc, meta = clean_matrix(counts_sc, obj, remove_low_qual=True,
-                                   remove_mito=True, meta=True)
+    counts_sc, meta = clean_matrix(counts_sc,
+                                   obj,
+                                   remove_low_qual=True,
+                                   remove_mito=True,
+                                   meta=True)
     if target_ct != None:
         counts_sc = counts_sc.loc[:, ct.isin(target_ct)]
         meta = meta[meta[[cell_type_var]].iloc[:, 0].isin(target_ct)]
@@ -165,5 +171,6 @@ def deconv(obj, bulk, cell_type_var, sample_var=None, target_ct=None,
     counts_sc = counts_sc.reindex(bulk.index)
     
     # estimate basis matrix
-    basis, sum_mat, sigma, basis_mvw, var_adj_q = _deconv_basis(counts_sc, ct,
+    basis, sum_mat, sigma, basis_mvw, var_adj_q = _deconv_basis(counts_sc,
+                                                                ct,
                                                                 samples)

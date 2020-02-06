@@ -64,7 +64,8 @@ def cell_cycle_train(verbose=False):
     if os.path.exists(path_clf):
         clf, features = joblib.load(path_clf)
         if verbose:
-            print('A trained classifier was found. Loading it from %s' % path_clf)
+            print('A trained classifier was found. \
+Loading it from %s' % path_clf)
     else:
         desc = 'Buettner et al. (2015) doi:10.1038/nbt.3102'
         B = adobo.IO.load_from_file(path_data, desc=desc)
@@ -81,8 +82,8 @@ def cell_cycle_train(verbose=False):
                           with_std=True)     # scale the data to unit variance
         Y = [i[0] for i in norm_cc_mat.columns.str.split('_')]
 
-        clf = SGDClassifier(loss='hinge', penalty='l2', max_iter=5, shuffle=True,
-                            verbose=verbose)
+        clf = SGDClassifier(loss='hinge', penalty='l2', max_iter=5,
+                            shuffle=True, verbose=verbose)
         clf.fit(X, Y)
         features = norm_cc_mat.index
         joblib.dump([clf, features], path_clf)
@@ -303,7 +304,8 @@ def cell_type_predict(obj, name=(), clustering=(),
                 median_expr = ret
                 obj.norm_data[k]['clusters'][algo]['median_expr'] = median_expr
                 median_expr.index = median_expr.index.str.upper()
-                if median_expr.shape[0] == np.sum(median_expr.index.str.match('^(.+)_.+')):
+                s = np.sum(median_expr.index.str.match('^(.+)_.+'))
+                if median_expr.shape[0] == s:
                     input_symbols = median_expr.index.str.extract(
                         '^(.+)_.+')[0]
                     input_symbols = input_symbols.str.upper()
@@ -340,4 +342,7 @@ of input data.')
                 res_pred = final_tbl.groupby('cluster').nth(0)
                 _a = res_pred['adjusted p-value BH'] > 0.10
                 res_pred.loc[_a, 'cell type'] = 'Unknown'
-                obj.norm_data[k]['clusters'][algo]['cell_type_prediction'] = res_pred
+                key = 'cell_type_prediction'
+                obj.norm_data[k]['clusters'][algo][key] = res_pred
+                key = 'cell_type_prediction_full'
+                obj.norm_data[k]['clusters'][algo][key] = final_tbl
