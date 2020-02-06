@@ -43,7 +43,7 @@ def export_data(obj, filename, norm='standard', clust='leiden',
     clust : `str`
         Name of the clustering. For example: 'leiden̈́'.
     what : `{'normalized', 'clusters', 'pca', 'tsne', 'umap', 'cell_type_pred',
-             'median_expr'}`
+             'cell_type_prediction_full', 'median_expr'}`
         What to export.
     transpose : `bool`
         Transpose the data before writing it. Default: False
@@ -69,7 +69,8 @@ def export_data(obj, filename, norm='standard', clust='leiden',
     Nothing.
     """
     choices = ('normalized', 'clusters', 'pca',
-               'tsne', 'umap', 'cell_type_pred', 'median_expr')
+               'tsne', 'umap', 'cell_type_pred', 'cell_type_prediction_full',
+               'median_expr')
     if not what in choices:
         raise Exception(
             '"what" must be one of: %s' % ', '.join(choices))
@@ -92,6 +93,8 @@ def export_data(obj, filename, norm='standard', clust='leiden',
         D = obj.norm_data[norm]['dr']['umap']['embedding']
     elif what == 'cell_type_pred':
         D = obj.norm_data[norm]['clusters'][clust]['cell_type_prediction']
+    elif what == 'cell_type_prediction_full':
+        D = obj.norm_data[norm]['clusters'][clust]['cell_type_prediction_full']
     elif what == 'median_expr':
         cl = obj.norm_data[norm]['clusters'][clust]['membership']
         D = obj.norm_data[norm]['data']
