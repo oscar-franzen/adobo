@@ -83,7 +83,7 @@ def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red',
     _mpl_finish(filename, bbox_inches='tight', **args)
 
 
-def overall(obj, what='reads', how='histogram', bin_size=100,
+def overall(obj, what='cells', how='histogram', bin_size=100,
             cut_off=None, color=YLW_CURRY, title=None, filename=None,
             **args):
     """Generates a plot of read counts per cell or expressed genes per
@@ -93,10 +93,10 @@ def overall(obj, what='reads', how='histogram', bin_size=100,
     ----------
     obj : :class:`adobo.data.dataset`
         A data class object.
-    what : `{'reads', 'genes'}`
-        If 'reads' then plots the number of reads per cell. If
+    what : `{'cells', 'genes'}`
+        If 'cells' then plots the number of reads per cell. If
         'genes', then plots the number of expressed genes per
-        cell. Default: 'reads'
+        cell. Default: 'cells'
     how : `{'histogram', 'boxplot', 'barplot', 'violin'}`
         Type of plot to generate. Default: 'histogram'
     bin_size : `int`
@@ -117,15 +117,15 @@ def overall(obj, what='reads', how='histogram', bin_size=100,
     -------
     None
     """
-    if not what in ('reads', 'genes'):
-        raise Exception('"what" can only be "reads" or "genes".')
+    if not what in ('cells', 'genes'):
+        raise Exception('"what" can only be "cells" or "genes".')
     if not how in ('histogram', 'boxplot', 'barplot', 'violin'):
         raise Exception(
             '"how" can only be "histogram", "boxplot", "barplot" or "violin".')
     plt.clf()
     plt.close(fig='all')
     count_data = obj.count_data
-    if what == 'reads':
+    if what == 'cells':
         summary = count_data.sum(axis=0)
         ylab = 'raw read counts'
         xlab = 'cells'
