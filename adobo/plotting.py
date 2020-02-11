@@ -390,7 +390,7 @@ def cell_viz(obj, reduction=None, normalization=(), clustering=(),
     filename : `str`, optional
         Name of an output file instead of showing on screen.
     marker_size : `float`
-        The size of the markers.
+        The size of the markers. Default: 0.8
     font_size : `float`
         Font size. Default: 8
     colors : `{'default', 'random'}` or `list`
