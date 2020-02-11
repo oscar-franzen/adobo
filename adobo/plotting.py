@@ -35,7 +35,6 @@ def _mpl_finish(filename, block=False, **args):
     else:
         plt.show(block=block)
 
-
 def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red',
                     title=None, filename=None, **args):
     """Generates a scatter plot showing the total number of reads on
@@ -721,7 +720,8 @@ adobo.bio.cell_type_predict has not been called yet.')
         # go back to default style
         plt.style.use('classic')
         plt.rcParams.update(plt.rcParamsDefault)
-    _mpl_finish(filename, **args)
+    # selection mode doesn't work if block=False
+    _mpl_finish(filename, block=selection_mode, **args)
 
 
 def pca_elbow(obj, normalization=None, comp_max=100, all_genes=False,
