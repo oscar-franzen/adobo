@@ -345,7 +345,7 @@ def cell_viz(obj, reduction=None, normalization=(), clustering=(),
              colors='adobo', title=None, legend=True,
              legend_marker_scale=10, legend_position=(1, 1),
              min_cluster_size=10, figsize=(10, 10), margins=None,
-             dark=False, verbose=False, **args):
+             dark=False, aspect_ratio='equal', verbose=False, **args):
     """Generates a 2d scatter plot from an embedding
 
     Parameters
@@ -420,6 +420,9 @@ def cell_viz(obj, reduction=None, normalization=(), clustering=(),
         values. Default: None
     dark : `bool`
         Make the background color black. Default: False
+    aspect_ratio : `{'equal', 'auto'}`
+        Set the aspect of the axis scaling, i.e. the ratio of y-unit
+        to x-unit. Default: 'equal'
     verbose : `bool`
         Be verbose or not. Default: True
 
@@ -538,7 +541,7 @@ def cell_viz(obj, reduction=None, normalization=(), clustering=(),
                                                     # in the legend
             aa[pl_idx].set_title('%s %s %s' % (norm_name, cl_algo, reduction),
                                  size=font_size)
-            aa[pl_idx].set_aspect('equal')
+            aa[pl_idx].set_aspect(aspect_ratio)
             aa[pl_idx].set_gid(reduction+'_'+norm_name+'_' + cl_algo)
 
             def _hh(sel):
@@ -682,7 +685,7 @@ adobo.bio.cell_type_predict has not been called yet.')
                 cax = divider.append_axes("right", size="5%", pad=0.05)
                 cbar = fig.colorbar(po, cax=cax)
             aa[pl_idx].set_title(meta_var, size=font_size)
-            aa[pl_idx].set_aspect('equal')
+            aa[pl_idx].set_aspect(aspect_ratio)
             pl_idx += 1
         # plot genes
         for gene in genes:
@@ -701,7 +704,7 @@ adobo.bio.cell_type_predict has not been called yet.')
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(po, cax=cax)
             aa[pl_idx].set_title(ge.index[0], size=font_size)
-            aa[pl_idx].set_aspect('equal')
+            aa[pl_idx].set_aspect(aspect_ratio)
             pl_idx += 1
         # turn off unused axes
         # if (len(clustering) + len(metadata) + len(genes)) == 1:
