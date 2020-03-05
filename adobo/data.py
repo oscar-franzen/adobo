@@ -294,6 +294,8 @@ Commands executed:
             target = self.meta_cells
         elif axis == 'genes':
             target = self.meta_genes
+        if key == 'status':
+            raise KeyError('The name "status" is not allowed.')
         target[key] = data
         if type_ == 'cat':
             target[key] = target[key].astype('category')
