@@ -358,7 +358,7 @@ the %s normalization' % k)
                     ref_coef = coef.iloc[kk, :]
                     # recompute coefficients for contrasts
                     # https://genomicsclass.github.io/book/pages/interactions_and_contrasts.html
-+                    con = np.zeros((coef.shape[0], kk))
+                    con = np.zeros((coef.shape[0], kk))
                     np.fill_diagonal(con, -1)
                     con[kk, ] = 1
                     std_new = np.sqrt((std_dev**2).dot(con**2))
