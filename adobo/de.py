@@ -6,7 +6,7 @@
 """
 Summary
 -------
-Functions for differential expression.
+Functions for differential expression analysis.
 """
 import time
 from multiprocessing import Pool
@@ -231,7 +231,7 @@ def _choose_leftright_pvalues(left, right, direction):
 
 
 def linear_model(obj, normalization=(), clustering=(), direction='up',
-                 min_cluster_size=10, verbose=False):
+                 target_clusters=None, min_cluster_size=10, verbose=False):
     """Performs differential expression analysis between clusters
     using a linear model and t-statistics
 
@@ -261,12 +261,26 @@ def linear_model(obj, normalization=(), clustering=(), direction='up',
         Can be 'any' for any direction 'up' for up-regulated and
         'down' for down-regulated. Normally we want to find genes
         being upregulated in cluster A compared with cluster
-        B. Default: up
+        B. Default: 'up'
+    target_clusters : `list`
+        Specify the clusters for which the test should be
+        performed. Default is to include all clusters. Default: None
     min_cluster_size : `int`
         Minimum number of cells per cluster (clusters smaller than
         this are ignored).  Default: 10
     verbose : `bool`
         Be verbose or not. Default: False
+
+    Example
+    -------
+    >>> import adobo as ad
+    >>> exp = ad.IO.load_from_file('pbmc8k.mat.gz', bundled=True)
+    >>> ad.normalize.norm(exp)
+    >>> ad.hvg.find_hvg(exp)
+    >>> ad.dr.pca(exp)
+    >>> ad.clustering.generate(exp)
+    >>> ad.de.linear_model(exp)
+    >>> ad.de.combine_tests(exp)
 
     References
     ----------
@@ -292,15 +306,20 @@ the %s normalization' % k)
         for algo in clusters:
             if len(clustering) == 0 or algo in clustering:
                 cl = clusters[algo]['membership']
+                
                 # remove clusters with too few cells
                 q = pd.Series(cl).value_counts()
                 cl_remove = q[q < min_cluster_size].index
                 X_f = X.loc[np.logical_not(cl.isin(cl_remove)).values, :]
                 cl = cl[np.logical_not(cl.isin(cl_remove))]
 
+                if target_clusters:
+                    X_f = X_f.loc[cl.isin(target_clusters), :]
+                    cl = cl[cl.isin(target_clusters)]
+
                 # full design matrix
-                dm_full = patsy.dmatrix(
-                    '~ 0 + C(cl)', pd.DataFrame({'cl': cl}))
+                dm_full = patsy.dmatrix('~ 0 + C(cl)',
+                                        pd.DataFrame({'cl': cl}))
                 resid_df = dm_full.shape[0] - dm_full.shape[1]
 
                 # gene expression should be the response
@@ -313,15 +332,14 @@ the %s normalization' % k)
                 # https://stats.stackexchange.com/questions/44838/how-are-the-standard-errors-of-coefficients-calculated-in-a-regression
                 # http://web.mit.edu/~r/current/arch/i386_linux26/lib/R/library/limma/html/lm.series.html
                 # residual variance for each gene
-                dm_nrow = dm_full.shape[0]
-                dm_ncol = dm_full.shape[1]
+                dm_nrow, dm_ncol = dm_full.shape
                 sigma2 = ((X_f-dm_full.dot(coef))**2).sum(axis=0) / \
                     (dm_nrow-dm_ncol)
 
                 q = dm_full.transpose().dot(dm_full)
                 chol = np.linalg.cholesky(q)
-                chol2inv = scipy.linalg.cho_solve(
-                    (chol, False), np.eye(chol.shape[0]))
+                v = (chol, False)
+                chol2inv = scipy.linalg.cho_solve(v, np.eye(chol.shape[0]))
                 std_dev = np.sqrt(np.diag(chol2inv))
                 clusts = np.unique(cl)
 
