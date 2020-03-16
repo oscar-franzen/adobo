@@ -36,7 +36,7 @@ def _mpl_finish(filename, block=False, **args):
         plt.show(block=block)
 
 def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red',
-                    title=None, filename=None, **args):
+                    no_plot=False, title=None, filename=None, **args):
     """Generates a scatter plot showing the total number of reads on
        one axis and the number of detected genes on the other axis
 
@@ -48,6 +48,9 @@ def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red',
         Color of the plot. Default: '#E69F00'
     color_filtered : `str`
         Color of the cells that have been filtered out. Default: 'red'
+    no_plot : `bool`
+        Don't generate a plot, only return a data frame containing
+        the data points. Default: False
     title : `str`
         Title of the plot. Default: None
     filename : `str`, optional
@@ -69,6 +72,13 @@ def overall_scatter(obj, color_kept=YLW_CURRY, color_filtered='red',
     reads = count_data.sum(axis=0)
     genes = pd.Series([np.sum(r[1] > 0)
                        for r in count_data.transpose().iterrows()])
+    if no_plot:
+        df = pd.DataFrame({
+            'reads' : reads.values,
+            'genes' : genes.values,
+            'removed' : obj.meta_cells.status != 'OK'
+        })
+        return df
     ax.scatter(x=reads, y=genes, color=color_kept, s=2)
     reads_not_ok = reads[obj.meta_cells.status != 'OK']
     genes_not_ok = genes[(obj.meta_cells.status != 'OK').values]
