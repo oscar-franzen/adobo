@@ -5037,6 +5037,15 @@ Mm Hs	MS4A7	Monocytes	CD20L4|CFFM4|MS4A8	0.027	membrane spanning 4-domains A7	pr
 Mm Hs	CEBPB	Monocytes	NFIL6|IL6DBP|C/EBP-beta|TCF5	0.138	CCAAT enhancer binding protein beta	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
 Mm Hs	CD68	Monocytes	SCARD1|macrosialin|DKFZp686M18236|LAMP4	0.063	CD68 molecule	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
 Mm Hs	IFI30	Monocytes	IFI-30|GILT|IP30|MGC32056|IP-30	0.078	IFI30, lysosomal thiol reductase	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Hs	S100A12	Monocytes	CGRP|CAAF1|CAGC|ENRAGE	0.003	S100 calcium binding protein A12	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Hs	SERPINA1	Monocytes	AAT|A1A|PI1|alpha-1-antitrypsin|A1AT|alpha1AT|PI	0.016	serpin family A member 1	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Mm Hs	RGS2	Monocytes	G0S8	0.128	regulator of G protein signaling 2	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Mm Hs	LST1	Monocytes	B144|D6S49E	0.082	leukocyte specific transcript 1	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Mm Hs	SPI1	Monocytes	PU.1|SPI-A|SFPI1|SPI-1	0.094	Spi-1 proto-oncogene	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Mm Hs	TYMP	Monocytes	MNGIE|ECGF1	0.011	thymidine phosphorylase	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Hs	CSTA	Monocytes	STF1|STFA	0.012	cystatin A	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Mm Hs	FGL2	Monocytes	pT49|T49	0.03	fibrinogen like 2	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
+Mm Hs	PYCARD	Monocytes	CARD5|ASC	0.147	PYD and CARD domain containing	protein-coding gene	NA	Mesoderm	Immune system	NA	NA	NA	NA
 Mm Hs	ISL1	Motor neurons	Isl-1|ISLET1	0.028	ISL LIM homeobox 1	protein-coding gene	1	Ectoderm	Brain	0.0	0.0	0.0134712	0.0313763
 Mm Hs	MNX1	Motor neurons	HB9|HOXHB9|SCRA1|HLXB9	0.0	motor neuron and pancreas homeobox 1	protein-coding gene	1	Ectoderm	Brain	0.0	0.0	0.0	0.0
 Mm Hs	ISL2	Motor neurons	FLJ10160	0.004	ISL LIM homeobox 2	protein-coding gene	NA	Ectoderm	Brain	0.0	0.0	0.0	0.00519731
