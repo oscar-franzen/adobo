@@ -153,7 +153,7 @@ def irlb(data_norm, scale=True, ncomp=75, var_weigh=True, seed=None):
     cols = inp.columns
     inp = inp.transpose()
     if scale:
-        inp = sklearn_scale(inp,  # cells as rows and genes as columns
+        inp = sklearn_scale(inp.sparse.to_dense(),  # cells as rows and genes as columns
                             # over genes, i.e. features (columns)
                             axis=0,
                             with_mean=True,   # subtracting the column means
