@@ -98,7 +98,7 @@ def export_data(obj, filename, norm='standard', clust='leiden',
     elif what == 'median_expr':
         cl = obj.norm_data[norm]['clusters'][clust]['membership']
         D = obj.norm_data[norm]['data']
-        ret = D.groupby(cl.values, axis=1).aggregate(np.median)
+        ret = D.sparse.to_dense().groupby(cl.values, axis=1).aggregate(np.median)
         q = pd.Series(cl).value_counts()
         cl_remove = q[q < min_cluster_size].index
         ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
