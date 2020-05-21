@@ -297,7 +297,7 @@ def cell_type_predict(obj, name=(), clustering=(),
                 if verbose:
                     print('Running on the %s clustering' % algo)
                 cl = clusters[algo]['membership']
-                ret = X.groupby(cl.values, axis=1).aggregate(np.median)
+                ret = X.sparse.to_dense().groupby(cl.values, axis=1).aggregate(np.median)
                 q = pd.Series(cl).value_counts()
                 cl_remove = q[q < min_cluster_size].index
                 ret = ret.iloc[:, np.logical_not(ret.columns.isin(cl_remove))]
