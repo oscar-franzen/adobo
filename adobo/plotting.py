@@ -699,14 +699,14 @@ adobo.bio.cell_type_predict has not been called yet.')
             pl_idx += 1
         # plot genes
         for gene in genes:
-            if not np.any(item['data'].index.str.match(gene)):
+            if not np.any(item['data'].index.str.fullmatch(gene)):
                 m = '"%s" was not found in the gene expression matrix' % gene
                 raise Exception(m)
-            if np.sum(item['data'].index.str.match(gene)) > 1:
+            if np.sum(item['data'].index.str.fullmatch(gene)) > 1:
                 raise Exception(
                     'Multiple genes found with the name "%s"' % gene)
             #ge = item['data'].loc[gene, :]
-            ge = item['data'][item['data'].index.str.match(gene)]
+            ge = item['data'][item['data'].index.str.fullmatch(gene)]
             cmap = sns.cubehelix_palette(as_cmap=True)
             po = aa[pl_idx].scatter(E.iloc[:, 0], E.iloc[:, 1], s=marker_size,
                                     c=ge.values[0], cmap=cmap)
